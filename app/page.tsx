@@ -3,6 +3,7 @@
 import { ArrowRight, BarChart3, BrainCircuit, CheckCircle2, ClipboardList, Gauge, GitBranch, History, LineChart, RefreshCw, Search, ShieldCheck, Sparkles, Target, Users } from 'lucide-react';
 import { useState } from 'react';
 import Game from '../components/Game';
+import TransparencyFlow from '../components/TransparencyFlow';
 
 const features = [[Target, 'Strategic decisions', 'Balance technology, people, governance, and value across 12 quarters.'], [Gauge, 'Real-time feedback', 'Watch ROI, adoption, risk, and data readiness change after every choice.'], [BrainCircuit, 'AI-powered coaching', 'Ask a board advisor to challenge assumptions and sharpen your case.'], [LineChart, 'Deep analytics', 'Explore forecasts, Strategy DNA, heatmaps, and executive frameworks.']];
 const steps = [[ClipboardList, 'The briefing', '2 minutes', 'Review the baseline, choose an LLM advisor, and understand the starting conditions.'], [Target, 'The decision window', '5 minutes per quarter', 'Use the Strategy Simulator, What-If analysis, Board Advisor, and BCG monitor to choose.'], [BarChart3, 'The results', 'Immediate feedback', 'Read the causal chain, recommendations, traffic lights, and framework scores.'], [RefreshCw, 'The next quarter', 'Continuous improvement', 'Use forecasting, heatmaps, history, and Time Machine comparisons to improve.']];
