@@ -24,7 +24,7 @@ export default function GameAssessmentScreen({
   analytics,
 }: GameAssessmentScreenProps) {
   return (
-    <main className="min-h-screen grid-bg p-6">
+    <main className="min-h-screen grid-bg p-6 pb-32 sm:pb-6">
       <section className="mx-auto max-w-3xl pt-12">
         <p className="text-xs font-bold uppercase tracking-[.25em] text-gold">
           Baseline assessment · 02

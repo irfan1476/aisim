@@ -87,7 +87,7 @@ export default function GameDecisionView({
           </div>
         </div>
       </header>
-      <div className="mx-auto grid max-w-[1500px] gap-5 p-5 lg:grid-cols-[1fr_340px]">
+      <div className="mx-auto grid max-w-[1500px] gap-5 p-5 pb-28 sm:pb-5 lg:grid-cols-[1fr_340px]">
         <section>
           <div className="mb-5 flex items-end justify-between">
             <div>
