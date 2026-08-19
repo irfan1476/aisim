@@ -16,3 +16,10 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
   advanceQuarter: () => { const state = get(); if (state.q >= 12) return set({ stage: 'done' }); set({ q: state.q + 1, stage: 'decide', selected: [], crisis: null, causalChain: [], proactiveRecommendations: [], feedback: `Quarter ${state.q + 1} is ready.` }); },
   resetGame: () => set(initialGameState()), loadGame: (state) => set(state),
 }), { name: 'ai-investment-game' }));
+
+export function useGameState(initializer: () => any): [any, (update: any) => void] {
+  const store = useGameStore();
+  const setState = useGameStore.setState;
+  if (!store.feedback) setState(initializer());
+  return [store, (update) => setState((current) => typeof update === 'function' ? update(current) : update)];
+}
