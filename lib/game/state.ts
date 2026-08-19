@@ -4,7 +4,16 @@ export type CausalItem = { name: string; effects: Effect[] };
 export type Recommendation = { priority: 'high' | 'medium' | 'low'; title: string; message: string; action: string; metric: string };
 import type { InitiativeState } from './initiativeState';
 import { initializeInitiativeStates } from './initiativeState';
-export type QuarterSnapshot = { q: number; chosen: (string | undefined)[]; metrics: any; initiativeStates?: Record<string, InitiativeState> };
+export type MetricKey = 'roi' | 'revenue' | 'efficiency' | 'adoption' | 'risk' | 'data' | 'satisfaction' | 'literacy' | 'turnover' | 'compliance' | 'innovation' | 'spent' | 'score';
+export type MetricsSnapshot = Partial<Record<MetricKey, number>>;
+export type QuarterSnapshot = {
+  q: number;
+  chosen: string[];
+  metrics: MetricsSnapshot;
+  initiativeStates?: Record<string, InitiativeState>;
+  crisis?: unknown;
+  crisisResponse?: Record<string, number>;
+};
 export type GameState = {
   q: number; stage: 'decide' | 'results' | 'done'; selected: string[]; alloc: Allocation;
   roi: number; revenue: number; efficiency: number; adoption: number; risk: number; data: number;
