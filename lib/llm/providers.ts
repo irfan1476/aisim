@@ -25,7 +25,9 @@ export async function chat(input: ChatInput) {
 
   // --- LLAMA (Ollama or llama.cpp) ---
   if (provider === 'llama') {
-    const url = input.localLLMUrl || 'http://127.0.0.1:8080/v1/chat/completions';
+    let url = input.localLLMUrl || 'http://127.0.0.1:11434/api/chat';
+    if (url.endsWith('/v1/chat/')) url = `${url}completions`;
+    if (url.endsWith('/v1/chat')) url = `${url}/completions`;
 
     // Detect Ollama by URL (port 11434 or /api/chat in path)
     const isOllama = url.includes('11434') || url.includes('/api/chat');
@@ -147,4 +149,3 @@ export function extractText(provider: LLMProvider, data: any): string {
   // --- OPENAI / OPENDCODE ---
   return data?.choices?.[0]?.message?.content || '';
 }
-

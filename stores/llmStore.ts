@@ -25,6 +25,6 @@ export const providerDefaults: Record<LLMProvider, { label: string; model: strin
 
 export const useLLMStore = create<LLMState>()(persist((set) => ({
   provider: 'openai', apiKey: '', model: providerDefaults.openai.model, temperature: 0.7,
-  localLLMUrl: 'http://127.0.0.1:8080/v1/chat/completions',
+  localLLMUrl: 'http://127.0.0.1:11434/api/chat',
   set: (values) => set(values), clearKey: () => set({ apiKey: '' }),
 }), { name: 'ai-investment-llm-settings' }));
