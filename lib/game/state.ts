@@ -3,6 +3,7 @@ export type Effect = { metric: string; delta: number; color: string };
 export type CausalItem = { name: string; effects: Effect[] };
 export type Recommendation = { priority: 'high' | 'medium' | 'low'; title: string; message: string; action: string; metric: string };
 import type { InitiativeState } from './initiativeState';
+import { initializeInitiativeStates } from './initiativeState';
 export type QuarterSnapshot = { q: number; chosen: (string | undefined)[]; metrics: any; initiativeStates?: Record<string, InitiativeState> };
 export type GameState = {
   q: number; stage: 'decide' | 'results' | 'done'; selected: string[]; alloc: Allocation;
@@ -13,5 +14,5 @@ export type GameState = {
 };
 
 export function initialGameState(): GameState {
-  return { q: 1, stage: 'decide', selected: ['demand', 'energy'], alloc: { infra: 35, data: 25, people: 15, mlops: 10, compliance: 10, innovation: 5 }, roi: 0, revenue: 0, efficiency: 8, adoption: 38, risk: 36, data: 54, satisfaction: 61, literacy: 35, turnover: 14, compliance: 62, innovation: 42, spent: 0, score: 0, history: [], initiativeStates: {}, achievements: [], crisis: null, feedback: 'The board is watching for a balanced portfolio. You have room to build momentum.', baseline: [], experimental: false, causalChain: [], proactiveRecommendations: [] };
+  return { q: 1, stage: 'decide', selected: ['demand', 'energy'], alloc: { infra: 35, data: 25, people: 15, mlops: 10, compliance: 10, innovation: 5 }, roi: 0, revenue: 0, efficiency: 8, adoption: 38, risk: 36, data: 54, satisfaction: 61, literacy: 35, turnover: 14, compliance: 62, innovation: 42, spent: 0, score: 0, history: [], initiativeStates: initializeInitiativeStates(), achievements: [], crisis: null, feedback: 'The board is watching for a balanced portfolio. You have room to build momentum.', baseline: [], experimental: false, causalChain: [], proactiveRecommendations: [] };
 }
