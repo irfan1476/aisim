@@ -1,11 +1,12 @@
 import { initiatives } from './initiatives';
 import { updateInitiativeStates, initializeInitiativeStates, type InitiativeState } from './initiativeState';
 import type { GameState, QuarterSnapshot } from './state';
+import { normalizeGameState } from './persistence';
 
 export type QuarterDecision = { selected: string[]; alloc: GameState['alloc'] };
 
 export function hydrateGameState(state: GameState): GameState {
-  return { ...state, initiativeStates: Object.keys(state.initiativeStates || {}).length ? state.initiativeStates : initializeInitiativeStates(), history: state.history || [] };
+  return normalizeGameState(state);
 }
 
 export function resolveQuarter(state: GameState, decision: QuarterDecision): { metrics: Partial<GameState>; initiativeStates: Record<string, InitiativeState>; snapshot: QuarterSnapshot } {
