@@ -144,6 +144,7 @@ export function normalizeGameState(value: unknown): GameState {
   next.proactiveRecommendations = Array.isArray(source.proactiveRecommendations)
     ? source.proactiveRecommendations as GameState['proactiveRecommendations']
     : defaults.proactiveRecommendations;
+  next.approvedRecommendations = stringArrayOr(source.approvedRecommendations, defaults.approvedRecommendations);
   return next;
 }
 

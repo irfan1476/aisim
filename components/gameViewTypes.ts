@@ -45,6 +45,7 @@ export interface GameViewState {
   feedback: string;
   causalChain: unknown[];
   proactiveRecommendations: unknown[];
+  approvedRecommendations: string[];
   baseline: unknown[];
   experimental: boolean;
   initiativeStates: Record<string, InitiativeState>;

@@ -37,6 +37,7 @@ type GameStore = GameState & {
   applyWhatIfDraft: (draft: WhatIfDraft) => void;
   saveWhatIfDraft: (draft: WhatIfDraft) => void;
   clearWhatIfDraft: () => void;
+  approveRecommendation: (title: string) => void;
   loadGame: (state: unknown) => void;
 };
 
@@ -147,6 +148,7 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
   },
 
   clearWhatIfDraft: removeWhatIfDraft,
+  approveRecommendation: (title) => set((state) => ({ approvedRecommendations: state.approvedRecommendations.includes(title) ? state.approvedRecommendations : [...state.approvedRecommendations, title], feedback: `Recommendation approved: ${title}. Build it into the next decision.` })),
 
   loadGame: (state) => set(normalizeGameState(state)),
 }), {
