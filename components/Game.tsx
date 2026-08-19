@@ -15,6 +15,7 @@ import { calculateBCGScore } from '../lib/game/scoring';
 import { initializeInitiativeStates } from '../lib/game/initiativeState';
 import { useGameStore } from '../stores/gameStore';
 import NextQuarterGuidance from './NextQuarterGuidance';
+import QuarterRoadmap from './QuarterRoadmap';
 
 const initiatives: GameInitiative[] = [
   { id: 'maintenance', name: 'Predictive Maintenance', desc: 'Predict component failures weeks in advance.', cost: 2.8, roi: 187, risk: 'MED', data: 4, human: 3, impact: 'Cuts downtime and extends asset life.' },
@@ -66,5 +67,5 @@ export default function Game() {
   if (screen === 'setup') return <GameSetupScreen name={name} experimental={experimental} onNameChange={setName} onExperimentalChange={setExperimental} onContinue={() => setScreen('assessment')} />;
   if (screen === 'assessment') return <GameAssessmentScreen assessment={assessment} onAssessmentChange={(index, value) => setAssessment(current => { const next = [...current]; next[index] = value; return next; })} onComplete={() => { const fresh = initial(); store.resetCampaign(); store.loadGame({ ...fresh, baseline: assessment, experimental }); setScreen('game'); }} canContinue={assessment.length === 5} analytics={<AnalyticsHub state={s} initiatives={initiatives} />} />;
   if (screen === 'done') return <GameDoneScreen state={s} onPlayAgain={reset} />;
-  return <main className="min-h-screen bg-mist"><NextQuarterGuidance guidance={s.nextQuarterGuidance} onApply={store.applyRecommendation} onDismiss={store.dismissRecommendation}/><GameDecisionView state={s} initiatives={liveInitiatives} metrics={metrics} total={total} persona={persona} answer={answer} question={question} isAsking={isAsking} onPersonaChange={setPersona} onQuestionChange={setQuestion} onAsk={ask} onToggleInitiative={toggle} onAllocationChange={updateAlloc} onConfirm={confirm} onReset={reset} /><GameResultsModal state={s} onRespond={respond} onAdvance={advance} onApproveRecommendation={store.approveRecommendation} /></main>;
+  return <main className="min-h-screen bg-mist"><NextQuarterGuidance guidance={s.nextQuarterGuidance} onApply={store.applyRecommendation} onDismiss={store.dismissRecommendation}/><div className="mx-auto max-w-[1500px] px-5 pt-5"><QuarterRoadmap state={s}/></div><GameDecisionView state={s} initiatives={liveInitiatives} metrics={metrics} total={total} persona={persona} answer={answer} question={question} isAsking={isAsking} onPersonaChange={setPersona} onQuestionChange={setQuestion} onAsk={ask} onToggleInitiative={toggle} onAllocationChange={updateAlloc} onConfirm={confirm} onReset={reset} /><GameResultsModal state={s} onRespond={respond} onAdvance={advance} onApproveRecommendation={store.approveRecommendation} /></main>;
 }
