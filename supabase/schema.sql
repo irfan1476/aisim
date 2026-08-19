@@ -1,0 +1,2 @@
+create table if not exists game_sessions (id uuid primary key default gen_random_uuid(), scenario_id text not null, player_name text, status text default 'active', total_score int, game_state jsonb, created_at timestamptz default now(), updated_at timestamptz default now());
+create table if not exists rounds (id uuid primary key default gen_random_uuid(), session_id uuid references game_sessions(id) on delete cascade, quarter_number int not null, decisions jsonb, metrics_before jsonb, metrics_after jsonb, event jsonb, created_at timestamptz default now());

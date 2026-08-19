@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>How to play — The AI Investment Challenge</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap');
+:root{--paper:#f6f8fa;--paper2:#fff;--ink:#1f2328;--muted:#656d76;--rule:#d0d7de;--accent:#08872b;--accent-tint:rgba(8,135,43,.09);--dark:#0d1117}*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Geist,Arial,sans-serif}main{max-width:1200px;margin:0 auto;padding:56px 28px 72px}.eyebrow{font:600 11px 'Geist Mono',monospace;letter-spacing:.16em;color:var(--accent);text-transform:uppercase}.title{font:400 48px/1.02 'Instrument Serif',Georgia,serif;margin:14px 0 12px}.sub{color:var(--muted);font-size:16px;line-height:1.65;max-width:720px}.diagram-wrap{margin-top:38px;overflow-x:auto}.diagram{min-width:960px;width:100%;height:auto}.legend{border-top:1px solid var(--rule);margin-top:28px;padding-top:16px;display:flex;gap:24px;flex-wrap:wrap;color:var(--muted);font:11px 'Geist Mono',monospace}.legend span{display:flex;align-items:center;gap:7px}.dot{width:8px;height:8px;border-radius:50%;display:inline-block}.green{background:var(--accent)}.dark{background:var(--dark)}.red{background:#cf222e}.cards{display:grid;grid-template-columns:1.15fr 1fr .9fr;gap:16px;margin-top:42px}.card{background:var(--paper2);border:1px solid var(--rule);border-radius:8px;padding:22px}.card:nth-child(2){border-top:3px solid var(--accent)}.card:nth-child(3){background:var(--dark);color:#fff;border-color:var(--dark)}h2{font-size:18px;margin:8px 0 12px}ul{margin:0;padding-left:18px;color:var(--muted);font-size:14px;line-height:1.8}.card:nth-child(3) ul{color:rgba(255,255,255,.7)}.tip{margin-top:32px;border-left:3px solid var(--accent);padding:10px 16px;color:var(--muted);font:italic 18px/1.45 'Instrument Serif',Georgia,serif}.footer{border-top:1px solid var(--rule);margin-top:54px;padding-top:14px;color:var(--muted);font:10px 'Geist Mono',monospace}
+</style></head>
+<body><main>
+<div class="eyebrow">The AI Investment Challenge · player guide</div>
+<h1 class="title">How the boardroom loop works</h1>
+<p class="sub">You are the Chief AI Officer of Project Factory 2030. Each quarter, decide where to place a finite transformation budget, then learn from the operating consequences. The goal is not to maximize technology spend — it is to create durable value.</p>
+<div class="diagram-wrap">
+<svg class="diagram" viewBox="0 0 1120 420" role="img" aria-labelledby="gameplay-title gameplay-desc">
+<title id="gameplay-title">The AI Investment Challenge gameplay loop</title>
+<desc id="gameplay-desc">A twelve-quarter simulation loop showing briefing, review, investment decisions, confirmation, results, crisis response, and final CEO rating.</desc>
+<defs>
+<marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#656d76"/></marker>
+<marker id="arrow-green" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#08872b"/></marker>
+</defs>
+<rect width="1120" height="420" fill="#f6f8fa"/>
+<!-- connectors first: rounded orthogonal routes -->
+<path d="M188 112H228Q236 112 236 120V152" fill="none" stroke="#656d76" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M420 184H454Q462 184 462 192V222" fill="none" stroke="#656d76" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M646 254H680Q688 254 688 262V292" fill="none" stroke="#08872b" stroke-width="1.6" marker-end="url(#arrow-green)"/>
+<path d="M872 324H906Q914 324 914 316V286" fill="none" stroke="#656d76" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M914 238V164Q914 156 906 156H872" fill="none" stroke="#cf222e" stroke-width="1.4" stroke-dasharray="5 4" marker-end="url(#arrow)"/>
+<path d="M872 116H936Q944 116 944 108V72Q944 64 936 64H660" fill="none" stroke="#656d76" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M660 64H430Q422 64 422 72V92" fill="none" stroke="#08872b" stroke-width="1.6" marker-end="url(#arrow-green)"/>
+<!-- nodes -->
+<g font-family="Geist,Arial,sans-serif">
+<g><rect x="40" y="72" width="148" height="80" rx="6" fill="#fff" stroke="#1f2328"/><rect x="52" y="84" width="42" height="16" rx="3" fill="#1f2328"/><text x="73" y="96" fill="#fff" font-size="9" text-anchor="middle" font-weight="600">START</text><text x="114" y="119" fill="#1f2328" font-size="15" text-anchor="middle" font-weight="600">Briefing</text><text x="114" y="138" fill="#656d76" font-size="11" text-anchor="middle">company + mandate</text></g>
+<g><rect x="276" y="152" width="144" height="64" rx="6" fill="#fff" stroke="#1f2328"/><text x="348" y="178" fill="#1f2328" font-size="15" text-anchor="middle" font-weight="600">Review</text><text x="348" y="197" fill="#656d76" font-size="11" text-anchor="middle">metrics + advisor read</text></g>
+<g><rect x="462" y="222" width="184" height="64" rx="6" fill="#eef8f0" stroke="#08872b" stroke-width="1.6"/><text x="554" y="248" fill="#1f2328" font-size="15" text-anchor="middle" font-weight="600">Decide</text><text x="554" y="267" fill="#08872b" font-size="11" text-anchor="middle">3 initiatives + 100% budget</text></g>
+<g><rect x="688" y="292" width="184" height="64" rx="6" fill="#fff" stroke="#1f2328"/><text x="780" y="318" fill="#1f2328" font-size="15" text-anchor="middle" font-weight="600">Confirm</text><text x="780" y="337" fill="#656d76" font-size="11" text-anchor="middle">commit the quarter</text></g>
+<g><rect x="914" y="222" width="144" height="64" rx="6" fill="#fff" stroke="#1f2328"/><text x="986" y="248" fill="#1f2328" font-size="15" text-anchor="middle" font-weight="600">Results</text><text x="986" y="267" fill="#656d76" font-size="11" text-anchor="middle">metrics move</text></g>
+<g><rect x="914" y="92" width="144" height="64" rx="6" fill="#fff7f7" stroke="#cf222e"/><text x="986" y="118" fill="#1f2328" font-size="15" text-anchor="middle" font-weight="600">Crisis?</text><text x="986" y="137" fill="#cf222e" font-size="11" text-anchor="middle">choose a response</text></g>
+<g><rect x="462" y="32" width="198" height="64" rx="6" fill="#0d1117" stroke="#0d1117"/><text x="561" y="58" fill="#fff" font-size="15" text-anchor="middle" font-weight="600">Next quarter</text><text x="561" y="77" fill="#3fb950" font-size="11" text-anchor="middle">repeat × 12</text></g>
+</g>
+<text x="210" y="101" fill="#656d76" font-family="Geist Mono,monospace" font-size="10">1</text><text x="438" y="207" fill="#656d76" font-family="Geist Mono,monospace" font-size="10">2</text><text x="666" y="277" fill="#08872b" font-family="Geist Mono,monospace" font-size="10">3</text><text x="892" y="307" fill="#656d76" font-family="Geist Mono,monospace" font-size="10">4</text><text x="926" y="178" fill="#cf222e" font-family="Geist Mono,monospace" font-size="10">optional</text>
+</svg></div>
+<div class="legend"><span><i class="dot green"></i> focal decision / value creation</span><span><i class="dot dark"></i> campaign milestone</span><span><i class="dot red"></i> risk event / crisis branch</span><span>Each quarter is self-paced — no forced timer.</span></div>
+<section class="cards"><article class="card"><div class="eyebrow">01 · Make the trade-off</div><h2>Choose a portfolio</h2><ul><li>Select up to 3 initiatives from 6.</li><li>Balance cost, ROI, risk, data readiness, and human impact.</li><li>Allocate exactly 100% of the $10M envelope.</li></ul></article><article class="card"><div class="eyebrow">02 · Watch the system</div><h2>Read consequences</h2><ul><li>ROI and revenue show financial value.</li><li>Adoption, satisfaction, and literacy show people impact.</li><li>Risk, compliance, and data readiness show resilience.</li></ul></article><article class="card"><div class="eyebrow" style="color:#3fb950">03 · Play the long game</div><h2>Optimize for the verdict</h2><ul><li>Respond to crises without abandoning the strategy.</li><li>Use CFO, CTO, CHRO, or Risk perspectives.</li><li>Finish all 12 quarters to receive your CEO rating.</li></ul></article></section>
+<div class="tip">The winning pattern is rarely “pick the highest ROI card.” It is investing in the operating system around AI — people, data, MLOps, and trust — so the value compounds.</div>
+<div class="footer">AI INVESTMENT CHALLENGE / PLAYER GUIDE / PROJECT FACTORY 2030</div>
+</main></body></html>
