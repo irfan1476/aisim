@@ -9,7 +9,9 @@
     "lint": "next lint",
     "type-check": "tsc --noEmit",
     "test": "node --test tests/*.test.cjs",
-    "test:game": "node --test tests/game-engine.test.cjs"
+    "test:game": "node --test tests/game-engine.test.cjs",
+    "test:balance": "node --test tests/balance-harness.test.cjs",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",
@@ -20,6 +22,7 @@
     "zustand": "^5.0.15"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@types/node": "^20.14.12",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",

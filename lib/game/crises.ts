@@ -3,4 +3,7 @@ export const crises = [
   { title: 'A near-miss exposes a data access gap.', type: 'GOVERNANCE ALERT', text: 'No customer data was lost, but the board wants evidence that controls are improving.', options: [['Security audit', 'Fund a full controls review.', { risk: -12, compliance: 10 }], ['Transparent update', 'Communicate the remediation plan.', { adoption: 4, risk: -4 }], ['Investigate quietly', 'Protect focus and fix the root cause.', { risk: -6, data: 3 }]] },
   { title: 'Two senior technicians announce retirement.', type: 'TALENT SIGNAL', text: 'Their tacit knowledge is essential to keeping the plants running smoothly.', options: [['Retention bonuses', 'Keep them through the transition.', { satisfaction: 8, turnover: -6 }], ['Upskill the bench', 'Accelerate knowledge transfer and training.', { literacy: 10, adoption: 5 }], ['Recruit externally', 'Add experienced operators to the team.', { satisfaction: 3, innovation: 4 }]] },
 ];
-export function generateCrisis() { return crises[Math.floor(Math.random() * crises.length)]; }
+export function generateCrisis(index?: number) {
+  const resolvedIndex = index === undefined ? Math.floor(Math.random() * crises.length) : Math.abs(Math.trunc(index)) % crises.length;
+  return crises[resolvedIndex];
+}

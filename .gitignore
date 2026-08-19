@@ -5,6 +5,8 @@ dist/
 .env*
 .vercel/
 coverage/
+test-results/
+playwright-report/
 *.log
 .DS_Store
 *.tsbuildinfo

@@ -1,33 +1,139 @@
-import type { GameState } from './state';
+import type { GameState } from "./state";
+import { evaluateSynergies } from "./generator";
 
-export function calculateMetrics(state: GameState, selected: string[]): Partial<GameState> {
-  const chosen = selected.map((id) => state.initiativeStates[id]).filter(Boolean);
-  const factor = (state.alloc.people >= 15 ? 1.12 : 0.94) * (state.alloc.compliance >= 10 ? 1.05 : 0.93);
+export function calculateMetrics(
+  state: GameState,
+  selected: string[],
+): Partial<GameState> {
+  const chosen = selected
+    .map((id) => state.initiativeStates[id])
+    .filter(Boolean);
+  const factor =
+    (state.alloc.people >= 15 ? 1.12 : 0.94) *
+    (state.alloc.compliance >= 10 ? 1.05 : 0.93);
+  const synergies = evaluateSynergies(selected, state.initiativeStates);
+  const synergyMultiplier =
+    1 + synergies.reduce((sum, effect) => sum + effect.roiBoost, 0);
+  const synergyRiskReduction = synergies.reduce(
+    (sum, effect) => sum + effect.riskReduction,
+    0,
+  );
+  const synergyAdoption = synergies.reduce(
+    (sum, effect) => sum + effect.adoptionBoost,
+    0,
+  );
+  const averageRiskScore = chosen.length
+    ? chosen.reduce((sum, item) => sum + Number(item.riskScore ?? 48), 0) /
+      chosen.length
+    : 48;
+  const adoptionHeadroom = Math.max(0.18, 1 - state.adoption / 115);
+  const teamReadiness =
+    0.8 + Number(state.initiativeGeneration?.context.team || 0.6) * 0.3;
+  const adoptionGain =
+    (0.8 +
+      state.alloc.people / 10 +
+      (chosen.some((item) => item.id === "knowledge") ? 2.5 : 0) +
+      synergyAdoption) *
+    adoptionHeadroom *
+    teamReadiness;
+  const technicalLeverage = 0.7 + (state.alloc.infra + state.alloc.mlops) / 100;
+  const riskChange =
+    ((averageRiskScore - 48) / 10) * 0.55 -
+    ((state.alloc.compliance - 10) / 5) * (0.5 + state.risk / 60) -
+    synergyRiskReduction;
   return {
-    roi: Math.min(99, state.roi + chosen.reduce((a, i) => a + i.roi, 0) / 100 * factor / 2),
-    revenue: Math.min(60, state.revenue + chosen.reduce((a, i) => a + (i.id === 'demand' ? 3 : i.id === 'quality' || i.id === 'supply' ? 2 : 1), 0)),
-    efficiency: Math.min(95, state.efficiency + chosen.reduce((a, i) => a + (i.id === 'energy' ? 7 : i.id === 'maintenance' ? 6 : 3), 0)),
-    adoption: Math.min(98, state.adoption + (state.alloc.people >= 18 ? 8 : 3) + (chosen.some((i) => i.id === 'knowledge') ? 7 : 0)),
-    risk: Math.max(5, state.risk + (chosen.some((i) => i.risk === 'HIGH') ? 6 : -3) - (state.alloc.compliance >= 12 ? 5 : 0)),
-    data: Math.min(98, state.data + state.alloc.data / 10 + (chosen.some((i) => i.id === 'demand') ? 3 : 0)),
-    satisfaction: Math.min(98, state.satisfaction + state.alloc.people / 5 + (chosen.some((i) => i.id === 'knowledge') ? 5 : 0)),
+    roi: Math.min(
+      99,
+      state.roi +
+        (((chosen.reduce((a, i) => a + i.currentRoi, 0) / 100) * factor) / 2) *
+          synergyMultiplier,
+    ),
+    revenue: Math.min(
+      60,
+      state.revenue +
+        chosen.reduce(
+          (a, i) =>
+            a +
+            (i.id === "demand"
+              ? 3
+              : i.id === "quality" || i.id === "supply"
+                ? 2
+                : 1),
+          0,
+        ),
+    ),
+    efficiency: Math.min(
+      95,
+      state.efficiency +
+        chosen.reduce(
+          (a, i) =>
+            a + (i.id === "energy" ? 7 : i.id === "maintenance" ? 6 : 3),
+          0,
+        ) *
+          0.3 *
+          technicalLeverage,
+    ),
+    adoption: Math.min(98, state.adoption + adoptionGain),
+    risk: Math.max(5, Math.min(95, state.risk + riskChange)),
+    data: Math.min(
+      98,
+      state.data +
+        state.alloc.data / 10 +
+        (chosen.some((i) => i.id === "demand") ? 3 : 0),
+    ),
+    satisfaction: Math.min(
+      98,
+      state.satisfaction +
+        state.alloc.people / 5 +
+        (chosen.some((i) => i.id === "knowledge") ? 5 : 0),
+    ),
     literacy: Math.min(98, state.literacy + state.alloc.people / 4),
-    spent: state.spent + chosen.reduce((a, i) => a + i.cost, 0),
+    spent: state.spent + chosen.reduce((a, i) => a + i.currentCost, 0),
   };
 }
 
 export function causalChain(state: GameState, selected: string[]) {
-  const factor = (state.alloc.people >= 15 ? 1.12 : 0.94) * (state.alloc.compliance >= 10 ? 1.05 : 0.93);
-  return selected.map((id) => state.initiativeStates[id]).filter(Boolean).map((i) => {
-    const effects: { metric: string; delta: number; color: string }[] = [];
-    const roiDelta = i.roi / 100 * factor / 2;
-    if (roiDelta > 0.5) effects.push({ metric: 'ROI', delta: roiDelta, color: 'emerald' });
-    const adoptionDelta = (i.id === 'knowledge' ? 7 : i.id === 'demand' ? 3 : i.id === 'quality' || i.id === 'supply' ? 2 : 1) + (state.alloc.people - 15) * 0.3;
-    if (Math.abs(adoptionDelta) > 1) effects.push({ metric: 'Adoption', delta: adoptionDelta, color: 'purple' });
-    const riskDelta = (i.currentRisk === 'HIGH' ? 6 : i.currentRisk === 'MED' ? 2 : -2) - state.alloc.compliance / 20;
-    if (Math.abs(riskDelta) > 1) effects.push({ metric: 'Risk', delta: riskDelta, color: 'crimson' });
-    const dataDelta = i.id === 'demand' ? 3 : i.id === 'maintenance' ? 2 : i.id === 'quality' ? 1 : 0;
-    if (dataDelta > 1) effects.push({ metric: 'Data', delta: dataDelta, color: 'cyan' });
-    return { name: i.name, effects };
-  }).filter((item) => item.effects.length > 0);
+  const factor =
+    (state.alloc.people >= 15 ? 1.12 : 0.94) *
+    (state.alloc.compliance >= 10 ? 1.05 : 0.93);
+  return selected
+    .map((id) => state.initiativeStates[id])
+    .filter(Boolean)
+    .map((i) => {
+      const effects: { metric: string; delta: number; color: string }[] = [];
+      const roiDelta = ((i.currentRoi / 100) * factor) / 2;
+      if (roiDelta > 0.5)
+        effects.push({ metric: "ROI", delta: roiDelta, color: "emerald" });
+      const adoptionDelta =
+        (i.id === "knowledge"
+          ? 7
+          : i.id === "demand"
+            ? 3
+            : i.id === "quality" || i.id === "supply"
+              ? 2
+              : 1) +
+        (state.alloc.people - 15) * 0.3;
+      if (Math.abs(adoptionDelta) > 1)
+        effects.push({
+          metric: "Adoption",
+          delta: adoptionDelta,
+          color: "purple",
+        });
+      const riskDelta =
+        (Number(i.riskScore ?? 48) - 48) / 10 - state.alloc.compliance / 6;
+      if (Math.abs(riskDelta) > 1)
+        effects.push({ metric: "Risk", delta: riskDelta, color: "crimson" });
+      const dataDelta =
+        i.id === "demand"
+          ? 3
+          : i.id === "maintenance"
+            ? 2
+            : i.id === "quality"
+              ? 1
+              : 0;
+      if (dataDelta > 1)
+        effects.push({ metric: "Data", delta: dataDelta, color: "cyan" });
+      return { name: i.name, effects };
+    })
+    .filter((item) => item.effects.length > 0);
 }

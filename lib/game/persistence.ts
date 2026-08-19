@@ -1,13 +1,13 @@
 import { initialGameState, type Allocation, type GameState, type MetricKey, type QuarterSnapshot } from './state';
 import { initializeInitiativeStates, type InitiativeState } from './initiativeState';
-import { createInitiativeGeneration, generateInitiatives, type InitiativeGeneration, type ScenarioArchetype } from './generator';
+import { createInitiativeGeneration, generateInitiatives, inferArchetypeFromDecisions, type InitiativeGeneration, type ScenarioArchetype } from './generator';
 
 export const GAME_STORAGE_KEY = 'ai-investment-game';
 export const LEGACY_GAME_STORAGE_KEY = 'ai-investment-save';
 export const WHAT_IF_STORAGE_KEY = 'ai-whatif-applied';
 export const LEADERBOARD_STORAGE_KEY = 'ai_simulation_leaderboard';
 export const LEGACY_MIGRATION_KEY = 'ai-investment-legacy-migrated';
-export const GAME_PERSISTENCE_VERSION = 3;
+export const GAME_PERSISTENCE_VERSION = 4;
 
 export type WhatIfDraft = {
   name?: string;
@@ -44,7 +44,7 @@ function stringArrayOr(value: unknown, fallback: string[]): string[] {
 function normalizeGeneration(value: unknown, baseline: number[]): InitiativeGeneration {
   const source = isRecord(value) ? value : {};
   const archetypes: ScenarioArchetype[] = ['balanced', 'data-driven', 'people-first', 'tech-first', 'risk-tolerant', 'risk-averse'];
-  const archetype = archetypes.includes(source.archetype as ScenarioArchetype) ? source.archetype as ScenarioArchetype : 'balanced';
+  const archetype = archetypes.includes(source.archetype as ScenarioArchetype) ? source.archetype as ScenarioArchetype : inferArchetypeFromDecisions(baseline);
   const seed = numberOr(source.seed, 2030);
   const context = isRecord(source.context) ? source.context : {};
   const generated = createInitiativeGeneration(archetype, baseline, seed);
@@ -101,9 +101,12 @@ function normalizeSnapshot(
   const snapshot: QuarterSnapshot = {
     q: Math.max(1, Math.round(numberOr(value.q, fallbackMetrics.q))),
     chosen: stringArrayOr(value.chosen, []),
+    selectedIds: stringArrayOr(value.selectedIds, []),
     metrics,
     initiativeStates: normalizeInitiativeStates(value.initiativeStates, fallbackStates),
+    synergiesDiscovered: stringArrayOr(value.synergiesDiscovered, []),
   };
+  if (isRecord(value.allocation)) snapshot.allocation = normalizeAllocation(value.allocation, fallbackMetrics.alloc);
   if (value.crisis !== undefined) snapshot.crisis = value.crisis;
   if (isRecord(value.crisisResponse)) {
     const crisisResponse: Record<string, number> = {};
@@ -126,9 +129,14 @@ export function normalizeGameState(value: unknown): GameState {
   next.selected = stringArrayOr(source.selected, defaults.selected);
   next.alloc = normalizeAllocation(source.alloc, defaults.alloc);
   metricKeys.forEach((key) => { next[key] = numberOr(source[key], defaults[key]) as never; });
+  next.baseline = Array.isArray(source.baseline)
+    ? source.baseline.filter((item): item is number => typeof item === 'number' && Number.isFinite(item))
+    : [...defaults.baseline];
+  next.initiativeGeneration = normalizeGeneration(source.initiativeGeneration, next.baseline);
+  const generatedDefaults = initializeInitiativeStates(generateInitiatives(next.initiativeGeneration));
 
   let previousMetrics = defaults;
-  let previousStates = initializeInitiativeStates();
+  let previousStates = generatedDefaults;
   next.history = Array.isArray(source.history)
     ? source.history
       .map((entry) => normalizeSnapshot(entry, previousMetrics, previousStates))
@@ -141,23 +149,19 @@ export function normalizeGameState(value: unknown): GameState {
     : [];
 
   const hasCurrentInitiativeStates = isRecord(source.initiativeStates) && Object.keys(source.initiativeStates).length > 0;
-  next.initiativeGeneration = normalizeGeneration(source.initiativeGeneration, next.baseline);
-  const generatedDefaults = initializeInitiativeStates(generateInitiatives(next.initiativeGeneration));
   next.initiativeStates = hasCurrentInitiativeStates
     ? normalizeInitiativeStates(source.initiativeStates, generatedDefaults)
     : (next.history.at(-1)?.initiativeStates || generatedDefaults);
   next.achievements = stringArrayOr(source.achievements, defaults.achievements);
   next.crisis = source.crisis ?? defaults.crisis;
   next.feedback = typeof source.feedback === 'string' ? source.feedback : defaults.feedback;
-  next.baseline = Array.isArray(source.baseline)
-    ? source.baseline.filter((item): item is number => typeof item === 'number' && Number.isFinite(item))
-    : [...defaults.baseline];
   next.experimental = typeof source.experimental === 'boolean' ? source.experimental : defaults.experimental;
   next.causalChain = Array.isArray(source.causalChain) ? source.causalChain as GameState['causalChain'] : defaults.causalChain;
   next.proactiveRecommendations = Array.isArray(source.proactiveRecommendations)
     ? source.proactiveRecommendations as GameState['proactiveRecommendations']
     : defaults.proactiveRecommendations;
   next.approvedRecommendations = stringArrayOr(source.approvedRecommendations, defaults.approvedRecommendations);
+  next.discoveredSynergies = stringArrayOr(source.discoveredSynergies, defaults.discoveredSynergies);
   next.nextQuarterGuidance = isRecord(source.nextQuarterGuidance) && typeof source.nextQuarterGuidance.title === 'string' && typeof source.nextQuarterGuidance.action === 'string'
     ? { title: source.nextQuarterGuidance.title, action: source.nextQuarterGuidance.action, allocationKey: typeof source.nextQuarterGuidance.allocationKey === 'string' ? source.nextQuarterGuidance.allocationKey : undefined, target: typeof source.nextQuarterGuidance.target === 'string' ? source.nextQuarterGuidance.target : undefined }
     : defaults.nextQuarterGuidance;

@@ -7,8 +7,7 @@ import { causalChain } from '../lib/game/metrics';
 import { generateCrisis } from '../lib/game/crises';
 import { generateProactiveRecommendations } from '../lib/game/recommendations';
 import { resolveQuarter, deriveScore } from '../lib/game/engine';
-import { describeSynergies, generateInitiatives, refineGeneration } from '../lib/game/generator';
-import { initializeInitiativeStates } from '../lib/game/initiativeState';
+import { describeSynergies } from '../lib/game/generator';
 import {
   clearPersistedCampaign,
   clearPersistedGameData,
@@ -78,6 +77,12 @@ function quickResetState(state: GameState): Partial<GameState> {
   };
 }
 
+function crisisRoll(seed: number, quarter: number): number {
+  let value = ((seed >>> 0) + quarter * 2654435761) >>> 0;
+  value = (value * 1664525 + 1013904223) >>> 0;
+  return value / 4294967296;
+}
+
 export const useGameStore = create<GameStore>()(persist((set, get) => ({
   ...initialGameState(),
 
@@ -91,22 +96,22 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
   updateAllocation: (key, value) => set((state) => ({ alloc: { ...state.alloc, [key]: value } })),
 
   confirmDecisions: () => {
-    const raw = normalizeGameState(get());
-    const generation = raw.history.length === 0 ? refineGeneration(raw.initiativeGeneration, raw.alloc, raw.selected) : raw.initiativeGeneration;
-    const state = raw.history.length === 0 && generation.archetype !== raw.initiativeGeneration.archetype
-      ? { ...raw, initiativeGeneration: generation, initiativeStates: initializeInitiativeStates(generateInitiatives(generation)) }
-      : raw;
+    const state = normalizeGameState(get());
     const result = resolveQuarter(state, { selected: state.selected, alloc: state.alloc });
     const resolvedState = { ...state, ...result.metrics, initiativeStates: result.initiativeStates };
     const discovery = describeSynergies(state.selected, result.initiativeStates);
-    const selectedHighRisk = state.selected.some((id) => result.initiativeStates[id]?.currentRisk === 'HIGH');
+    const newlyDiscovered = discovery?.effects.map(effect => effect.key) || [];
+    const discoveredSynergies = Array.from(new Set([...state.discoveredSynergies, ...newlyDiscovered]));
+    const resolvedRisk = Number(result.metrics.risk ?? state.risk);
+    const crisisProbability = Math.max(.08, Math.min(.7, (resolvedRisk - 15) / 75));
     set({
       ...resolvedState,
       score: deriveScore(state, result.metrics),
       stage: 'results',
-      crisis: state.q % 3 === 0 && (Number(result.metrics.risk || state.risk) >= 28 || selectedHighRisk) ? generateCrisis() : null,
-      causalChain: causalChain(state, state.selected),
+      crisis: state.q % 3 === 0 && crisisRoll(state.initiativeGeneration.seed, state.q) < crisisProbability ? generateCrisis(state.initiativeGeneration.seed + state.q) : null,
+      causalChain: causalChain(resolvedState, state.selected),
       proactiveRecommendations: generateProactiveRecommendations(resolvedState),
+      discoveredSynergies,
       feedback: discovery?.message || `Quarter ${state.q} resolved. Your portfolio is now showing the consequences of this allocation.`,
       history: [...state.history, result.snapshot],
     });
