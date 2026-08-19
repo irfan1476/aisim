@@ -1,11 +1,12 @@
 import { initiatives, type Initiative } from './initiatives';
+import type { DynamicInitiative } from './generator';
 
 export type MaturityLevel = 'nascent' | 'developing' | 'mature' | 'optimized';
-export interface InitiativeState extends Initiative { currentData: number; currentRoi: number; currentRisk: 'LOW' | 'MED' | 'HIGH'; currentCost: number; currentHuman: number; quartersFunded: number; quartersSinceLastFund: number; totalInvestment: number; maturityLevel: MaturityLevel; dataInvestment: number; governanceInvestment: number; trainingInvestment: number; }
+export interface InitiativeState extends Initiative { currentData: number; currentRoi: number; currentRisk: 'LOW' | 'MED' | 'HIGH'; currentCost: number; currentHuman: number; quartersFunded: number; quartersSinceLastFund: number; totalInvestment: number; maturityLevel: MaturityLevel; dataInvestment: number; governanceInvestment: number; trainingInvestment: number; baseRoi?: number; baseCost?: number; baseData?: number; baseHuman?: number; baseRiskScore?: number; riskScore?: number; synergies?: string[]; }
 const roundMetric = (value: number) => Number(value.toFixed(2));
 
-export function initializeInitiativeStates(): Record<string, InitiativeState> {
-  return Object.fromEntries(initiatives.map(init => [init.id, { ...init, currentData: init.data, currentRoi: init.roi, currentRisk: init.risk as 'LOW' | 'MED' | 'HIGH', currentCost: init.cost, currentHuman: init.human, quartersFunded: 0, quartersSinceLastFund: 0, totalInvestment: 0, maturityLevel: 'nascent' as MaturityLevel, dataInvestment: 0, governanceInvestment: 0, trainingInvestment: 0 }])) as Record<string, InitiativeState>;
+export function initializeInitiativeStates(generated: DynamicInitiative[] = initiatives as DynamicInitiative[]): Record<string, InitiativeState> {
+  return Object.fromEntries(generated.map(init => [init.id, { ...init, currentData: init.data, currentRoi: init.roi, currentRisk: init.risk as 'LOW' | 'MED' | 'HIGH', currentCost: init.cost, currentHuman: init.human, quartersFunded: 0, quartersSinceLastFund: 0, totalInvestment: 0, maturityLevel: 'nascent' as MaturityLevel, dataInvestment: 0, governanceInvestment: 0, trainingInvestment: 0 }])) as Record<string, InitiativeState>;
 }
 
 export function updateInitiativeStates(states: Record<string, InitiativeState>, selected: string[], allocation: any, metrics: { adoption: number }): Record<string, InitiativeState> {

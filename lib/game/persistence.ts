@@ -1,5 +1,6 @@
 import { initialGameState, type Allocation, type GameState, type MetricKey, type QuarterSnapshot } from './state';
 import { initializeInitiativeStates, type InitiativeState } from './initiativeState';
+import { createInitiativeGeneration, generateInitiatives, type InitiativeGeneration, type ScenarioArchetype } from './generator';
 
 export const GAME_STORAGE_KEY = 'ai-investment-game';
 export const LEGACY_GAME_STORAGE_KEY = 'ai-investment-save';
@@ -38,6 +39,16 @@ function stringArrayOr(value: unknown, fallback: string[]): string[] {
   return Array.isArray(value)
     ? value.filter((item): item is string => typeof item === 'string')
     : [...fallback];
+}
+
+function normalizeGeneration(value: unknown, baseline: number[]): InitiativeGeneration {
+  const source = isRecord(value) ? value : {};
+  const archetypes: ScenarioArchetype[] = ['balanced', 'data-driven', 'people-first', 'tech-first', 'risk-tolerant', 'risk-averse'];
+  const archetype = archetypes.includes(source.archetype as ScenarioArchetype) ? source.archetype as ScenarioArchetype : 'balanced';
+  const seed = numberOr(source.seed, 2030);
+  const context = isRecord(source.context) ? source.context : {};
+  const generated = createInitiativeGeneration(archetype, baseline, seed);
+  return { ...generated, context: { organization: numberOr(context.organization, generated.context.organization), data: numberOr(context.data, generated.context.data), team: numberOr(context.team, generated.context.team) } };
 }
 
 function normalizeAllocation(value: unknown, fallback: Allocation): Allocation {
@@ -130,9 +141,11 @@ export function normalizeGameState(value: unknown): GameState {
     : [];
 
   const hasCurrentInitiativeStates = isRecord(source.initiativeStates) && Object.keys(source.initiativeStates).length > 0;
+  next.initiativeGeneration = normalizeGeneration(source.initiativeGeneration, next.baseline);
+  const generatedDefaults = initializeInitiativeStates(generateInitiatives(next.initiativeGeneration));
   next.initiativeStates = hasCurrentInitiativeStates
-    ? normalizeInitiativeStates(source.initiativeStates, initializeInitiativeStates())
-    : (next.history.at(-1)?.initiativeStates || initializeInitiativeStates());
+    ? normalizeInitiativeStates(source.initiativeStates, generatedDefaults)
+    : (next.history.at(-1)?.initiativeStates || generatedDefaults);
   next.achievements = stringArrayOr(source.achievements, defaults.achievements);
   next.crisis = source.crisis ?? defaults.crisis;
   next.feedback = typeof source.feedback === 'string' ? source.feedback : defaults.feedback;

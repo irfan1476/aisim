@@ -1,4 +1,5 @@
 import type { InitiativeState } from '../lib/game/initiativeState';
+import type { InitiativeGeneration } from '../lib/game/generator';
 
 export type MetricColor = 'gold' | 'emerald' | 'blue' | 'purple' | 'red' | 'cyan';
 
@@ -50,6 +51,7 @@ export interface GameViewState {
   baseline: unknown[];
   experimental: boolean;
   initiativeStates: Record<string, InitiativeState>;
+  initiativeGeneration?: InitiativeGeneration;
 }
 
 export interface Metric {

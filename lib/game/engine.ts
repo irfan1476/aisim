@@ -12,13 +12,15 @@ export function hydrateGameState(state: GameState): GameState {
 export function resolveQuarter(state: GameState, decision: QuarterDecision): { metrics: Partial<GameState>; initiativeStates: Record<string, InitiativeState>; snapshot: QuarterSnapshot } {
   const current = hydrateGameState(state); const evolved = updateInitiativeStates(current.initiativeStates, decision.selected, decision.alloc, { adoption: current.adoption });
   const chosen = decision.selected.map(id => evolved[id]).filter(Boolean);
+  const synergyPairs = chosen.reduce((total, item, index) => total + chosen.slice(index + 1).filter(other => item.synergies?.includes(other.id)).length, 0);
+  const synergyMultiplier = 1 + synergyPairs * .08;
   const factor = (decision.alloc.people >= 15 ? 1.12 : 0.94) * (decision.alloc.compliance >= 10 ? 1.05 : .93);
   const metrics: Partial<GameState> = {
-    roi: Math.min(99, current.roi + chosen.reduce((sum, item) => sum + item.currentRoi, 0) / 100 * factor / 2),
+    roi: Math.min(99, current.roi + chosen.reduce((sum, item) => sum + item.currentRoi, 0) / 100 * factor / 2 * synergyMultiplier),
     revenue: Math.min(60, current.revenue + chosen.reduce((sum, item) => sum + (item.id === 'demand' ? 3 : ['quality', 'supply'].includes(item.id) ? 2 : 1), 0)),
     efficiency: Math.min(95, current.efficiency + chosen.reduce((sum, item) => sum + (item.id === 'energy' ? 7 : item.id === 'maintenance' ? 6 : 3), 0)),
     adoption: Math.min(98, current.adoption + (decision.alloc.people >= 18 ? 8 : 3) + (chosen.some(item => item.id === 'knowledge') ? 7 : 0)),
-    risk: Math.max(5, current.risk + (chosen.some(item => item.currentRisk === 'HIGH') ? 6 : -3) - (decision.alloc.compliance >= 12 ? 5 : 0)),
+    risk: Math.max(5, current.risk + (chosen.some(item => item.currentRisk === 'HIGH') ? 6 : -3) - (decision.alloc.compliance >= 12 ? 5 : 0) - synergyPairs),
     data: Math.min(98, current.data + decision.alloc.data / 10 + (chosen.some(item => item.id === 'demand') ? 3 : 0)),
     satisfaction: Math.min(98, current.satisfaction + decision.alloc.people / 5 + (chosen.some(item => item.id === 'knowledge') ? 5 : 0)),
     literacy: Math.min(98, current.literacy + decision.alloc.people / 4),
