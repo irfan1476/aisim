@@ -44,6 +44,7 @@ export async function chat(input: ChatInput) {
         stream: false,
         options: {
           temperature: temperature,
+          num_predict: 350,
         },
       };
     } else {
