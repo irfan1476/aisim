@@ -15,7 +15,7 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
   respondToCrisis: (impact) => set((state) => ({ ...impact, crisis: null, stage: 'results' })),
   advanceQuarter: () => { const state = get(); if (state.q >= 12) return set({ stage: 'done' }); set({ q: state.q + 1, stage: 'decide', selected: [], crisis: null, causalChain: [], proactiveRecommendations: [], feedback: `Quarter ${state.q + 1} is ready.` }); },
   resetGame: () => set(initialGameState()), loadGame: (state) => set(state),
-}), { name: 'ai-investment-game' }));
+}), { name: 'ai-investment-game', version: 2, migrate: (persisted: any) => ({ ...initialGameState(), ...persisted, initiativeStates: persisted?.initiativeStates && Object.keys(persisted.initiativeStates).length ? persisted.initiativeStates : initialGameState().initiativeStates, history: (persisted?.history || []).map((entry: any) => ({ ...entry, metrics: entry.metrics || {}, chosen: entry.chosen || [] })) }) }));
 
 export function useGameState(initializer: () => any): [any, (update: any) => void] {
   const store = useGameStore();
