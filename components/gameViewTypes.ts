@@ -46,6 +46,7 @@ export interface GameViewState {
   causalChain: unknown[];
   proactiveRecommendations: unknown[];
   approvedRecommendations: string[];
+  nextQuarterGuidance?: { title: string; action: string; allocationKey?: string; target?: string } | null;
   baseline: unknown[];
   experimental: boolean;
   initiativeStates: Record<string, InitiativeState>;
