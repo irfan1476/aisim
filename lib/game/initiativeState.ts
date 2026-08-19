@@ -4,6 +4,9 @@ import type { DynamicInitiative } from './generator';
 export type MaturityLevel = 'nascent' | 'developing' | 'mature' | 'optimized';
 export interface InitiativeState extends Initiative { currentData: number; currentRoi: number; currentRisk: 'LOW' | 'MED' | 'HIGH'; currentCost: number; currentHuman: number; quartersFunded: number; quartersSinceLastFund: number; totalInvestment: number; maturityLevel: MaturityLevel; dataInvestment: number; governanceInvestment: number; trainingInvestment: number; baseRoi?: number; baseCost?: number; baseData?: number; baseHuman?: number; baseRiskScore?: number; riskScore?: number; synergies?: string[]; }
 const roundMetric = (value: number) => Number(value.toFixed(2));
+const riskScoreFor = (item: InitiativeState) => item.riskScore ?? (item.currentRisk === 'LOW' ? 24 : item.currentRisk === 'MED' ? 48 : 72);
+const riskBandFor = (score: number): 'LOW' | 'MED' | 'HIGH' => score < 35 ? 'LOW' : score < 65 ? 'MED' : 'HIGH';
+const maturityFor = (funded: number, neglected: number): MaturityLevel => neglected >= 4 ? funded >= 4 ? 'developing' : 'nascent' : funded >= 6 ? 'optimized' : funded >= 4 ? 'mature' : funded >= 2 ? 'developing' : 'nascent';
 
 export function initializeInitiativeStates(generated: DynamicInitiative[] = initiatives as DynamicInitiative[]): Record<string, InitiativeState> {
   return Object.fromEntries(generated.map(init => [init.id, { ...init, currentData: init.data, currentRoi: init.roi, currentRisk: init.risk as 'LOW' | 'MED' | 'HIGH', currentCost: init.cost, currentHuman: init.human, quartersFunded: 0, quartersSinceLastFund: 0, totalInvestment: 0, maturityLevel: 'nascent' as MaturityLevel, dataInvestment: 0, governanceInvestment: 0, trainingInvestment: 0 }])) as Record<string, InitiativeState>;
@@ -11,6 +14,17 @@ export function initializeInitiativeStates(generated: DynamicInitiative[] = init
 
 export function updateInitiativeStates(states: Record<string, InitiativeState>, selected: string[], allocation: any, metrics: { adoption: number }): Record<string, InitiativeState> {
   const next = Object.fromEntries(Object.entries(states || initializeInitiativeStates()).map(([id, value]) => [id, { ...value }]));
-  Object.values(next).forEach(item => { if (!selected.includes(item.id)) { item.quartersSinceLastFund += 1; if (item.quartersSinceLastFund > 3) item.currentData = roundMetric(Math.max(1, item.currentData - .2)); return; } item.quartersSinceLastFund = 0; item.quartersFunded += 1; item.dataInvestment = roundMetric(item.dataInvestment + Number(allocation.data || 0) / 10); item.governanceInvestment = roundMetric(item.governanceInvestment + Number(allocation.compliance || 0) / 10); item.trainingInvestment = roundMetric(item.trainingInvestment + Number(allocation.people || 0) / 10); item.currentData = roundMetric(Math.min(5, item.currentData + Number(allocation.data || 0) / 50 + .12)); item.currentRoi = Math.round(item.roi * (1 + (item.currentData - item.data) / 10) * (1 + item.quartersFunded / 20)); const riskLevels = ['LOW', 'MED', 'HIGH'] as const; item.currentRisk = riskLevels[Math.max(0, riskLevels.indexOf(item.currentRisk) - Math.floor(Number(allocation.compliance || 0) / 20 + item.quartersFunded / 6))]; item.currentCost = roundMetric(Math.max(item.cost * .6, item.cost - item.quartersFunded * .05)); item.currentHuman = roundMetric(Math.min(5, item.currentHuman + metrics.adoption / 500)); item.totalInvestment = roundMetric(item.totalInvestment + item.currentCost); item.maturityLevel = item.quartersFunded >= 6 ? 'optimized' : item.quartersFunded >= 4 ? 'mature' : item.quartersFunded >= 2 ? 'developing' : 'nascent'; });
+  Object.values(next).forEach(item => {
+    if (!selected.includes(item.id)) {
+      item.quartersSinceLastFund += 1;
+      if (item.quartersSinceLastFund > 3) { item.currentData = roundMetric(Math.max(1, item.currentData - .2)); item.currentRoi = Math.round(Math.max(item.roi * .7, item.currentRoi * .98)); item.riskScore = roundMetric(Math.min(96, riskScoreFor(item) + 3)); }
+      item.currentRisk = riskBandFor(riskScoreFor(item)); item.maturityLevel = maturityFor(item.quartersFunded, item.quartersSinceLastFund); return;
+    }
+    item.quartersSinceLastFund = 0; item.quartersFunded += 1;
+    item.dataInvestment = roundMetric(item.dataInvestment + Number(allocation.data || 0) / 10); item.governanceInvestment = roundMetric(item.governanceInvestment + Number(allocation.compliance || 0) / 10); item.trainingInvestment = roundMetric(item.trainingInvestment + Number(allocation.people || 0) / 10);
+    item.currentData = roundMetric(Math.min(5, item.currentData + Number(allocation.data || 0) / 50 + .12)); item.currentHuman = roundMetric(Math.min(5, item.currentHuman + metrics.adoption / 500));
+    const evolutionBonus = Math.min(.15, item.quartersFunded * .02); item.currentRoi = Math.round(item.roi * (1 + evolutionBonus)); item.currentCost = roundMetric(Math.max(item.cost * .8, item.currentCost * (1 - Math.min(.2, item.quartersFunded * .03))));
+    item.riskScore = roundMetric(Math.max(8, riskScoreFor(item) - 4 - Number(allocation.compliance || 0) / 12)); item.currentRisk = riskBandFor(item.riskScore); item.totalInvestment = roundMetric(item.totalInvestment + item.currentCost); item.maturityLevel = maturityFor(item.quartersFunded, 0);
+  });
   return next;
 }

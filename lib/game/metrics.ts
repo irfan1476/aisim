@@ -1,8 +1,7 @@
 import type { GameState } from './state';
-import { initiatives } from './initiatives';
 
 export function calculateMetrics(state: GameState, selected: string[]): Partial<GameState> {
-  const chosen = initiatives.filter((i) => selected.includes(i.id));
+  const chosen = selected.map((id) => state.initiativeStates[id]).filter(Boolean);
   const factor = (state.alloc.people >= 15 ? 1.12 : 0.94) * (state.alloc.compliance >= 10 ? 1.05 : 0.93);
   return {
     roi: Math.min(99, state.roi + chosen.reduce((a, i) => a + i.roi, 0) / 100 * factor / 2),
@@ -19,13 +18,13 @@ export function calculateMetrics(state: GameState, selected: string[]): Partial<
 
 export function causalChain(state: GameState, selected: string[]) {
   const factor = (state.alloc.people >= 15 ? 1.12 : 0.94) * (state.alloc.compliance >= 10 ? 1.05 : 0.93);
-  return initiatives.filter((i) => selected.includes(i.id)).map((i) => {
+  return selected.map((id) => state.initiativeStates[id]).filter(Boolean).map((i) => {
     const effects: { metric: string; delta: number; color: string }[] = [];
     const roiDelta = i.roi / 100 * factor / 2;
     if (roiDelta > 0.5) effects.push({ metric: 'ROI', delta: roiDelta, color: 'emerald' });
     const adoptionDelta = (i.id === 'knowledge' ? 7 : i.id === 'demand' ? 3 : i.id === 'quality' || i.id === 'supply' ? 2 : 1) + (state.alloc.people - 15) * 0.3;
     if (Math.abs(adoptionDelta) > 1) effects.push({ metric: 'Adoption', delta: adoptionDelta, color: 'purple' });
-    const riskDelta = (i.risk === 'HIGH' ? 6 : i.risk === 'MED' ? 2 : -2) - state.alloc.compliance / 20;
+    const riskDelta = (i.currentRisk === 'HIGH' ? 6 : i.currentRisk === 'MED' ? 2 : -2) - state.alloc.compliance / 20;
     if (Math.abs(riskDelta) > 1) effects.push({ metric: 'Risk', delta: riskDelta, color: 'crimson' });
     const dataDelta = i.id === 'demand' ? 3 : i.id === 'maintenance' ? 2 : i.id === 'quality' ? 1 : 0;
     if (dataDelta > 1) effects.push({ metric: 'Data', delta: dataDelta, color: 'cyan' });

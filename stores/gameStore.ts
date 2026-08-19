@@ -7,6 +7,8 @@ import { causalChain } from '../lib/game/metrics';
 import { generateCrisis } from '../lib/game/crises';
 import { generateProactiveRecommendations } from '../lib/game/recommendations';
 import { resolveQuarter, deriveScore } from '../lib/game/engine';
+import { describeSynergies, generateInitiatives, refineGeneration } from '../lib/game/generator';
+import { initializeInitiativeStates } from '../lib/game/initiativeState';
 import {
   clearPersistedCampaign,
   clearPersistedGameData,
@@ -89,16 +91,23 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
   updateAllocation: (key, value) => set((state) => ({ alloc: { ...state.alloc, [key]: value } })),
 
   confirmDecisions: () => {
-    const state = normalizeGameState(get());
+    const raw = normalizeGameState(get());
+    const generation = raw.history.length === 0 ? refineGeneration(raw.initiativeGeneration, raw.alloc, raw.selected) : raw.initiativeGeneration;
+    const state = raw.history.length === 0 && generation.archetype !== raw.initiativeGeneration.archetype
+      ? { ...raw, initiativeGeneration: generation, initiativeStates: initializeInitiativeStates(generateInitiatives(generation)) }
+      : raw;
     const result = resolveQuarter(state, { selected: state.selected, alloc: state.alloc });
     const resolvedState = { ...state, ...result.metrics, initiativeStates: result.initiativeStates };
+    const discovery = describeSynergies(state.selected, result.initiativeStates);
+    const selectedHighRisk = state.selected.some((id) => result.initiativeStates[id]?.currentRisk === 'HIGH');
     set({
       ...resolvedState,
       score: deriveScore(state, result.metrics),
       stage: 'results',
-      crisis: state.q % 3 === 0 ? generateCrisis() : null,
+      crisis: state.q % 3 === 0 && (Number(result.metrics.risk || state.risk) >= 28 || selectedHighRisk) ? generateCrisis() : null,
       causalChain: causalChain(state, state.selected),
       proactiveRecommendations: generateProactiveRecommendations(resolvedState),
+      feedback: discovery?.message || `Quarter ${state.q} resolved. Your portfolio is now showing the consequences of this allocation.`,
       history: [...state.history, result.snapshot],
     });
   },

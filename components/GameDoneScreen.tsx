@@ -1,6 +1,7 @@
 import { ArrowRight, CheckCircle2, Compass, Download, RotateCcw, Sparkles, TrendingUp, TriangleAlert } from 'lucide-react';
 import type { GameViewState } from './gameViewTypes';
 import { initiatives } from '../lib/game/initiatives';
+import { archetypeReveal } from '../lib/game/generator';
 
 interface GameDoneScreenProps { state: GameViewState; onPlayAgain: () => void; }
 type Snapshot = { q: number; chosen?: string[]; metrics?: Record<string, number> };
@@ -15,7 +16,9 @@ function verdict(score: number, adoption: number, risk: number, people: number) 
 
 export default function GameDoneScreen({ state, onPlayAgain }: GameDoneScreenProps) {
   const history = (state.history || []) as Snapshot[];
-  const [grade, archetype, diagnosis, gradeTone] = verdict(state.score, state.adoption, state.risk, Number(state.alloc?.people || 0));
+  const [grade, archetype, verdictMessage, gradeTone] = verdict(state.score, state.adoption, state.risk, Number(state.alloc?.people || 0));
+  const [strategicArchetype, archetypeMessage] = archetypeReveal(state.initiativeGeneration?.archetype || 'balanced');
+  const diagnosis = `Your strategic pattern: ${strategicArchetype}. ${archetypeMessage} ${verdictMessage}`;
   const adoptionGap = Math.max(0, 60 - state.adoption); const riskGap = Math.max(0, state.risk - 25);
   const counts = history.flatMap(x => x.chosen || []).reduce<Record<string, number>>((a, id) => { a[id] = (a[id] || 0) + 1; return a; }, {});
   const topBets = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([id]) => initiatives.find(x => x.id === id)?.name || id);
