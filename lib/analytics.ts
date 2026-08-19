@@ -27,6 +27,29 @@ export function bcgCompliance(people: number, infra: number, data: number) {
 export function mckinseyRewired(metrics: any) { const capabilities = { strategy: metrics.roi, adoption: metrics.adoption, data: metrics.data, talent: metrics.literacy, operatingModel: metrics.efficiency }; return { ...capabilities, overall: Object.values(capabilities).reduce((a: number, b: any) => a + Number(b || 0), 0) / Object.keys(capabilities).length }; }
 export function pwcRai(compliance: number, satisfaction: number, risk: number) { const values = { governance: compliance, humanImpact: satisfaction, transparency: 100 - risk, accountability: (compliance + 100 - risk) / 2 }; return { ...values, overall: Object.values(values).reduce((a: number, b: any) => a + Number(b || 0), 0) / Object.keys(values).length }; }
 
+export interface BCGAlignment { score: number; dimensions: { peopleChange: number; processWorkflow: number; techData: number; algorithmModel: number }; insights: string[]; recommendations: string[]; }
+
+export function calculateBCGAlignment(state: any, initiatives: any[] = []): BCGAlignment {
+  const selected = initiatives.filter(item => (state.selected || []).includes(item.id));
+  const peopleBudget = Number(state.alloc?.people ?? 0);
+  let peopleChange = Math.min(80, peopleBudget * 2) + (peopleBudget > 20 ? 10 : 0);
+  if (selected.some(item => item.id === 'knowledge')) peopleChange += 15;
+  if (Number(state.alloc?.compliance ?? 0) > 12) peopleChange += 10;
+  if (Number(state.adoption ?? 0) > 60) peopleChange += 10;
+  const processWorkflow = Math.min(100, (selected.filter(item => /workflow|process/i.test(item.impact || '') || ['energy', 'supply'].includes(item.id)).length / Math.max(1, selected.length)) * 100 + (Number(state.alloc?.innovation ?? 0) > 10 ? 10 : 0));
+  const techData = Math.min(100, ((Number(state.alloc?.infra ?? 0) + Number(state.alloc?.data ?? 0)) / 80) * 100 + (Number(state.alloc?.mlops ?? 0) > 15 ? 10 : 0) + (Number(state.data ?? 0) > 70 ? 10 : 0));
+  const avgROI = selected.length ? selected.reduce((sum, item) => sum + Number(item.roi || 0), 0) / selected.length : Number(state.roi || 0);
+  const algorithmModel = Math.min(100, Math.max(0, avgROI / 2));
+  const dimensions = { peopleChange: Math.min(100, Math.max(0, peopleChange)), processWorkflow, techData, algorithmModel };
+  const score = Math.round(dimensions.peopleChange * .4 + dimensions.processWorkflow * .3 + dimensions.techData * .2 + dimensions.algorithmModel * .1);
+  const insights: string[] = []; const recommendations: string[] = [];
+  if (dimensions.peopleChange < 50) { insights.push('People and change investment is below the value-realization threshold.'); recommendations.push('Increase people enablement, training, and role redesign.'); }
+  if (dimensions.processWorkflow < 50) { insights.push('Process redesign is weak; AI is not yet embedded in core workflows.'); recommendations.push('Choose initiatives that change operating workflows, not only add tools.'); }
+  if (dimensions.techData < 50) { insights.push('Technology and data foundations may constrain scale.'); recommendations.push('Strengthen data engineering and MLOps before scaling.'); }
+  if (!insights.length) insights.push('Your portfolio is aligned across people, process, technology, and model capability.');
+  return { score, dimensions, insights, recommendations };
+}
+
 export interface TransformationKPIs {
   timeToValue: { quartersToROI: number[]; average: number; trend: Trend; benchmark: number };
   adoption: { currentRate: number; trend: Trend; activationRate: number; activeUsage: number; departmentBreakdown: Record<string, number> };
