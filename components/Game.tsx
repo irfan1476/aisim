@@ -34,6 +34,10 @@ function initial(): GameViewState {
   return { q: 1, stage: 'decide', selected: ['demand', 'energy'], alloc: { infra: 35, data: 25, people: 15, mlops: 10, compliance: 10, innovation: 5 }, roi: 0, revenue: 0, efficiency: 8, adoption: 38, risk: 36, data: 54, satisfaction: 61, literacy: 35, turnover: 14, compliance: 62, innovation: 42, spent: 0, score: 0, history: [], achievements: [], crisis: null, feedback: 'The board is watching for a balanced portfolio. You have room to build momentum.', causalChain: [], proactiveRecommendations: [], approvedRecommendations: [], baseline: [], experimental: false, initiativeStates: initializeInitiativeStates() };
 }
 
+function compactNumber(value: number): number {
+  return Number.isFinite(value) ? Number(value.toFixed(2)) : 0;
+}
+
 export default function Game() {
   const store = useGameStore();
   const s = store as unknown as GameViewState;
@@ -46,7 +50,7 @@ export default function Game() {
   const [assessment, setAssessment] = useState<number[]>([]);
   const [experimental, setExperimental] = useState(false);
   const total = useMemo(() => Object.values(s.alloc).reduce((a, b) => a + b, 0), [s.alloc]);
-  const liveInitiatives = useMemo(() => initiatives.map((initiative) => ({ ...initiative, roi: s.initiativeStates?.[initiative.id]?.currentRoi ?? initiative.roi, data: s.initiativeStates?.[initiative.id]?.currentData ?? initiative.data, risk: s.initiativeStates?.[initiative.id]?.currentRisk ?? initiative.risk })), [s.initiativeStates]);
+  const liveInitiatives = useMemo(() => initiatives.map((initiative) => { const live = s.initiativeStates?.[initiative.id]; return { ...initiative, roi: compactNumber(live?.currentRoi ?? initiative.roi), data: compactNumber(live?.currentData ?? initiative.data), cost: compactNumber(live?.currentCost ?? initiative.cost), risk: live?.currentRisk ?? initiative.risk }; }), [s.initiativeStates]);
 
   const metrics: Metric[] = [['ROI', 'roi', '%', 'gold'], ['Revenue uplift', 'revenue', '%', 'emerald'], ['Efficiency', 'efficiency', '%', 'blue'], ['Adoption', 'adoption', '%', 'purple'], ['Risk exposure', 'risk', '%', 'red'], ['Data readiness', 'data', '%', 'cyan']].map(([label, key, unit, color]) => ({ label, value: s[key as keyof GameViewState] as number, unit, color: color as Metric['color'] }));
   const toggle = (id: string) => store.selectInitiatives(s.selected.includes(id) ? s.selected.filter(i => i !== id) : s.selected.length < 3 ? [...s.selected, id] : s.selected);
