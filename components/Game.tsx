@@ -46,6 +46,7 @@ export default function Game() {
   const [assessment, setAssessment] = useState<number[]>([]);
   const [experimental, setExperimental] = useState(false);
   const total = useMemo(() => Object.values(s.alloc).reduce((a, b) => a + b, 0), [s.alloc]);
+  const liveInitiatives = useMemo(() => initiatives.map((initiative) => ({ ...initiative, roi: s.initiativeStates?.[initiative.id]?.currentRoi ?? initiative.roi, data: s.initiativeStates?.[initiative.id]?.currentData ?? initiative.data, risk: s.initiativeStates?.[initiative.id]?.currentRisk ?? initiative.risk })), [s.initiativeStates]);
 
   const metrics: Metric[] = [['ROI', 'roi', '%', 'gold'], ['Revenue uplift', 'revenue', '%', 'emerald'], ['Efficiency', 'efficiency', '%', 'blue'], ['Adoption', 'adoption', '%', 'purple'], ['Risk exposure', 'risk', '%', 'red'], ['Data readiness', 'data', '%', 'cyan']].map(([label, key, unit, color]) => ({ label, value: s[key as keyof GameViewState] as number, unit, color: color as Metric['color'] }));
   const toggle = (id: string) => store.selectInitiatives(s.selected.includes(id) ? s.selected.filter(i => i !== id) : s.selected.length < 3 ? [...s.selected, id] : s.selected);
@@ -60,5 +61,5 @@ export default function Game() {
   if (screen === 'setup') return <GameSetupScreen name={name} experimental={experimental} onNameChange={setName} onExperimentalChange={setExperimental} onContinue={() => setScreen('assessment')} />;
   if (screen === 'assessment') return <GameAssessmentScreen assessment={assessment} onAssessmentChange={(index, value) => setAssessment(current => { const next = [...current]; next[index] = value; return next; })} onComplete={() => { store.loadGame({ ...s, baseline: assessment, experimental }); setScreen('game'); }} canContinue={assessment.length === 5} analytics={<AnalyticsHub state={s} initiatives={initiatives} />} />;
   if (screen === 'done') return <GameDoneScreen state={s} onPlayAgain={reset} />;
-  return <main className="min-h-screen bg-mist"><GameDecisionView state={s} initiatives={initiatives} metrics={metrics} total={total} persona={persona} answer={answer} question={question} isAsking={isAsking} onPersonaChange={setPersona} onQuestionChange={setQuestion} onAsk={ask} onToggleInitiative={toggle} onAllocationChange={updateAlloc} onConfirm={confirm} onReset={reset} /><GameResultsModal state={s} onRespond={respond} onAdvance={advance} onApproveRecommendation={store.approveRecommendation} /></main>;
+  return <main className="min-h-screen bg-mist"><GameDecisionView state={s} initiatives={liveInitiatives} metrics={metrics} total={total} persona={persona} answer={answer} question={question} isAsking={isAsking} onPersonaChange={setPersona} onQuestionChange={setQuestion} onAsk={ask} onToggleInitiative={toggle} onAllocationChange={updateAlloc} onConfirm={confirm} onReset={reset} /><GameResultsModal state={s} onRespond={respond} onAdvance={advance} onApproveRecommendation={store.approveRecommendation} /></main>;
 }
