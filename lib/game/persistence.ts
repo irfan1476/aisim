@@ -145,6 +145,9 @@ export function normalizeGameState(value: unknown): GameState {
     ? source.proactiveRecommendations as GameState['proactiveRecommendations']
     : defaults.proactiveRecommendations;
   next.approvedRecommendations = stringArrayOr(source.approvedRecommendations, defaults.approvedRecommendations);
+  next.nextQuarterGuidance = isRecord(source.nextQuarterGuidance) && typeof source.nextQuarterGuidance.title === 'string' && typeof source.nextQuarterGuidance.action === 'string'
+    ? { title: source.nextQuarterGuidance.title, action: source.nextQuarterGuidance.action, allocationKey: typeof source.nextQuarterGuidance.allocationKey === 'string' ? source.nextQuarterGuidance.allocationKey : undefined, target: typeof source.nextQuarterGuidance.target === 'string' ? source.nextQuarterGuidance.target : undefined }
+    : defaults.nextQuarterGuidance;
   return next;
 }
 

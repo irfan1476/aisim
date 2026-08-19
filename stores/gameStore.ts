@@ -38,6 +38,8 @@ type GameStore = GameState & {
   saveWhatIfDraft: (draft: WhatIfDraft) => void;
   clearWhatIfDraft: () => void;
   approveRecommendation: (title: string) => void;
+  applyRecommendation: () => void;
+  dismissRecommendation: () => void;
   loadGame: (state: unknown) => void;
 };
 
@@ -148,7 +150,18 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
   },
 
   clearWhatIfDraft: removeWhatIfDraft,
-  approveRecommendation: (title) => set((state) => ({ approvedRecommendations: state.approvedRecommendations.includes(title) ? state.approvedRecommendations : [...state.approvedRecommendations, title], feedback: `Recommendation approved: ${title}. Build it into the next decision.` })),
+  approveRecommendation: (title) => set((state) => {
+    const allocationKey = title.toLowerCase().includes('compliance') || title.toLowerCase().includes('risk') ? 'compliance' : title.toLowerCase().includes('data') ? 'data' : title.toLowerCase().includes('training') || title.toLowerCase().includes('adoption') || title.toLowerCase().includes('people') ? 'people' : undefined;
+    const guidance = { title, action: allocationKey ? `Increase ${allocationKey} allocation before confirming this quarter.` : 'Review this recommendation before confirming the quarter.', allocationKey };
+    return { approvedRecommendations: state.approvedRecommendations.includes(title) ? state.approvedRecommendations : [...state.approvedRecommendations, title], nextQuarterGuidance: guidance, feedback: `Recommendation approved: ${title}. It is queued as next-quarter guidance.` };
+  }),
+  applyRecommendation: () => set((state) => {
+    const key = state.nextQuarterGuidance?.allocationKey as keyof typeof state.alloc | undefined;
+    if (!key) return { feedback: 'Review the recommendation manually before confirming.', nextQuarterGuidance: null };
+    const current = state.alloc[key]; const increase = Math.min(8, 20 - current); const source: keyof typeof state.alloc = key === 'infra' ? 'innovation' : 'infra'; const available = state.alloc[source]; const shift = Math.min(increase, Math.max(0, available - 5));
+    return shift <= 0 ? { feedback: `Keep ${key} at ${current}%; the recommendation is noted for this quarter.`, nextQuarterGuidance: null } : { alloc: { ...state.alloc, [key]: current + shift, [source]: available - shift }, feedback: `Applied guidance: ${key} allocation increased by ${shift} points.`, nextQuarterGuidance: null };
+  }),
+  dismissRecommendation: () => set({ nextQuarterGuidance: null, feedback: 'Recommendation dismissed for this quarter; it remains in campaign history.' }),
 
   loadGame: (state) => set(normalizeGameState(state)),
 }), {
