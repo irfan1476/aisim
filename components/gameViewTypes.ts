@@ -21,7 +21,7 @@ export interface GameCrisis {
   title: string;
   type: string;
   text: string;
-  options: Array<[string, string, Record<string, number>]>;
+  options: Array<[string, string, Record<string, number>, number?]>;
 }
 
 export interface GameViewState {
@@ -64,6 +64,7 @@ export interface GameViewState {
   scenarioProgress?: Record<string, number>;
   quarterlyCrisisCost: number;
   scenarioOverspend: number;
+  scenarioBonus: number;
 }
 
 export interface Metric {

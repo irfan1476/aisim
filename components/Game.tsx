@@ -15,6 +15,8 @@ import NextQuarterGuidance from "./NextQuarterGuidance";
 import QuarterRoadmap from "./QuarterRoadmap";
 import { createInferredGeneration } from "../lib/game/generator";
 import { initialGameState } from "../lib/game/state";
+import { getScenario } from "../lib/scenarios/registry";
+import type { CurrencyMode } from "../lib/scenarios/types";
 import {
   hasCampaignProgress,
   readPersistedGameState,
@@ -37,6 +39,8 @@ export default function Game() {
   const [isAsking, setIsAsking] = useState(false);
   const [assessment, setAssessment] = useState<number[]>([]);
   const [experimental, setExperimental] = useState(false);
+  const [scenarioMode, setScenarioMode] = useState(false);
+  const [currencyMode, setCurrencyMode] = useState<CurrencyMode>("$");
   const [debug, setDebug] = useState(false);
   useEffect(() => {
     setDebug(
@@ -50,6 +54,8 @@ export default function Game() {
     store.loadGame(persisted);
     setAssessment(persisted.baseline || []);
     setExperimental(Boolean(persisted.experimental));
+    setScenarioMode(Boolean(persisted.scenarioMode));
+    setCurrencyMode(persisted.currencyMode || "$");
     setScreen(persisted.stage === "done" ? "done" : "game");
     // The persisted campaign is read once when the game shell mounts.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -128,7 +134,7 @@ export default function Game() {
           messages: [
             {
               role: "system",
-              content: `You are the ${persona} board advisor in an executive AI investment simulation. Reply in plain text only, under 120 words, using exactly these labels: Recommendation:, Why:, Next step:. Do not use Markdown, headings, or repeat the question. Be concise and actionable. Do not reveal internal archetype labels or seed values. Reference current initiative stats, maturity, funding history, governance, and any discovered combinations when relevant. Current state: ${JSON.stringify({ ...s, advisorContext: { maturity: s.initiativeGeneration?.context, dynamicInitiatives: availableInitiatives.map((item) => ({ id: item.id, roi: item.currentRoi, cost: item.currentCost, risk: item.currentRisk, riskScore: item.riskScore, data: item.currentData, human: item.currentHuman, maturity: item.maturityLevel, quartersFunded: item.quartersFunded })), recentHistory: s.history?.slice(-3) || [], selected: s.selected || [], allocation: s.alloc || {}, causalChain: s.causalChain || [], recommendations: s.proactiveRecommendations || [] } })}`,
+              content: `You are the ${persona} board advisor in an executive AI investment simulation. Reply in plain text only, under 120 words, using exactly these labels: Recommendation:, Why:, Next step:. Do not use Markdown, headings, or repeat the question. Be concise and actionable. Do not reveal internal archetype labels or seed values. Reference current initiative stats, maturity, funding history, governance, and any discovered combinations when relevant. ${s.scenarioMode ? `Scenario context: ${getScenario(s.scenarioId)?.frameworkContext.advisorPrompt || "Domain-specific scenario pressures are active."} Quarterly budget: ${s.quarterlyBudget}.` : "Standard mode is active; preserve the current campaign logic."} Current state: ${JSON.stringify({ ...s, advisorContext: { maturity: s.initiativeGeneration?.context, dynamicInitiatives: availableInitiatives.map((item) => ({ id: item.id, roi: item.currentRoi, cost: item.currentCost, risk: item.currentRisk, riskScore: item.riskScore, data: item.currentData, human: item.currentHuman, maturity: item.maturityLevel, quartersFunded: item.quartersFunded })), recentHistory: s.history?.slice(-3) || [], selected: s.selected || [], allocation: s.alloc || {}, causalChain: s.causalChain || [], recommendations: s.proactiveRecommendations || [], scenarioProgress: s.scenarioProgress || {} } })}`,
             },
             { role: "user", content: userQuestion },
           ],
@@ -144,8 +150,8 @@ export default function Game() {
     }
   };
   const confirm = () => store.confirmDecisions();
-  const respond = (impact: Record<string, number>) =>
-    store.respondToCrisis(impact);
+  const respond = (impact: Record<string, number>, cost?: number) =>
+    store.respondToCrisis(impact, cost);
   const advance = () => {
     if (s.q >= 12) {
       store.advanceQuarter();
@@ -164,8 +170,12 @@ export default function Game() {
       <GameSetupScreen
         name={name}
         experimental={experimental}
+        scenarioMode={scenarioMode}
+        currencyMode={currencyMode}
         onNameChange={setName}
         onExperimentalChange={setExperimental}
+        onScenarioModeChange={setScenarioMode}
+        onCurrencyChange={setCurrencyMode}
         onContinue={() => setScreen("assessment")}
       />
     );
@@ -182,9 +192,25 @@ export default function Game() {
         }
         onComplete={() => {
           const generation = createInferredGeneration(assessment);
+          const scenario = scenarioMode ? getScenario("projectFactory") : undefined;
+          const startingMetrics = scenario?.startingState.startingMetrics || {};
           store.resetCampaign();
           store.loadGame({
-            ...initialGameState(generation),
+            ...initialGameState(generation, {
+              scenarioMode,
+              scenarioId: scenario?.id,
+              currencyMode,
+              quarterlyBudget: scenario?.startingState.budget,
+              scenarioStartingMetrics: startingMetrics,
+              scenarioProgress: scenario ? Object.fromEntries(scenario.progress.map((item) => [item.key, item.start])) : undefined,
+              defaultAllocation: scenario?.startingState.defaultAllocation,
+              startingMetrics: {
+                efficiency: startingMetrics.efficiency,
+                adoption: startingMetrics.adoption,
+                data: startingMetrics.data,
+                satisfaction: startingMetrics.satisfaction,
+              },
+            }),
             baseline: assessment,
             experimental,
           });

@@ -169,6 +169,7 @@ export function normalizeGameState(value: unknown): GameState {
   next.scenarioProgress = isRecord(source.scenarioProgress) ? Object.fromEntries(Object.entries(source.scenarioProgress).filter(([, item]) => typeof item === 'number' && Number.isFinite(item))) as Record<string, number> : undefined;
   next.quarterlyCrisisCost = numberOr(source.quarterlyCrisisCost, 0);
   next.scenarioOverspend = numberOr(source.scenarioOverspend, 0);
+  next.scenarioBonus = numberOr(source.scenarioBonus, 0);
   next.causalChain = Array.isArray(source.causalChain) ? source.causalChain as GameState['causalChain'] : defaults.causalChain;
   next.proactiveRecommendations = Array.isArray(source.proactiveRecommendations)
     ? source.proactiveRecommendations as GameState['proactiveRecommendations']

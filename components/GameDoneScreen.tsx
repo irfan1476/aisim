@@ -17,6 +17,8 @@ import {
 import { calculateReflection } from "../lib/reflection";
 import YouSaidYouDid from "./YouSaidYouDid";
 import SelfAwarenessScore from "./SelfAwarenessScore";
+import { formatBudget, formatCurrency } from "../lib/currency";
+import { getScenario } from "../lib/scenarios/registry";
 
 interface GameDoneScreenProps {
   state: GameViewState;
@@ -118,6 +120,7 @@ export default function GameDoneScreen({
     ...(state.discoveredSynergies || []),
     ...history.flatMap((item) => item.synergiesDiscovered || []),
   ]);
+  const scenario = state.scenarioMode ? getScenario(state.scenarioId) : undefined;
   const riskMovement = state.risk - 36;
   const evidence = `Across ${history.length} quarters, you averaged ${n(averagePeople, 0)}% in people, ${n(averageData, 0)}% in data, and ${n(averageGovernance, 0)}% in governance. ${topBetEvidence}; risk ${riskMovement <= 0 ? "fell" : "rose"} ${n(Math.abs(riskMovement))} points, and you discovered ${discoveredSynergies.size} capability ${discoveredSynergies.size === 1 ? "combination" : "combinations"}.`;
   const diagnosis = `Your strategic pattern: ${strategicArchetype}. ${archetypeMessage} ${evidence} ${verdictMessage}`;
@@ -202,6 +205,7 @@ export default function GameDoneScreen({
             ))}
           </div>
         </section>
+        {scenario && <section className="mt-6 rounded-3xl border border-[#54aeff]/35 bg-[#ddf4ff] p-6 shadow-sm md:p-8"><div className="flex flex-wrap items-start justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-[.2em] text-[#0969da]">Scenario performance</p><h2 className="mt-2 text-2xl font-bold">{scenario.name}</h2><p className="mt-2 text-sm text-[#57606a]">Budget framing: {formatBudget(state.quarterlyBudget, state.currencyMode)} per quarter · campaign spend: {formatCurrency(state.spent, state.currencyMode)}</p></div><div className="rounded-2xl bg-white px-5 py-3 text-center"><p className="text-xs text-[#57606a]">Scenario bonus</p><b className="text-3xl text-[#0969da]">+{state.scenarioBonus || 0}</b></div></div><div className="mt-6 grid gap-3 sm:grid-cols-2">{scenario.progress.map((item) => { const value = Number(state.scenarioProgress?.[item.key] ?? item.start); return <div key={item.key} className="rounded-xl bg-white p-4"><div className="flex justify-between text-sm font-bold"><span>{item.label}</span><span className="text-[#0969da]">{Math.round(value)}%</span></div><div className="mt-3 h-2 rounded-full bg-[#d0d7de]"><div className="h-full rounded-full bg-[#0969da]" style={{ width: `${Math.min(100, Math.max(0, value))}%` }} /></div></div>; })}</div></section>}
         <section className="mt-6 grid gap-6 lg:grid-cols-[1.35fr_.65fr]">
           <div className="rounded-3xl border border-[#d0d7de] bg-white p-6 shadow-sm md:p-8">
             <div className="flex items-center gap-3">

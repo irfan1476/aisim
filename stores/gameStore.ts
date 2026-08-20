@@ -5,6 +5,8 @@ import { createJSONStorage, persist, type StateStorage } from 'zustand/middlewar
 import { initialGameState, type GameState } from '../lib/game/state';
 import { causalChain } from '../lib/game/metrics';
 import { generateCrisis } from '../lib/game/crises';
+import { getScenario } from '../lib/scenarios/registry';
+import { calculateScenarioProgress } from '../lib/scenarios/progress';
 import { generateProactiveRecommendations } from '../lib/game/recommendations';
 import { resolveQuarter, deriveScore } from '../lib/game/engine';
 import { describeSynergies } from '../lib/game/generator';
@@ -29,7 +31,7 @@ type GameStore = GameState & {
   selectInitiatives: (ids: string[]) => void;
   updateAllocation: (key: keyof GameState['alloc'], value: number) => void;
   confirmDecisions: () => void;
-  respondToCrisis: (impact: Record<string, number>) => void;
+  respondToCrisis: (impact: Record<string, number>, cost?: number) => void;
   advanceQuarter: () => void;
   quickReset: () => void;
   resetCampaign: () => void;
@@ -99,26 +101,43 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
   confirmDecisions: () => {
     const state = normalizeGameState(get());
     const result = resolveQuarter(state, { selected: state.selected, alloc: state.alloc });
-    const resolvedState = { ...state, ...result.metrics, initiativeStates: result.initiativeStates };
+    const selectedCost = state.selected.reduce((sum, id) => sum + Number(result.initiativeStates[id]?.currentCost || 0), 0);
+    const overspend = state.scenarioMode ? Math.max(0, selectedCost - state.quarterlyBudget) : 0;
+    const overspendRisk = state.scenarioMode && state.quarterlyBudget > 0 ? Math.min(15, overspend / state.quarterlyBudget * 10) : 0;
+    const adjustedMetrics = { ...result.metrics, risk: Math.min(95, Number(result.metrics.risk ?? state.risk) + overspendRisk) };
+    const resolvedState = { ...state, ...adjustedMetrics, initiativeStates: result.initiativeStates };
     const discovery = describeSynergies(state.selected, result.initiativeStates);
     const newlyDiscovered = discovery?.effects.map(effect => effect.key) || [];
     const discoveredSynergies = Array.from(new Set([...state.discoveredSynergies, ...newlyDiscovered]));
-    const resolvedRisk = Number(result.metrics.risk ?? state.risk);
+    const resolvedRisk = Number(adjustedMetrics.risk ?? state.risk);
     const crisisProbability = Math.max(.08, Math.min(.7, (resolvedRisk - 15) / 75));
+    const scenario = state.scenarioMode ? getScenario(state.scenarioId) : undefined;
+    const scenarioProgress = scenario ? calculateScenarioProgress(resolvedState, scenario)?.values : state.scenarioProgress;
+    const scenarioBonus = state.scenarioMode && state.q >= 12 && scenario ? Math.round((calculateScenarioProgress(resolvedState, scenario)?.overall || 0) / 20) : state.scenarioBonus;
+    const scenarioCrisis = scenario && state.q % 3 === 0 && crisisRoll(state.initiativeGeneration.seed, state.q) < crisisProbability
+      ? scenario.crises[Math.abs(state.initiativeGeneration.seed + state.q) % scenario.crises.length]
+      : null;
     set({
       ...resolvedState,
-      score: deriveScore(state, result.metrics),
+      score: Math.min(100, deriveScore(state, adjustedMetrics) + scenarioBonus),
+      scenarioProgress,
+      scenarioOverspend: overspend,
+      scenarioBonus,
       stage: 'results',
-      crisis: state.q % 3 === 0 && crisisRoll(state.initiativeGeneration.seed, state.q) < crisisProbability ? generateCrisis(state.initiativeGeneration.seed + state.q) : null,
+      crisis: scenarioCrisis ? { ...scenarioCrisis, options: scenarioCrisis.options.map((option) => [option.label, option.description, option.impacts, option.cost] as [string, string, Record<string, number>, number?]) } : state.q % 3 === 0 && crisisRoll(state.initiativeGeneration.seed, state.q) < crisisProbability ? generateCrisis(state.initiativeGeneration.seed + state.q) : null,
       causalChain: causalChain(resolvedState, state.selected),
       proactiveRecommendations: generateProactiveRecommendations(resolvedState),
       discoveredSynergies,
       feedback: discovery?.message || `Quarter ${state.q} resolved. Your portfolio is now showing the consequences of this allocation.`,
-      history: [...state.history, result.snapshot],
+      history: [...state.history, { ...result.snapshot, metrics: adjustedMetrics }],
     });
   },
 
-  respondToCrisis: (impact) => set((state) => ({ ...impact, crisis: null, stage: 'results' })),
+  respondToCrisis: (impact, cost = 0) => set((state) => {
+    const next = { ...state, ...impact, spent: state.spent + (state.scenarioMode ? cost : 0), quarterlyCrisisCost: state.quarterlyCrisisCost + (state.scenarioMode ? cost : 0), crisis: null, stage: 'results' as const };
+    const scenario = next.scenarioMode ? getScenario(next.scenarioId) : undefined;
+    return { ...next, scenarioProgress: scenario ? calculateScenarioProgress(next, scenario)?.values : next.scenarioProgress };
+  }),
 
   advanceQuarter: () => {
     const state = normalizeGameState(get());
@@ -130,6 +149,8 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
       crisis: null,
       causalChain: [],
       proactiveRecommendations: [],
+      quarterlyCrisisCost: 0,
+      scenarioOverspend: 0,
       feedback: `Quarter ${state.q + 1} is ready.`,
     });
   },

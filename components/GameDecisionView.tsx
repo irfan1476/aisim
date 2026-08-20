@@ -13,6 +13,8 @@ import {
 } from "lucide-react";
 import AnalyticsHub from "./AnalyticsHub";
 import type { GameInitiative, GameViewState, Metric } from "./gameViewTypes";
+import { formatBudget, formatCurrency } from "../lib/currency";
+import { getScenario } from "../lib/scenarios/registry";
 
 interface Props {
   state: GameViewState;
@@ -129,6 +131,7 @@ export default function GameDecisionView({
               </div>
             ))}
           </div>
+          {state.scenarioMode && <ScenarioProgress state={state} />}
           <div className="rounded-3xl border border-ink/8 bg-white p-5">
             <div className="flex items-center justify-between">
               <div>
@@ -198,11 +201,7 @@ export default function GameDecisionView({
                     >
                       <span>
                         <b className="block text-ink">
-                          $
-                          {Number(live.currentCost ?? initiative.cost).toFixed(
-                            2,
-                          )}
-                          M
+                          {formatCurrency(Number(live.currentCost ?? initiative.cost), state.currencyMode)}
                         </b>
                         <small className="text-ink/40">investment</small>
                       </span>
@@ -267,7 +266,7 @@ export default function GameDecisionView({
                   Balance the operating system
                 </h2>
                 <p className="mt-1 text-sm text-ink/50">
-                  Your $10M quarterly transformation envelope
+                  Your {formatBudget(state.quarterlyBudget || 10, state.currencyMode)} quarterly transformation envelope
                 </p>
               </div>
               <span
@@ -284,7 +283,7 @@ export default function GameDecisionView({
                       {key === "mlops" ? "MLOps & maintenance" : key}
                     </span>
                     <span className="text-ink/45">
-                      {value}% · ${((value / 100) * 10).toFixed(2)}M
+                      {value}% · {formatCurrency((value / 100) * (state.quarterlyBudget || 10), state.currencyMode)}
                     </span>
                   </div>
                   <input
@@ -375,7 +374,7 @@ export default function GameDecisionView({
               </p>
               <p className="flex gap-2 text-ink/60">
                 <Wallet size={15} className="mt-1 shrink-0 text-gold" />
-                Quarterly spend is ${state.spent.toFixed(1)}M. Keep the
+                Campaign spend is {formatCurrency(state.spent, state.currencyMode)}. Keep the
                 portfolio intentional.
               </p>
               <p className="flex gap-2 text-ink/60">
@@ -399,4 +398,19 @@ export default function GameDecisionView({
       <AnalyticsHub state={state} initiatives={initiatives} />
     </>
   );
+}
+
+function ScenarioProgress({ state }: { state: GameViewState }) {
+  const scenario = getScenario(state.scenarioId);
+  if (!scenario) return null;
+  return <section className="mb-5 rounded-3xl border border-[#54aeff]/35 bg-[#ddf4ff] p-5">
+    <div className="flex flex-wrap items-baseline justify-between gap-2">
+      <div><p className="text-xs font-bold uppercase tracking-[.2em] text-[#0969da]">Scenario progress</p><h2 className="mt-1 text-lg font-bold">{scenario.name}</h2></div>
+      <span className="text-sm font-bold text-[#0969da]">{Math.round(Object.values(state.scenarioProgress || {}).reduce((a, b) => a + b, 0) / Math.max(1, Object.values(state.scenarioProgress || {}).length))}% overall</span>
+    </div>
+    <div className="mt-4 grid gap-3 sm:grid-cols-2">
+      {scenario.progress.map((item) => { const value = Number(state.scenarioProgress?.[item.key] ?? item.start); return <div key={item.key} className="rounded-xl border border-[#54aeff]/25 bg-white/75 p-3"><div className="flex justify-between text-xs font-bold"><span>{item.label}</span><span>{Math.round(value)}%</span></div><div className="mt-2 h-2 rounded-full bg-[#d0d7de]"><div className="h-full rounded-full bg-[#0969da]" style={{ width: `${Math.min(100, Math.max(0, value))}%` }} /></div></div>; })}
+    </div>
+    <p className="mt-3 text-xs text-[#57606a]">This challenge responds to your funding, operating maturity, and crisis choices.</p>
+  </section>;
 }

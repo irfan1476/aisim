@@ -6,7 +6,7 @@ import { calculateReflection } from "../lib/reflection";
 import type { UserReflections } from "../lib/game/state";
 interface Props {
   state: GameViewState;
-  onRespond: (impact: Record<string, number>) => void;
+  onRespond: (impact: Record<string, number>, cost?: number) => void;
   onAdvance: () => void;
   onApproveRecommendation: (title: string) => void;
   onSaveReflection: (value: Partial<UserReflections>) => void;
@@ -46,12 +46,13 @@ export default function GameResultsModal({
               {state.crisis.options.map((option) => (
                 <button
                   key={option[0]}
-                  onClick={() => onRespond(option[2])}
+                  onClick={() => onRespond(option[2], option[3])}
                   className="flex items-center justify-between rounded-xl border border-ink/10 bg-white p-3 text-left text-sm"
                 >
                   <span>
                     <b>{option[0]}</b>
                     <span className="ml-2 text-ink/50">{option[1]}</span>
+                    {option[3] ? <span className="ml-2 text-xs font-bold text-crimson">Cost {option[3]}</span> : null}
                   </span>
                   <ArrowRight size={15} />
                 </button>
