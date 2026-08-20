@@ -1,13 +1,15 @@
 import { initialGameState, type Allocation, type GameState, type MetricKey, type QuarterSnapshot } from './state';
 import { initializeInitiativeStates, type InitiativeState } from './initiativeState';
 import { createInitiativeGeneration, generateInitiatives, inferArchetypeFromDecisions, type InitiativeGeneration, type ScenarioArchetype } from './generator';
+import { getScenario } from '../scenarios/registry';
+import { scenarioInitiativesToStates } from './initiativeAdapter';
 
 export const GAME_STORAGE_KEY = 'ai-investment-game';
 export const LEGACY_GAME_STORAGE_KEY = 'ai-investment-save';
 export const WHAT_IF_STORAGE_KEY = 'ai-whatif-applied';
 export const LEADERBOARD_STORAGE_KEY = 'ai_simulation_leaderboard';
 export const LEGACY_MIGRATION_KEY = 'ai-investment-legacy-migrated';
-export const GAME_PERSISTENCE_VERSION = 4;
+export const GAME_PERSISTENCE_VERSION = 5;
 
 export type WhatIfDraft = {
   name?: string;
@@ -115,6 +117,13 @@ function normalizeSnapshot(
     });
     snapshot.crisisResponse = crisisResponse;
   }
+  if (isRecord(value.scenarioState)) {
+    snapshot.scenarioState = {
+      metrics: isRecord(value.scenarioState.metrics) ? Object.fromEntries(Object.entries(value.scenarioState.metrics).filter(([, item]) => typeof item === 'number' && Number.isFinite(item))) as Record<string, number> : {},
+      progress: isRecord(value.scenarioState.progress) ? Object.fromEntries(Object.entries(value.scenarioState.progress).filter(([, item]) => typeof item === 'number' && Number.isFinite(item))) as Record<string, number> : {},
+      flags: isRecord(value.scenarioState.flags) ? Object.fromEntries(Object.entries(value.scenarioState.flags).filter(([, item]) => typeof item === 'boolean')) as Record<string, boolean> : {},
+    };
+  }
   return snapshot;
 }
 
@@ -133,7 +142,12 @@ export function normalizeGameState(value: unknown): GameState {
     ? source.baseline.filter((item): item is number => typeof item === 'number' && Number.isFinite(item))
     : [...defaults.baseline];
   next.initiativeGeneration = normalizeGeneration(source.initiativeGeneration, next.baseline);
-  const generatedDefaults = initializeInitiativeStates(generateInitiatives(next.initiativeGeneration));
+  const persistedScenarioMode = source.scenarioMode === true;
+  const persistedScenarioId = typeof source.scenarioId === 'string' ? source.scenarioId : undefined;
+  const persistedScenario = persistedScenarioMode ? getScenario(persistedScenarioId) : undefined;
+  const generatedDefaults = persistedScenario?.initiatives
+    ? scenarioInitiativesToStates(persistedScenario.initiatives)
+    : initializeInitiativeStates(generateInitiatives(next.initiativeGeneration));
 
   let previousMetrics = defaults;
   let previousStates = generatedDefaults;
@@ -163,10 +177,20 @@ export function normalizeGameState(value: unknown): GameState {
   };
   next.scenarioMode = source.scenarioMode === true;
   next.scenarioId = typeof source.scenarioId === 'string' ? source.scenarioId : undefined;
+  const scenarioDefinition = next.scenarioMode ? getScenario(next.scenarioId) : undefined;
+  if (scenarioDefinition?.initiatives && !hasCurrentInitiativeStates) {
+    next.initiativeStates = scenarioInitiativesToStates(scenarioDefinition.initiatives);
+  }
   next.currencyMode = source.currencyMode === '₹' ? '₹' : '$';
   next.quarterlyBudget = numberOr(source.quarterlyBudget, next.scenarioMode ? 5 : 10);
   next.scenarioStartingMetrics = isRecord(source.scenarioStartingMetrics) ? Object.fromEntries(Object.entries(source.scenarioStartingMetrics).filter(([, item]) => typeof item === 'number' && Number.isFinite(item))) as Record<string, number> : undefined;
   next.scenarioProgress = isRecord(source.scenarioProgress) ? Object.fromEntries(Object.entries(source.scenarioProgress).filter(([, item]) => typeof item === 'number' && Number.isFinite(item))) as Record<string, number> : undefined;
+  const savedScenarioState = isRecord(source.scenarioState) ? source.scenarioState : {};
+  next.scenarioState = {
+    metrics: isRecord(savedScenarioState.metrics) ? Object.fromEntries(Object.entries(savedScenarioState.metrics).filter(([, item]) => typeof item === 'number' && Number.isFinite(item))) as Record<string, number> : { ...(next.scenarioStartingMetrics || {}) },
+    progress: isRecord(savedScenarioState.progress) ? Object.fromEntries(Object.entries(savedScenarioState.progress).filter(([, item]) => typeof item === 'number' && Number.isFinite(item))) as Record<string, number> : { ...(next.scenarioProgress || {}) },
+    flags: isRecord(savedScenarioState.flags) ? Object.fromEntries(Object.entries(savedScenarioState.flags).filter(([, item]) => typeof item === 'boolean')) as Record<string, boolean> : {},
+  };
   next.quarterlyCrisisCost = numberOr(source.quarterlyCrisisCost, 0);
   next.scenarioOverspend = numberOr(source.scenarioOverspend, 0);
   next.scenarioBonus = numberOr(source.scenarioBonus, 0);

@@ -6,6 +6,8 @@ import {
 import type { GameState, QuarterSnapshot } from "./state";
 import { normalizeGameState } from "./persistence";
 import { evaluateSynergies } from "./generator";
+import { getScenario } from "../scenarios/registry";
+import { applyScenarioEffects } from "./effectResolver";
 
 export type QuarterDecision = { selected: string[]; alloc: GameState["alloc"] };
 
@@ -19,6 +21,7 @@ export function resolveQuarter(
 ): {
   metrics: Partial<GameState>;
   initiativeStates: Record<string, InitiativeState>;
+  scenarioState: GameState['scenarioState'];
   snapshot: QuarterSnapshot;
 } {
   const current = hydrateGameState(state);
@@ -121,16 +124,33 @@ export function resolveQuarter(
       chosen.reduce((sum, item) => sum + item.currentCost, 0) *
         (1 - synergyCostReduction),
   };
+  const scenario = current.scenarioMode ? getScenario(current.scenarioId) : undefined;
+  const scenarioState = scenario
+    ? applyScenarioEffects(
+        scenario,
+        current.scenarioState?.metrics && Object.keys(current.scenarioState.metrics).length
+          ? current.scenarioState
+          : { metrics: { ...(current.scenarioStartingMetrics || {}) }, progress: { ...(current.scenarioProgress || {}) }, flags: {} },
+        evolved,
+        decision.selected,
+        decision.alloc,
+        current.adoption,
+      )
+    : current.scenarioState;
+  const resolvedMetrics = scenario
+    ? ({ ...metrics, ...scenarioState.metrics } as Partial<GameState>)
+    : metrics;
   const snapshot: QuarterSnapshot = {
     q: current.q,
     chosen: chosen.map((item) => item.name),
     selectedIds: [...decision.selected],
     allocation: { ...decision.alloc },
-    metrics,
+    metrics: resolvedMetrics,
     initiativeStates: JSON.parse(JSON.stringify(evolved)),
+    scenarioState: JSON.parse(JSON.stringify(scenarioState)),
     synergiesDiscovered: synergies.map((effect) => effect.key),
   };
-  return { metrics, initiativeStates: evolved, snapshot };
+  return { metrics: resolvedMetrics, initiativeStates: evolved, scenarioState, snapshot };
 }
 
 export function deriveScore(state: GameState, metrics: Partial<GameState>) {

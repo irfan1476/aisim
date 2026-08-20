@@ -40,6 +40,7 @@ export default function Game() {
   const [assessment, setAssessment] = useState<number[]>([]);
   const [experimental, setExperimental] = useState(false);
   const [scenarioMode, setScenarioMode] = useState(false);
+  const [scenarioId, setScenarioId] = useState("projectFactory");
   const [currencyMode, setCurrencyMode] = useState<CurrencyMode>("$");
   const [debug, setDebug] = useState(false);
   useEffect(() => {
@@ -55,6 +56,7 @@ export default function Game() {
     setAssessment(persisted.baseline || []);
     setExperimental(Boolean(persisted.experimental));
     setScenarioMode(Boolean(persisted.scenarioMode));
+    setScenarioId(persisted.scenarioId || "projectFactory");
     setCurrencyMode(persisted.currencyMode || "$");
     setScreen(persisted.stage === "done" ? "done" : "game");
     // The persisted campaign is read once when the game shell mounts.
@@ -171,10 +173,12 @@ export default function Game() {
         name={name}
         experimental={experimental}
         scenarioMode={scenarioMode}
+        scenarioId={scenarioId}
         currencyMode={currencyMode}
         onNameChange={setName}
         onExperimentalChange={setExperimental}
         onScenarioModeChange={setScenarioMode}
+        onScenarioChange={setScenarioId}
         onCurrencyChange={setCurrencyMode}
         onContinue={() => setScreen("assessment")}
       />
@@ -192,28 +196,14 @@ export default function Game() {
         }
         onComplete={() => {
           const generation = createInferredGeneration(assessment);
-          const scenario = scenarioMode ? getScenario("projectFactory") : undefined;
-          const startingMetrics = scenario?.startingState.startingMetrics || {};
+          const scenario = scenarioMode ? getScenario(scenarioId) : undefined;
           store.resetCampaign();
           store.loadGame({
-            ...initialGameState(generation, {
-              scenarioMode,
-              scenarioId: scenario?.id,
-              currencyMode,
-              quarterlyBudget: scenario?.startingState.budget,
-              scenarioStartingMetrics: startingMetrics,
-              scenarioProgress: scenario ? Object.fromEntries(scenario.progress.map((item) => [item.key, item.start])) : undefined,
-              defaultAllocation: scenario?.startingState.defaultAllocation,
-              startingMetrics: {
-                efficiency: startingMetrics.efficiency,
-                adoption: startingMetrics.adoption,
-                data: startingMetrics.data,
-                satisfaction: startingMetrics.satisfaction,
-              },
-            }),
+            ...initialGameState(generation, { currencyMode }),
             baseline: assessment,
             experimental,
           });
+          if (scenario) store.initializeScenario(scenario.id);
           setScreen("hypothesis");
         }}
         canContinue={assessment.length === 5}

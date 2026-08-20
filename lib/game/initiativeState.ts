@@ -2,11 +2,11 @@ import { initiatives, type Initiative } from './initiatives';
 import type { DynamicInitiative } from './generator';
 
 export type MaturityLevel = 'nascent' | 'developing' | 'mature' | 'optimized';
-export interface InitiativeState extends Initiative { currentData: number; currentRoi: number; currentRisk: 'LOW' | 'MED' | 'HIGH'; currentCost: number; currentHuman: number; quartersFunded: number; quartersSinceLastFund: number; totalInvestment: number; maturityLevel: MaturityLevel; dataInvestment: number; governanceInvestment: number; trainingInvestment: number; baseRoi?: number; baseCost?: number; baseData?: number; baseHuman?: number; baseRiskScore?: number; riskScore?: number; synergies?: string[]; }
+export interface InitiativeState extends Initiative { currentData: number; currentRoi: number; currentRisk: 'LOW' | 'MED' | 'HIGH'; currentCost: number; currentHuman: number; quartersFunded: number; quartersSinceLastFund: number; totalInvestment: number; maturityLevel: MaturityLevel; dataInvestment: number; governanceInvestment: number; trainingInvestment: number; baseRoi?: number; baseCost?: number; baseData?: number; baseHuman?: number; baseRiskScore?: number; riskScore?: number; synergies?: string[]; scenarioMetadata?: { primaryMetric: string; baseEffect: number; effectUnit: string; neglect: { decayRate: number; penaltyThreshold: number; penaltyAmount: number } }; }
 const roundMetric = (value: number) => Number(value.toFixed(2));
 const riskScoreFor = (item: InitiativeState) => item.riskScore ?? (item.currentRisk === 'LOW' ? 24 : item.currentRisk === 'MED' ? 48 : 72);
 const riskBandFor = (score: number): 'LOW' | 'MED' | 'HIGH' => score < 35 ? 'LOW' : score < 65 ? 'MED' : 'HIGH';
-const maturityFor = (funded: number, neglected: number): MaturityLevel => {
+export const maturityFor = (funded: number, neglected: number): MaturityLevel => {
   const levels: MaturityLevel[] = ['nascent', 'developing', 'mature', 'optimized'];
   const earned = funded >= 6 ? 3 : funded >= 4 ? 2 : funded >= 2 ? 1 : 0;
   const decay = neglected >= 6 ? 2 : neglected >= 3 ? 1 : 0;

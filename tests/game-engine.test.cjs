@@ -40,6 +40,8 @@ const { initialGameState } = require('../lib/game/state.ts');
 const { createInferredGeneration, evaluateSynergies, generateInitiatives, inferArchetypeFromCampaign } = require('../lib/game/generator.ts');
 const { normalizeGameState } = require('../lib/game/persistence.ts');
 const { useGameStore } = require('../stores/gameStore.ts');
+const { getScenario } = require('../lib/scenarios/registry.ts');
+const { scenarioInitiativesToStates } = require('../lib/game/initiativeAdapter.ts');
 
 const allocation = {
   infra: 35,
@@ -179,4 +181,35 @@ test('legacy migration derives generation context from the saved baseline', () =
 
   assert.equal(migrated.initiativeGeneration.archetype, expected.archetype);
   assert.deepEqual(migrated.initiativeGeneration.context, expected.context);
+});
+
+test('scenario registry exposes four domain packs with data-only progress definitions', () => {
+  ['projectFactory', 'bankNext', 'care360', 'futureReady'].forEach((id) => {
+    const scenario = getScenario(id);
+    assert.ok(scenario);
+    assert.equal(scenario.initiatives.length, 6);
+    scenario.progress.forEach((item) => {
+      assert.equal(typeof item.evaluate, 'undefined');
+      assert.ok(item.target !== undefined);
+      assert.ok(item.min !== undefined && item.max !== undefined);
+    });
+  });
+});
+
+test('scenario effects change domain metrics and persist scenario state', () => {
+  const scenario = getScenario('bankNext');
+  const generation = createInferredGeneration([3, 3, 3, 3, 3], 4242);
+  const initial = initialGameState(generation, { scenarioMode: true, scenarioId: scenario.id, scenarioStartingMetrics: scenario.startingState.startingMetrics, scenarioProgress: {} });
+  const state = { ...initial, initiativeStates: scenarioInitiativesToStates(scenario.initiatives), scenarioState: { metrics: { ...scenario.startingState.startingMetrics }, progress: {}, flags: {} }, selected: ['fraudDetection'], alloc: scenario.startingState.defaultAllocation };
+  const result = resolveQuarter(state, { selected: state.selected, alloc: state.alloc });
+  assert.ok(result.scenarioState.metrics.fraudPressure < 80);
+  assert.ok(result.scenarioState.progress.fraudPressure > 0);
+  assert.equal(result.snapshot.scenarioState.metrics.fraudPressure, result.scenarioState.metrics.fraudPressure);
+});
+
+test('scenario save migration keeps domain initiative ids', () => {
+  const scenario = getScenario('care360');
+  const migrated = normalizeGameState({ scenarioMode: true, scenarioId: 'care360', scenarioStartingMetrics: scenario.startingState.startingMetrics, initiativeStates: {} });
+  assert.deepEqual(Object.keys(migrated.initiativeStates).sort(), scenario.initiatives.map((item) => item.id).sort());
+  assert.equal(migrated.scenarioState.metrics.patientWaitTime, 75);
 });

@@ -1,0 +1,24 @@
+import type { ScenarioDefinition } from './types';
+import { initiative, metric } from './scenarioHelpers';
+
+export const futureReady: ScenarioDefinition = {
+  id: 'futureReady', name: 'FutureReady University', industry: 'Higher education', icon: '🎓', description: 'Build a more engaging, employable, and sustainable learning model across a multi-campus university.', difficulty: 'intermediate',
+  company: { name: 'FutureReady University', revenue: '₹900 Cr', employees: '1,200 faculty', locations: '20,000 students · multi-campus', description: 'A private institution expanding online and hybrid degree programmes.' },
+  challenges: [
+    { id: 'engagement', label: 'Student engagement', severity: '55 index', metric: 'studentEngagement', direction: 'higher-is-better', description: 'Completion and persistence are under pressure.' },
+    { id: 'workload', label: 'Faculty workload', severity: '75 index', metric: 'facultyWorkload', direction: 'lower-is-better', description: 'Assessment and administrative demands are overwhelming staff.' },
+    { id: 'governance', label: 'Academic governance', severity: '40 index', metric: 'academicGovernance', direction: 'higher-is-better', description: 'The university needs clear guidance for responsible AI use.' },
+  ],
+  startingState: { budget: 5, defaultAllocation: { infra: 20, data: 20, people: 25, mlops: 10, compliance: 15, innovation: 10 }, startingMetrics: { studentPersistence: 65, studentEngagement: 55, facultyWorkload: 75, employabilityReadiness: 60, academicGovernance: 40, efficiency: 30, adoption: 45, data: 50, satisfaction: 55 } },
+  progress: [metric('studentPersistence', 'Student persistence', '%', 65, 85, 'higher-is-better'), metric('studentEngagement', 'Student engagement', 'index', 55, 80, 'higher-is-better'), metric('facultyWorkload', 'Faculty workload', 'index', 75, 40, 'lower-is-better'), metric('employabilityReadiness', 'Employability readiness', 'index', 60, 85, 'higher-is-better'), metric('academicGovernance', 'Academic governance', 'index', 40, 85, 'higher-is-better')],
+  initiatives: [
+    initiative({ id: 'successPredictor', name: 'AI Student Success Predictor', desc: 'Identify disengagement early so support can be proactive.', cost: 1.4, roi: 150, risk: 'HIGH', data: 4, human: 4, impact: 'Improves persistence.', baseEffect: 4, primaryMetric: 'studentPersistence', effectUnit: 'percentage points' }),
+    initiative({ id: 'facultyCopilot', name: 'Faculty Copilot', desc: 'Reduce routine lesson planning and assessment work.', cost: 1.3, roi: 145, risk: 'MED', data: 3, human: 4, impact: 'Reduces faculty workload.', baseEffect: -6, primaryMetric: 'facultyWorkload', effectUnit: 'index points' }),
+    initiative({ id: 'careerGuidance', name: 'AI Career Guidance Platform', desc: 'Connect learners with personalised pathways and opportunities.', cost: 1.2, roi: 155, risk: 'MED', data: 4, human: 3, impact: 'Improves employability readiness.', baseEffect: 5, primaryMetric: 'employabilityReadiness', effectUnit: 'index points' }),
+    initiative({ id: 'studentChatbot', name: 'Student Support Chatbot', desc: 'Provide round-the-clock administrative and campus support.', cost: 0.9, roi: 135, risk: 'LOW', data: 3, human: 3, impact: 'Improves engagement.', baseEffect: 4, primaryMetric: 'studentEngagement', effectUnit: 'index points' }),
+    initiative({ id: 'learningAnalytics', name: 'Learning Analytics Platform', desc: 'Use course engagement evidence to improve learning design.', cost: 1.5, roi: 160, risk: 'HIGH', data: 5, human: 4, impact: 'Improves persistence.', baseEffect: 3, primaryMetric: 'studentPersistence', effectUnit: 'percentage points' }),
+    initiative({ id: 'researchAssistant', name: 'Research Assistant AI', desc: 'Speed literature discovery and proposal drafting responsibly.', cost: 1.1, roi: 140, risk: 'MED', data: 3, human: 3, impact: 'Reduces faculty workload.', baseEffect: -4, primaryMetric: 'facultyWorkload', effectUnit: 'index points' }),
+  ],
+  crises: [{ title: 'Faculty resistance delays a campus AI rollout.', type: 'CHANGE SIGNAL', text: 'Academic leaders want a more deliberate approach to adoption and governance.', options: [{ label: 'Co-design the guardrails', description: 'Invest in faculty participation and policy.', cost: 0.4, impacts: { adoption: 5, compliance: 6, risk: -4 } }, { label: 'Push the launch', description: 'Protect speed and accept resistance.', impacts: { adoption: 3, risk: 7 } }] }],
+  currency: { defaultSymbol: '₹', defaultLabel: 'Cr' }, frameworkContext: { advisorPrompt: 'Connect decisions to student persistence, engagement, faculty workload, employability, and academic governance. Education AI succeeds through co-design and trust.', industryBenchmarks: { studentPersistence: 85, employabilityReadiness: 85, academicGovernance: 85 } },
+};

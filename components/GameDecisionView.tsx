@@ -51,6 +51,7 @@ export default function GameDecisionView({
   onConfirm,
   onReset,
 }: Props) {
+  const scenario = state.scenarioMode ? getScenario(state.scenarioId) : undefined;
   return (
     <>
       <header className="sticky top-0 z-10 border-b border-ink/8 bg-white/90 px-5 py-4 backdrop-blur">
@@ -61,7 +62,7 @@ export default function GameDecisionView({
             </div>
             <div>
               <p className="text-xs font-bold tracking-[.16em]">
-                PROJECT FACTORY 2030
+                {scenario?.name || "PROJECT FACTORY 2030"}
               </p>
               <p className="text-xs text-ink/45">Chief AI Officer cockpit</p>
             </div>

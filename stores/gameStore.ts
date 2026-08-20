@@ -10,6 +10,7 @@ import { calculateScenarioProgress } from '../lib/scenarios/progress';
 import { generateProactiveRecommendations } from '../lib/game/recommendations';
 import { resolveQuarter, deriveScore } from '../lib/game/engine';
 import { describeSynergies } from '../lib/game/generator';
+import { scenarioInitiativesToStates } from '../lib/game/initiativeAdapter';
 import {
   clearPersistedCampaign,
   clearPersistedGameData,
@@ -45,6 +46,7 @@ type GameStore = GameState & {
   dismissRecommendation: () => void;
   saveReflection: (reflection: Partial<GameState['userReflections']>) => void;
   loadGame: (state: unknown) => void;
+  initializeScenario: (scenarioId: string) => void;
 };
 
 const browserStorage: StateStorage = {
@@ -94,6 +96,31 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
     set(initialGameState());
   },
 
+  initializeScenario: (scenarioId) => set((state) => {
+    const scenario = getScenario(scenarioId);
+    if (!scenario) return state;
+    const startingMetrics = { ...scenario.startingState.startingMetrics };
+    const nativeMetrics = {
+      efficiency: startingMetrics.efficiency ?? state.efficiency,
+      adoption: startingMetrics.adoption ?? state.adoption,
+      data: startingMetrics.data ?? state.data,
+      satisfaction: startingMetrics.satisfaction ?? state.satisfaction,
+    };
+    const progress = Object.fromEntries(scenario.progress.map((item) => [item.key, 0]));
+    return {
+      ...state,
+      scenarioMode: true,
+      scenarioId: scenario.id,
+      quarterlyBudget: scenario.startingState.budget,
+      scenarioStartingMetrics: startingMetrics,
+      scenarioProgress: progress,
+      scenarioState: { metrics: startingMetrics, progress, flags: {} },
+      alloc: { ...scenario.startingState.defaultAllocation },
+      initiativeStates: scenario.initiatives ? scenarioInitiativesToStates(scenario.initiatives) : state.initiativeStates,
+      ...nativeMetrics,
+    };
+  }),
+
   selectInitiatives: (ids) => set({ selected: [...ids] }),
 
   updateAllocation: (key, value) => set((state) => ({ alloc: { ...state.alloc, [key]: value } })),
@@ -105,14 +132,14 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
     const overspend = state.scenarioMode ? Math.max(0, selectedCost - state.quarterlyBudget) : 0;
     const overspendRisk = state.scenarioMode && state.quarterlyBudget > 0 ? Math.min(15, overspend / state.quarterlyBudget * 10) : 0;
     const adjustedMetrics = { ...result.metrics, risk: Math.min(95, Number(result.metrics.risk ?? state.risk) + overspendRisk) };
-    const resolvedState = { ...state, ...adjustedMetrics, initiativeStates: result.initiativeStates };
+    const resolvedState = { ...state, ...adjustedMetrics, initiativeStates: result.initiativeStates, scenarioState: result.scenarioState };
     const discovery = describeSynergies(state.selected, result.initiativeStates);
     const newlyDiscovered = discovery?.effects.map(effect => effect.key) || [];
     const discoveredSynergies = Array.from(new Set([...state.discoveredSynergies, ...newlyDiscovered]));
     const resolvedRisk = Number(adjustedMetrics.risk ?? state.risk);
     const crisisProbability = Math.max(.08, Math.min(.7, (resolvedRisk - 15) / 75));
     const scenario = state.scenarioMode ? getScenario(state.scenarioId) : undefined;
-    const scenarioProgress = scenario ? calculateScenarioProgress(resolvedState, scenario)?.values : state.scenarioProgress;
+    const scenarioProgress = scenario ? (result.scenarioState?.progress || calculateScenarioProgress(resolvedState, scenario)?.values) : state.scenarioProgress;
     const scenarioBonus = state.scenarioMode && state.q >= 12 && scenario ? Math.round((calculateScenarioProgress(resolvedState, scenario)?.overall || 0) / 20) : state.scenarioBonus;
     const scenarioCrisis = scenario && state.q % 3 === 0 && crisisRoll(state.initiativeGeneration.seed, state.q) < crisisProbability
       ? scenario.crises[Math.abs(state.initiativeGeneration.seed + state.q) % scenario.crises.length]
@@ -121,6 +148,7 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
       ...resolvedState,
       score: Math.min(100, deriveScore(state, adjustedMetrics) + scenarioBonus),
       scenarioProgress,
+      scenarioState: result.scenarioState,
       scenarioOverspend: overspend,
       scenarioBonus,
       stage: 'results',

@@ -1,5 +1,6 @@
-import type { Allocation, GameState } from '../game/state';
 import type { Initiative } from '../game/initiatives';
+import type { Allocation } from '../game/state';
+import type { MaturityLevel } from '../game/initiativeState';
 
 export type CurrencyMode = '$' | '₹';
 export type ScenarioDirection = 'higher-is-better' | 'lower-is-better';
@@ -17,9 +18,28 @@ export type ScenarioChallenge = {
 export type ScenarioProgressDefinition = {
   key: string;
   label: string;
+  unit: string;
   start: number;
+  target: number;
+  min: number;
+  max: number;
   direction: ScenarioDirection;
-  evaluate: (state: GameState) => number;
+};
+
+export type ScenarioNeglectConfig = {
+  decayRate: number;
+  penaltyThreshold: number;
+  penaltyAmount: number;
+};
+
+export type ScenarioInitiative = Initiative & {
+  baseEffect: number;
+  primaryMetric: string;
+  effectUnit: string;
+  initialMaturity?: MaturityLevel;
+  baseRiskScore?: number;
+  neglect?: ScenarioNeglectConfig;
+  provisional?: boolean;
 };
 
 export type ScenarioCrisisOption = {
@@ -47,7 +67,7 @@ export interface ScenarioDefinition {
   challenges: ScenarioChallenge[];
   startingState: { budget: number; defaultAllocation: Allocation; startingMetrics: ScenarioMetrics };
   progress: ScenarioProgressDefinition[];
-  initiatives?: Initiative[];
+  initiatives?: ScenarioInitiative[];
   crises: CrisisTemplate[];
   currency: { defaultSymbol: CurrencyMode; defaultLabel: string };
   frameworkContext: { advisorPrompt: string; industryBenchmarks: Record<string, number> };

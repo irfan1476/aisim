@@ -1,6 +1,13 @@
-import type { ScenarioDefinition } from './types';
+import type { ScenarioDefinition, ScenarioInitiative } from './types';
 
-const clamp = (value: number) => Math.min(100, Math.max(0, value));
+const initiatives: ScenarioInitiative[] = [
+  { id: 'maintenance', name: 'Predictive Maintenance', desc: 'Predict component failures weeks in advance.', cost: 2.8, roi: 187, risk: 'MED', data: 4, human: 3, impact: 'Cuts downtime and extends asset life.', baseEffect: -3, primaryMetric: 'downtimePressure', effectUnit: 'index points', provisional: true },
+  { id: 'quality', name: 'AI Visual Quality', desc: 'Detect defects in real time on the line.', cost: 2.1, roi: 164, risk: 'LOW', data: 3, human: 2, impact: 'Improves first-pass yield and OEM trust.', baseEffect: -40, primaryMetric: 'defectRate', effectUnit: 'PPM', provisional: true },
+  { id: 'demand', name: 'Demand Forecasting', desc: 'Align raw stock with OEM pull schedules.', cost: 1.5, roi: 142, risk: 'LOW', data: 5, human: 4, impact: 'Reduces inventory volatility.', baseEffect: 3, primaryMetric: 'supplyContinuity', effectUnit: 'percentage points', provisional: true },
+  { id: 'energy', name: 'Energy Optimization', desc: 'Use AI to offset rising energy costs.', cost: 1.8, roi: 156, risk: 'LOW', data: 3, human: 3, impact: 'Improves efficiency across five plants.', baseEffect: -2, primaryMetric: 'energyPressure', effectUnit: 'index points', provisional: true },
+  { id: 'knowledge', name: 'AI Knowledge Assistant', desc: 'Capture IP from retiring technicians.', cost: 1.2, roi: 198, risk: 'HIGH', data: 2, human: 5, impact: 'Builds resilience and workforce confidence.', baseEffect: 4, primaryMetric: 'workforceResilience', effectUnit: 'index points', provisional: true },
+  { id: 'supply', name: 'Supply Chain Risk', desc: 'Flag supplier delivery issues early.', cost: 2.3, roi: 134, risk: 'MED', data: 4, human: 3, impact: 'Protects tier-one OEM commitments.', baseEffect: 4, primaryMetric: 'supplyContinuity', effectUnit: 'percentage points', provisional: true },
+];
 
 export const projectFactory: ScenarioDefinition = {
   id: 'projectFactory',
@@ -22,14 +29,16 @@ export const projectFactory: ScenarioDefinition = {
   startingState: {
     budget: 5,
     defaultAllocation: { infra: 40, data: 20, people: 15, mlops: 10, compliance: 10, innovation: 5 },
-    startingMetrics: { efficiency: 20, satisfaction: 40, adoption: 38, data: 54, downtimePressure: 88, defectPressure: 92, energyPressure: 85, workforceResilience: 40 },
+    startingMetrics: { efficiency: 20, satisfaction: 40, adoption: 38, data: 54, downtimePressure: 65, defectRate: 500, energyPressure: 70, workforceResilience: 55, supplyContinuity: 65 },
   },
   progress: [
-    { key: 'downtimePressure', label: 'Downtime pressure', start: 88, direction: 'lower-is-better', evaluate: (state) => clamp(88 - Math.max(0, state.efficiency - 20) * 2) },
-    { key: 'defectPressure', label: 'Defect pressure', start: 92, direction: 'lower-is-better', evaluate: (state) => clamp(92 - Math.max(0, state.roi) * 0.35 - Math.max(0, state.data - 54) * 0.4) },
-    { key: 'energyPressure', label: 'Energy pressure', start: 85, direction: 'lower-is-better', evaluate: (state) => clamp(85 - Math.max(0, state.efficiency - 20) * 1.5 - Math.max(0, state.revenue) * 0.4) },
-    { key: 'workforceResilience', label: 'Workforce resilience', start: 40, direction: 'higher-is-better', evaluate: (state) => clamp(state.satisfaction) },
+    { key: 'downtimePressure', label: 'Downtime pressure', unit: 'index', start: 65, target: 35, min: 0, max: 100, direction: 'lower-is-better' },
+    { key: 'defectRate', label: 'Defect rate', unit: 'PPM', start: 500, target: 200, min: 0, max: 1000, direction: 'lower-is-better' },
+    { key: 'energyPressure', label: 'Energy pressure', unit: 'index', start: 70, target: 40, min: 0, max: 100, direction: 'lower-is-better' },
+    { key: 'workforceResilience', label: 'Workforce resilience', unit: 'index', start: 55, target: 85, min: 0, max: 100, direction: 'higher-is-better' },
+    { key: 'supplyContinuity', label: 'Supply continuity', unit: '% on time', start: 65, target: 85, min: 0, max: 100, direction: 'higher-is-better' },
   ],
+  initiatives,
   crises: [
     { title: 'A critical production line fails unexpectedly.', type: 'EQUIPMENT FAILURE', text: 'One of the oldest production lines has stopped. The board wants a response that protects uptime without creating a larger operating risk.', options: [
       { label: 'Emergency maintenance', description: 'Restore the line quickly, accepting a short-term risk increase.', cost: 0.5, impacts: { efficiency: -10, risk: 5 } },
