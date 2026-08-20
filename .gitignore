@@ -11,3 +11,8 @@ playwright-report/
 .DS_Store
 *.tsbuildinfo
 .vercel
+
+# Local social-sharing and advertising materials
+public/favicon.svg
+public/social-preview.svg
+marketing/
