@@ -15,6 +15,7 @@ import AnalyticsHub from "./AnalyticsHub";
 import type { GameInitiative, GameViewState, Metric } from "./gameViewTypes";
 import { formatBudget, formatCurrency } from "../lib/currency";
 import { getScenario } from "../lib/scenarios/registry";
+import type { ScenarioProgressDefinition } from "../lib/scenarios/types";
 
 interface Props {
   state: GameViewState;
@@ -404,10 +405,36 @@ export default function GameDecisionView({
 function ScenarioProgress({ state }: { state: GameViewState }) {
   const scenario = getScenario(state.scenarioId);
   if (!scenario) return null;
+  const liveScenarioMetrics = (
+    state as GameViewState & { scenarioState?: { metrics?: Record<string, number> } }
+  ).scenarioState?.metrics;
+  const progressValue = (item: ScenarioProgressDefinition) =>
+    Number(
+      liveScenarioMetrics?.[item.key] ??
+        state.scenarioStartingMetrics?.[item.key] ??
+        item.start,
+    );
+  const progressScore = (item: ScenarioProgressDefinition) => {
+    const value = progressValue(item);
+    const delta =
+      item.direction === "higher-is-better"
+        ? value - item.start
+        : item.start - value;
+    return Math.min(
+      100,
+      Math.max(0, (delta / Math.max(1, Math.abs(item.target - item.start))) * 100),
+    );
+  };
+  const formatValue = (value: number, unit: string) =>
+    `${Number.isInteger(value) ? value : value.toFixed(1)} ${unit}`;
+  const overall = scenario.progress.length
+    ? scenario.progress.reduce((sum, item) => sum + progressScore(item), 0) /
+      scenario.progress.length
+    : 0;
   return <section className="mb-5 rounded-3xl border border-[#54aeff]/35 bg-[#ddf4ff] p-5">
     <div className="flex flex-wrap items-baseline justify-between gap-2">
       <div><p className="text-xs font-bold uppercase tracking-[.2em] text-[#0969da]">Scenario progress</p><h2 className="mt-1 text-lg font-bold">{scenario.name}</h2></div>
-      <span className="text-sm font-bold text-[#0969da]">{Math.round(Object.values(state.scenarioProgress || {}).reduce((a, b) => a + b, 0) / Math.max(1, Object.values(state.scenarioProgress || {}).length))}% overall</span>
+      <span className="text-sm font-bold text-[#0969da]">{Math.round(overall)}% overall</span>
     </div>
     <div className="mt-4 rounded-2xl border border-[#54aeff]/25 bg-white/75 p-4">
       <p className="text-xs font-bold uppercase tracking-[.16em] text-[#57606a]">Operating constraints</p>
@@ -416,7 +443,7 @@ function ScenarioProgress({ state }: { state: GameViewState }) {
       </div>
     </div>
     <div className="mt-4 grid gap-3 sm:grid-cols-2">
-      {scenario.progress.map((item) => { const value = Number(state.scenarioProgress?.[item.key] ?? item.start); return <div key={item.key} className="rounded-xl border border-[#54aeff]/25 bg-white/75 p-3"><div className="flex justify-between text-xs font-bold"><span>{item.label}</span><span>{Math.round(value)}%</span></div><div className="mt-2 h-2 rounded-full bg-[#d0d7de]"><div className="h-full rounded-full bg-[#0969da]" style={{ width: `${Math.min(100, Math.max(0, value))}%` }} /></div></div>; })}
+      {scenario.progress.map((item) => { const value = progressValue(item); const score = progressScore(item); const starting = formatValue(item.start, item.unit); return <div key={item.key} className="rounded-xl border border-[#54aeff]/25 bg-white/75 p-3"><div className="flex items-start justify-between gap-3 text-xs font-bold"><span>{item.label}</span><span className="text-right text-[#0969da]">{formatValue(value, item.unit)}</span></div><div className="mt-2 h-2 rounded-full bg-[#d0d7de]"><div className="h-full rounded-full bg-[#0969da]" style={{ width: `${score}%` }} /></div><div className="mt-2 flex justify-between gap-2 text-[11px] text-[#57606a]"><span>{Math.round(score)}% toward target</span><span>Start {starting}</span></div></div>; })}
     </div>
     <p className="mt-3 text-xs text-[#57606a]">This challenge responds to your funding, operating maturity, and crisis choices.</p>
   </section>;
