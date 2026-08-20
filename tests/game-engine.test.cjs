@@ -272,3 +272,127 @@ test('all four scenarios survive a twelve-quarter decision loop', () => {
     assert.equal(state.q, 13);
   });
 });
+
+test('scenario neglect applies an explicit penalty only after the configured threshold', () => {
+  const scenario = getScenario('bankNext');
+  const initialState = {
+    ...initialGameState(undefined, {
+      scenarioMode: true,
+      scenarioId: scenario.id,
+      scenarioStartingMetrics: scenario.startingState.startingMetrics,
+    }),
+    initiativeStates: scenarioInitiativesToStates(scenario.initiatives),
+    scenarioState: {
+      metrics: { ...scenario.startingState.startingMetrics },
+      progress: {},
+      flags: {},
+    },
+  };
+
+  let state = initialState;
+  const pressureByQuarter = [];
+  for (let quarter = 1; quarter <= 4; quarter += 1) {
+    const result = resolveQuarter(state, { selected: [], alloc: scenario.startingState.defaultAllocation });
+    pressureByQuarter.push(result.scenarioState.metrics.fraudPressure);
+    state = {
+      ...state,
+      initiativeStates: result.initiativeStates,
+      scenarioState: result.scenarioState,
+      q: quarter + 1,
+    };
+  }
+
+  assert.equal(state.initiativeStates.fraudDetection.quartersSinceLastFund, 4);
+  assert.equal(pressureByQuarter[0], 80);
+  assert.equal(pressureByQuarter[1], 80);
+  assert.equal(pressureByQuarter[2], 80);
+  assert.ok(pressureByQuarter[3] > pressureByQuarter[2]);
+
+  const fifth = resolveQuarter(state, { selected: [], alloc: scenario.startingState.defaultAllocation });
+  assert.ok(fifth.scenarioState.metrics.fraudPressure > pressureByQuarter[3]);
+  assert.equal(fifth.initiativeStates.fraudDetection.quartersSinceLastFund, 5);
+});
+
+test('scenario metric effects clamp at both native boundaries', () => {
+  const scenario = getScenario('bankNext');
+  const states = scenarioInitiativesToStates(scenario.initiatives);
+  const allocationForEffects = scenario.startingState.defaultAllocation;
+
+  const atUpperBound = applyScenarioEffects(
+    scenario,
+    { metrics: { digitalAdoption: 100 }, progress: {}, flags: {} },
+    states,
+    ['customerCopilot'],
+    allocationForEffects,
+    100,
+  );
+  assert.equal(atUpperBound.metrics.digitalAdoption, 100);
+
+  const atLowerBound = applyScenarioEffects(
+    scenario,
+    { metrics: { fraudPressure: 0 }, progress: {}, flags: {} },
+    states,
+    ['fraudDetection'],
+    allocationForEffects,
+    100,
+  );
+  assert.equal(atLowerBound.metrics.fraudPressure, 0);
+  assert.ok(atUpperBound.progress.digitalAdoption <= 100);
+  assert.ok(atLowerBound.progress.fraudPressure <= 100);
+});
+
+test('scenario crisis response persists impact and cumulative cost through normalization', () => {
+  const scenario = getScenario('bankNext');
+  const base = initialGameState(undefined, {
+    scenarioMode: true,
+    scenarioId: scenario.id,
+    scenarioStartingMetrics: scenario.startingState.startingMetrics,
+  });
+  const scenarioState = {
+    ...base,
+    scenarioMode: true,
+    scenarioId: scenario.id,
+    initiativeStates: scenarioInitiativesToStates(scenario.initiatives),
+    scenarioState: {
+      metrics: { ...scenario.startingState.startingMetrics },
+      progress: {},
+      flags: {},
+    },
+    crisis: {
+      title: 'Test regulatory review',
+      type: 'COMPLIANCE',
+      text: 'A controlled test crisis.',
+      options: [],
+    },
+  };
+  useGameStore.getState().loadGame(scenarioState);
+  useGameStore.getState().respondToCrisis({ risk: 28, compliance: 67 }, 0.8);
+
+  const afterResponse = useGameStore.getState();
+  assert.equal(afterResponse.crisis, null);
+  assert.equal(afterResponse.risk, 28);
+  assert.equal(afterResponse.compliance, 67);
+  assert.equal(afterResponse.spent, 0.8);
+  assert.equal(afterResponse.quarterlyCrisisCost, 0.8);
+
+  const roundTripped = normalizeGameState(JSON.parse(JSON.stringify(afterResponse)));
+  assert.equal(roundTripped.scenarioMode, true);
+  assert.equal(roundTripped.scenarioId, 'bankNext');
+  assert.equal(roundTripped.risk, 28);
+  assert.equal(roundTripped.compliance, 67);
+  assert.equal(roundTripped.spent, 0.8);
+  assert.equal(roundTripped.quarterlyCrisisCost, 0.8);
+});
+
+test('Standard mode remains scenario-free when resolving a quarter', () => {
+  const state = initialGameState();
+  const result = resolveQuarter(state, { selected: ['demand'], alloc: allocation });
+
+  assert.equal(state.scenarioMode, false);
+  assert.equal(state.scenarioId, undefined);
+  assert.deepEqual(result.scenarioState, state.scenarioState);
+  assert.equal(result.metrics.fraudPressure, undefined);
+  assert.equal(result.metrics.complianceReadiness, undefined);
+  assert.ok(result.initiativeStates.demand);
+  assert.equal(result.initiativeStates.fraudDetection, undefined);
+});
