@@ -1,11 +1,54 @@
 import type { ScenarioDefinition } from '../scenarios/types';
-import type { ScenarioState } from './state';
+import type { GameState, ScenarioState } from './state';
 import type { InitiativeState } from './initiativeState';
 import type { Allocation } from './state';
 import { allocationToReadiness } from './allocation';
 import { maturityReadiness } from './maturity';
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+
+export type StandardEffectInputs = {
+  synergyMultiplier: number;
+  synergyRiskReduction: number;
+  synergyAdoption: number;
+  synergyCostReduction: number;
+};
+
+/**
+ * The original Standard-mode formulas live here unchanged. Keeping this pure
+ * makes the regression boundary explicit before scenario effects are merged.
+ */
+export function calculateStandardEffects(
+  current: GameState,
+  selected: string[],
+  allocation: GameState['alloc'],
+  chosen: InitiativeState[],
+  inputs: StandardEffectInputs,
+): Partial<GameState> {
+  const averageRiskScore = chosen.length
+    ? chosen.reduce((sum, item) => sum + Number(item.riskScore ?? 48), 0) / chosen.length
+    : 48;
+  const portfolioRiskPressure = (averageRiskScore - 48) / 10;
+  const governanceRelief = (Number(allocation.compliance || 0) - 10) / 5;
+  const factor = (allocation.people >= 15 ? 1.12 : 0.94) * (allocation.compliance >= 10 ? 1.05 : 0.93);
+  const adoptionHeadroom = Math.max(0.18, 1 - current.adoption / 115);
+  const teamReadiness = 0.8 + Number(current.initiativeGeneration?.context.team || 0.6) * 0.3;
+  const adoptionGain = (0.8 + allocation.people / 10 + (chosen.some((item) => item.id === 'knowledge') ? 2.5 : 0) + inputs.synergyAdoption) * adoptionHeadroom * teamReadiness;
+  const technicalLeverage = 0.7 + (allocation.infra + allocation.mlops) / 100;
+  const efficiencyGain = chosen.reduce((sum, item) => sum + (item.id === 'energy' ? 7 : item.id === 'maintenance' ? 6 : 3), 0) * 0.3 * technicalLeverage;
+  const riskChange = portfolioRiskPressure * 0.55 - governanceRelief * (0.5 + current.risk / 60) - inputs.synergyRiskReduction;
+  return {
+    roi: Math.min(99, current.roi + (((chosen.reduce((sum, item) => sum + item.currentRoi, 0) / 100) * factor / 2) * inputs.synergyMultiplier)),
+    revenue: Math.min(60, current.revenue + chosen.reduce((sum, item) => sum + (item.id === 'demand' ? 3 : ['quality', 'supply'].includes(item.id) ? 2 : 1), 0)),
+    efficiency: Math.min(95, current.efficiency + efficiencyGain),
+    adoption: Math.min(98, current.adoption + adoptionGain),
+    risk: Math.max(5, Math.min(95, current.risk + riskChange)),
+    data: Math.min(98, current.data + allocation.data / 10 + (chosen.some((item) => item.id === 'demand') ? 3 : 0)),
+    satisfaction: Math.min(98, current.satisfaction + allocation.people / 5 + (chosen.some((item) => item.id === 'knowledge') ? 5 : 0)),
+    literacy: Math.min(98, current.literacy + allocation.people / 4),
+    spent: current.spent + chosen.reduce((sum, item) => sum + item.currentCost, 0) * (1 - inputs.synergyCostReduction),
+  };
+}
 
 export function applyScenarioEffects(
   scenario: ScenarioDefinition,
