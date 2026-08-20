@@ -23,17 +23,17 @@ export const metadata = {
     title: 'Practice AI leadership before you lead for real.',
     description: 'A living 12-quarter AI transformation simulation where capabilities compound, risk mutates, and your strategic identity emerges from what you do.',
     images: [{
-      url: '/social-preview.svg',
-      width: 1200,
-      height: 630,
-      alt: 'The AI Investment Challenge — practice AI leadership before you lead for real.',
+      url: '/aisim.teachmeai.png',
+      width: 1408,
+      height: 768,
+      alt: 'The AI Investment Challenge cockpit for practicing AI leadership.',
     }],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Practice AI leadership before you lead for real.',
     description: 'Run a living 12-quarter AI transformation where strategy emerges through play.',
-    images: ['/social-preview.svg'],
+    images: ['/aisim.teachmeai.png'],
   },
 };
 
