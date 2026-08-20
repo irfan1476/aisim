@@ -1,21 +1,27 @@
 "use client";
 import { ArrowRight, CheckCircle2, GitBranch, Lightbulb } from "lucide-react";
 import type { GameViewState } from "./gameViewTypes";
+import ReflectionCard from "./ReflectionCard";
+import { calculateReflection } from "../lib/reflection";
+import type { UserReflections } from "../lib/game/state";
 interface Props {
   state: GameViewState;
   onRespond: (impact: Record<string, number>) => void;
   onAdvance: () => void;
   onApproveRecommendation: (title: string) => void;
+  onSaveReflection: (value: Partial<UserReflections>) => void;
 }
 export default function GameResultsModal({
   state,
   onRespond,
   onAdvance,
   onApproveRecommendation,
+  onSaveReflection,
 }: Props) {
   if (state.stage !== "results") return null;
   const recommendations = state.proactiveRecommendations as any[];
   const approved = new Set(state.approvedRecommendations || []);
+  const reflection = calculateReflection(state as any);
   return (
     <div
       data-testid="quarter-results"
@@ -129,6 +135,14 @@ export default function GameResultsModal({
                 </p>
               )}
             </section>
+            {(state.q === 1 || state.q === 6) && (
+              <ReflectionCard
+                quarter={state.q as 1 | 6}
+                reflection={reflection}
+                userReflections={state.userReflections || {}}
+                onSave={onSaveReflection}
+              />
+            )}
             <button
               onClick={onAdvance}
               className="mt-7 flex w-full items-center justify-center gap-2 rounded-xl bg-ink px-5 py-4 text-sm font-bold text-white"

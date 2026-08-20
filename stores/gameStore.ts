@@ -41,6 +41,7 @@ type GameStore = GameState & {
   approveRecommendation: (title: string) => void;
   applyRecommendation: () => void;
   dismissRecommendation: () => void;
+  saveReflection: (reflection: Partial<GameState['userReflections']>) => void;
   loadGame: (state: unknown) => void;
 };
 
@@ -176,6 +177,10 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
     return shift <= 0 ? { feedback: `Keep ${key} at ${current}%; the recommendation is noted for this quarter.`, nextQuarterGuidance: null } : { alloc: { ...state.alloc, [key]: current + shift, [source]: available - shift }, feedback: `Applied guidance: ${key} allocation increased by ${shift} points.`, nextQuarterGuidance: null };
   }),
   dismissRecommendation: () => set({ nextQuarterGuidance: null, feedback: 'Recommendation dismissed for this quarter; it remains in campaign history.' }),
+
+  saveReflection: (reflection) => set((state) => ({
+    userReflections: { ...state.userReflections, ...reflection },
+  })),
 
   loadGame: (state) => set(normalizeGameState(state)),
 }), {

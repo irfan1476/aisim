@@ -1,0 +1,9 @@
+import { BrainCircuit } from 'lucide-react';
+import type { ReflectionData } from '../lib/reflection';
+
+interface Props { reflection: ReflectionData }
+
+export default function SelfAwarenessScore({ reflection }: Props) {
+  const { selfAwareness } = reflection;
+  return <section className="mt-6 rounded-3xl border border-[#d0d7de] bg-white p-6 shadow-sm md:p-8"><div className="flex items-center gap-3"><BrainCircuit className="text-[#8250df]"/><div><h2 className="text-2xl font-bold">Strategic self-awareness</h2><p className="text-[#656d76]">How clearly your campaign connected beliefs, choices, and adaptation.</p></div></div><div className="mt-6 flex flex-wrap items-end gap-4"><b className="text-6xl text-[#8250df]">{selfAwareness.score}</b><span className="pb-2 text-[#656d76]">/100</span><p className="max-w-md pb-2 text-sm leading-6 text-[#656d76]">{selfAwareness.score >= 80 ? 'Your actions were clear and your adaptations were visible.' : selfAwareness.score >= 60 ? 'Your campaign shows a useful mix of alignment and learning tension.' : 'Your campaign created meaningful distance between opening beliefs and later choices—an invitation to explore why.'}</p></div><div className="mt-6 grid gap-3 sm:grid-cols-3">{[['Belief/action alignment', selfAwareness.alignmentScore], ['Evidence of adaptation', selfAwareness.adaptationScore], ['Tension awareness', selfAwareness.tensionScore]].map(([label, value]) => <div key={label as string} className="rounded-2xl bg-[#f6f8fa] p-4"><p className="text-xs text-[#656d76]">{label as string}</p><b className="mt-2 block text-2xl text-[#1f2328]">{Number(value)}/100</b><div className="mt-3 h-2 rounded-full bg-[#d0d7de]"><div className="h-2 rounded-full bg-[#8250df]" style={{width:`${Number(value)}%`}}/></div></div>)}</div><ul className="mt-5 space-y-2 text-sm text-[#656d76]">{selfAwareness.breakdown.map((item) => <li key={item}>• {item}</li>)}</ul></section>;
+}

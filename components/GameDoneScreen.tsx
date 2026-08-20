@@ -14,6 +14,9 @@ import {
   archetypeReveal,
   inferArchetypeFromCampaignDetailed,
 } from "../lib/game/generator";
+import { calculateReflection } from "../lib/reflection";
+import YouSaidYouDid from "./YouSaidYouDid";
+import SelfAwarenessScore from "./SelfAwarenessScore";
 
 interface GameDoneScreenProps {
   state: GameViewState;
@@ -69,6 +72,7 @@ export default function GameDoneScreen({
   onPlayAgain,
 }: GameDoneScreenProps) {
   const history = (state.history || []) as Snapshot[];
+  const reflection = calculateReflection(state as any);
   const averageAllocation = (key: string) => {
     const captured = history.filter((item) => item.allocation);
     return captured.length
@@ -269,6 +273,8 @@ export default function GameDoneScreen({
             </div>
           </div>
         </section>
+        <YouSaidYouDid reflection={reflection} />
+        <SelfAwarenessScore reflection={reflection} />
         <section className="mt-6 rounded-3xl border border-[#d0d7de] bg-white p-6 shadow-sm md:p-8">
           <div className="flex items-center justify-between gap-4">
             <div>

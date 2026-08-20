@@ -156,6 +156,11 @@ export function normalizeGameState(value: unknown): GameState {
   next.crisis = source.crisis ?? defaults.crisis;
   next.feedback = typeof source.feedback === 'string' ? source.feedback : defaults.feedback;
   next.experimental = typeof source.experimental === 'boolean' ? source.experimental : defaults.experimental;
+  const reflections = isRecord(source.userReflections) ? source.userReflections : {};
+  next.userReflections = {
+    q1: reflections.q1 === 'yes' || reflections.q1 === 'partial' || reflections.q1 === 'no' ? reflections.q1 : undefined,
+    q6: typeof reflections.q6 === 'string' ? reflections.q6.slice(0, 500) : undefined,
+  };
   next.causalChain = Array.isArray(source.causalChain) ? source.causalChain as GameState['causalChain'] : defaults.causalChain;
   next.proactiveRecommendations = Array.isArray(source.proactiveRecommendations)
     ? source.proactiveRecommendations as GameState['proactiveRecommendations']

@@ -7,6 +7,7 @@ import GameDecisionView from "./GameDecisionView";
 import GameDoneScreen from "./GameDoneScreen";
 import GameResultsModal from "./GameResultsModal";
 import GameSetupScreen from "./GameSetupScreen";
+import GameHypothesisScreen from "./GameHypothesisScreen";
 import type { GameViewState, Metric } from "./gameViewTypes";
 import { useLLMStore } from "../stores/llmStore";
 import { useGameStore } from "../stores/gameStore";
@@ -28,7 +29,7 @@ export default function Game() {
   const s = store as unknown as GameViewState;
   const [name, setName] = useState("");
   const [screen, setScreen] = useState<
-    "setup" | "assessment" | "game" | "done"
+    "setup" | "assessment" | "hypothesis" | "game" | "done"
   >("setup");
   const [persona, setPersona] = useState("CFO");
   const [question, setQuestion] = useState("");
@@ -187,12 +188,19 @@ export default function Game() {
             baseline: assessment,
             experimental,
           });
-          setScreen("game");
+          setScreen("hypothesis");
         }}
         canContinue={assessment.length === 5}
         analytics={
           <AnalyticsHub state={s} initiatives={availableInitiatives} />
-        }
+      }
+    />
+  );
+  if (screen === "hypothesis")
+    return (
+      <GameHypothesisScreen
+        answers={assessment}
+        onBegin={() => setScreen("game")}
       />
     );
   if (screen === "done")
@@ -252,6 +260,7 @@ export default function Game() {
         onRespond={respond}
         onAdvance={advance}
         onApproveRecommendation={store.approveRecommendation}
+        onSaveReflection={store.saveReflection}
       />
     </main>
   );
