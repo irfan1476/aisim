@@ -1,4 +1,5 @@
 import type { ScenarioDefinition, ScenarioInitiative } from './types';
+import { synergy } from './scenarioHelpers';
 
 const initiatives: ScenarioInitiative[] = [
   { id: 'maintenance', name: 'Predictive Maintenance', desc: 'Predict component failures weeks in advance.', cost: 2.8, roi: 187, risk: 'MED', data: 4, human: 3, impact: 'Cuts downtime and extends asset life.', baseEffect: -3, primaryMetric: 'downtimePressure', effectUnit: 'index points', provisional: true },
@@ -39,6 +40,12 @@ export const projectFactory: ScenarioDefinition = {
     { key: 'supplyContinuity', label: 'Supply continuity', unit: '% on time', start: 65, target: 85, min: 0, max: 100, direction: 'higher-is-better' },
   ],
   initiatives,
+  synergies: [
+    synergy({ key: 'demand:supply', initiativeIds: ['demand', 'supply'], label: 'End-to-end planning', description: 'Demand signals and supplier warnings reinforce a more reliable production plan.', roiBoost: 0.07, riskReduction: 1.5, adoptionBoost: 1, costReduction: 0.02 }),
+    synergy({ key: 'knowledge:maintenance', initiativeIds: ['knowledge', 'maintenance'], label: 'Learning maintenance loop', description: 'Technician knowledge helps predictive maintenance move from a model into frontline practice.', roiBoost: 0.05, riskReduction: 1, adoptionBoost: 2, costReduction: 0.02 }),
+    synergy({ key: 'maintenance:quality', initiativeIds: ['maintenance', 'quality'], label: 'Asset-quality signal', description: 'Asset health and defect signals reinforce the same operating improvement cycle.', roiBoost: 0.08, riskReduction: 1.5, adoptionBoost: 1, costReduction: 0.03 }),
+    synergy({ key: 'energy:maintenance', initiativeIds: ['energy', 'maintenance'], label: 'Efficient uptime', description: 'Energy telemetry and maintenance timing reduce delivery friction together.', roiBoost: 0.06, riskReduction: 1, adoptionBoost: 0, costReduction: 0.02 }),
+  ],
   crises: [
     { title: 'A critical production line fails unexpectedly.', type: 'EQUIPMENT FAILURE', text: 'One of the oldest production lines has stopped. The board wants a response that protects uptime without creating a larger operating risk.', options: [
       { label: 'Emergency maintenance', description: 'Restore the line quickly, accepting a short-term risk increase.', cost: 0.5, impacts: { efficiency: -10, risk: 5 } },

@@ -1,4 +1,4 @@
-import type { ScenarioInitiative, ScenarioProgressDefinition } from './types';
+import type { ScenarioInitiative, ScenarioProgressDefinition, ScenarioSynergyDefinition } from './types';
 
 export function initiative(
   value: Omit<ScenarioInitiative, 'provisional'>,
@@ -17,4 +17,10 @@ export function metric(
   max = 100,
 ): ScenarioProgressDefinition {
   return { key, label, unit, start, target, min, max, direction };
+}
+
+export function synergy(
+  value: ScenarioSynergyDefinition,
+): ScenarioSynergyDefinition {
+  return value;
 }

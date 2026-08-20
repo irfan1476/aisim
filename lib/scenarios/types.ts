@@ -32,6 +32,23 @@ export type ScenarioNeglectConfig = {
   penaltyAmount: number;
 };
 
+/**
+ * A scenario-declared relationship between two initiatives.
+ *
+ * These values intentionally mirror the engine's existing synergy vocabulary
+ * so a future generic resolver can consume them without knowing scenario IDs.
+ */
+export type ScenarioSynergyDefinition = {
+  key: string;
+  initiativeIds: [string, string];
+  label: string;
+  description: string;
+  roiBoost: number;
+  riskReduction: number;
+  adoptionBoost: number;
+  costReduction: number;
+};
+
 export type ScenarioInitiative = Initiative & {
   baseEffect: number;
   primaryMetric: string;
@@ -68,6 +85,7 @@ export interface ScenarioDefinition {
   startingState: { budget: number; defaultAllocation: Allocation; startingMetrics: ScenarioMetrics };
   progress: ScenarioProgressDefinition[];
   initiatives?: ScenarioInitiative[];
+  synergies?: ScenarioSynergyDefinition[];
   crises: CrisisTemplate[];
   currency: { defaultSymbol: CurrencyMode; defaultLabel: string };
   frameworkContext: { advisorPrompt: string; industryBenchmarks: Record<string, number> };
