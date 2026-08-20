@@ -116,6 +116,8 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
       scenarioProgress: progress,
       scenarioState: { metrics: startingMetrics, progress, flags: {} },
       alloc: { ...scenario.startingState.defaultAllocation },
+      selected: [],
+      stage: 'decide',
       initiativeStates: scenario.initiatives ? scenarioInitiativesToStates(scenario.initiatives) : state.initiativeStates,
       ...nativeMetrics,
     };

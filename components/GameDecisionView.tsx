@@ -409,6 +409,12 @@ function ScenarioProgress({ state }: { state: GameViewState }) {
       <div><p className="text-xs font-bold uppercase tracking-[.2em] text-[#0969da]">Scenario progress</p><h2 className="mt-1 text-lg font-bold">{scenario.name}</h2></div>
       <span className="text-sm font-bold text-[#0969da]">{Math.round(Object.values(state.scenarioProgress || {}).reduce((a, b) => a + b, 0) / Math.max(1, Object.values(state.scenarioProgress || {}).length))}% overall</span>
     </div>
+    <div className="mt-4 rounded-2xl border border-[#54aeff]/25 bg-white/75 p-4">
+      <p className="text-xs font-bold uppercase tracking-[.16em] text-[#57606a]">Operating constraints</p>
+      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+        {scenario.challenges.map((challenge) => <div key={challenge.id} className="rounded-xl border border-[#d0d7de] bg-white p-3"><div className="flex items-center justify-between gap-2 text-sm font-bold"><span>{challenge.label}</span><span className="text-[#cf222e]">{challenge.severity}</span></div><p className="mt-1 text-xs leading-5 text-[#57606a]">{challenge.description}</p></div>)}
+      </div>
+    </div>
     <div className="mt-4 grid gap-3 sm:grid-cols-2">
       {scenario.progress.map((item) => { const value = Number(state.scenarioProgress?.[item.key] ?? item.start); return <div key={item.key} className="rounded-xl border border-[#54aeff]/25 bg-white/75 p-3"><div className="flex justify-between text-xs font-bold"><span>{item.label}</span><span>{Math.round(value)}%</span></div><div className="mt-2 h-2 rounded-full bg-[#d0d7de]"><div className="h-full rounded-full bg-[#0969da]" style={{ width: `${Math.min(100, Math.max(0, value))}%` }} /></div></div>; })}
     </div>

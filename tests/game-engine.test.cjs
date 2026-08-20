@@ -213,3 +213,10 @@ test('scenario save migration keeps domain initiative ids', () => {
   assert.deepEqual(Object.keys(migrated.initiativeStates).sort(), scenario.initiatives.map((item) => item.id).sort());
   assert.equal(migrated.scenarioState.metrics.patientWaitTime, 75);
 });
+
+test('scenario initialization clears Standard-mode default selections', () => {
+  useGameStore.getState().initializeScenario('bankNext');
+  const state = useGameStore.getState();
+  assert.deepEqual(state.selected, []);
+  assert.deepEqual(Object.keys(state.initiativeStates).sort(), getScenario('bankNext').initiatives.map((item) => item.id).sort());
+});
