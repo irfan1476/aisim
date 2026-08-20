@@ -12,7 +12,5 @@ playwright-report/
 *.tsbuildinfo
 .vercel
 
-# Local social-sharing and advertising materials
-public/favicon.svg
-public/social-preview.svg
+# Local advertising materials
 marketing/
