@@ -60,6 +60,7 @@ export interface GameViewState {
   scenarioId?: string;
   currencyMode: CurrencyMode;
   quarterlyBudget: number;
+  scenarioBudgetRemaining: number;
   scenarioStartingMetrics?: Record<string, number>;
   scenarioProgress?: Record<string, number>;
   quarterlyCrisisCost: number;

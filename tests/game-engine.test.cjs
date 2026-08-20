@@ -211,6 +211,24 @@ test('scenario effects change domain metrics and persist scenario state', () => 
   assert.equal(result.snapshot.scenarioState.metrics.fraudPressure, result.scenarioState.metrics.fraudPressure);
 });
 
+test('scenario-declared synergies change domain outcomes without engine scenario branches', () => {
+  const scenario = getScenario('bankNext');
+  const generation = createInferredGeneration([3, 3, 3, 3, 3], 4242);
+  const base = initialGameState(generation, { scenarioMode: true, scenarioId: scenario.id, scenarioStartingMetrics: scenario.startingState.startingMetrics });
+  const state = {
+    ...base,
+    initiativeStates: scenarioInitiativesToStates(scenario.initiatives),
+    scenarioState: { metrics: { ...scenario.startingState.startingMetrics }, progress: {}, flags: {} },
+    selected: ['fraudDetection', 'complianceMonitoring'],
+    alloc: scenario.startingState.defaultAllocation,
+  };
+  const withSynergy = resolveQuarter(state, { selected: state.selected, alloc: state.alloc });
+  const withoutSynergy = resolveQuarter(state, { selected: ['fraudDetection'], alloc: state.alloc });
+
+  assert.ok(withSynergy.scenarioState.metrics.fraudPressure < withoutSynergy.scenarioState.metrics.fraudPressure);
+  assert.deepEqual(withSynergy.snapshot.synergiesDiscovered, ['fraudDetection:complianceMonitoring']);
+});
+
 test('scenario save migration keeps domain initiative ids', () => {
   const scenario = getScenario('care360');
   const migrated = normalizeGameState({ scenarioMode: true, scenarioId: 'care360', scenarioStartingMetrics: scenario.startingState.startingMetrics, initiativeStates: {} });
@@ -346,6 +364,7 @@ test('scenario crisis response persists impact and cumulative cost through norma
   const base = initialGameState(undefined, {
     scenarioMode: true,
     scenarioId: scenario.id,
+    quarterlyBudget: scenario.startingState.budget,
     scenarioStartingMetrics: scenario.startingState.startingMetrics,
   });
   const scenarioState = {
@@ -374,6 +393,7 @@ test('scenario crisis response persists impact and cumulative cost through norma
   assert.equal(afterResponse.compliance, 67);
   assert.equal(afterResponse.spent, 0.8);
   assert.equal(afterResponse.quarterlyCrisisCost, 0.8);
+  assert.equal(afterResponse.scenarioBudgetRemaining, 4.2);
 
   const roundTripped = normalizeGameState(JSON.parse(JSON.stringify(afterResponse)));
   assert.equal(roundTripped.scenarioMode, true);
@@ -382,6 +402,24 @@ test('scenario crisis response persists impact and cumulative cost through norma
   assert.equal(roundTripped.compliance, 67);
   assert.equal(roundTripped.spent, 0.8);
   assert.equal(roundTripped.quarterlyCrisisCost, 0.8);
+  assert.equal(roundTripped.scenarioBudgetRemaining, 4.2);
+});
+
+test('scenario crisis domain impacts update scenario metrics and progress', () => {
+  const scenario = getScenario('bankNext');
+  const base = initialGameState(undefined, { scenarioMode: true, scenarioId: scenario.id, scenarioStartingMetrics: scenario.startingState.startingMetrics });
+  useGameStore.getState().loadGame({
+    ...base,
+    scenarioMode: true,
+    scenarioId: scenario.id,
+    initiativeStates: scenarioInitiativesToStates(scenario.initiatives),
+    scenarioState: { metrics: { ...scenario.startingState.startingMetrics }, progress: {}, flags: {} },
+  });
+  useGameStore.getState().respondToCrisis({ fraudPressure: -8 }, 0.2);
+  const afterResponse = useGameStore.getState();
+  assert.equal(afterResponse.scenarioState.metrics.fraudPressure, 72);
+  assert.ok(afterResponse.scenarioState.progress.fraudPressure > 0);
+  assert.equal(afterResponse.fraudPressure, undefined);
 });
 
 test('Standard mode remains scenario-free when resolving a quarter', () => {

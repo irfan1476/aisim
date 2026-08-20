@@ -183,6 +183,7 @@ export function normalizeGameState(value: unknown): GameState {
   }
   next.currencyMode = source.currencyMode === '₹' ? '₹' : '$';
   next.quarterlyBudget = numberOr(source.quarterlyBudget, next.scenarioMode ? 5 : 10);
+  next.scenarioBudgetRemaining = numberOr(source.scenarioBudgetRemaining, next.quarterlyBudget);
   next.scenarioStartingMetrics = isRecord(source.scenarioStartingMetrics) ? Object.fromEntries(Object.entries(source.scenarioStartingMetrics).filter(([, item]) => typeof item === 'number' && Number.isFinite(item))) as Record<string, number> : undefined;
   next.scenarioProgress = isRecord(source.scenarioProgress) ? Object.fromEntries(Object.entries(source.scenarioProgress).filter(([, item]) => typeof item === 'number' && Number.isFinite(item))) as Record<string, number> : undefined;
   const savedScenarioState = isRecord(source.scenarioState) ? source.scenarioState : {};

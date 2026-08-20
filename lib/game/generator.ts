@@ -1,4 +1,5 @@
 import { initiatives, type Initiative } from "./initiatives";
+import type { ScenarioSynergyDefinition } from "../scenarios/types";
 
 // Archetype is an internal diagnosis. It is intentionally not a player-facing mode.
 export type ScenarioArchetype =
@@ -477,8 +478,9 @@ export function generateInitiatives(
 export function describeSynergies(
   selected: string[],
   states: Record<string, { name: string; synergies?: string[] }>,
+  definitions?: ScenarioSynergyDefinition[],
 ) {
-  const effects = evaluateSynergies(selected, states);
+  const effects = evaluateSynergies(selected, states, definitions);
   if (!effects.length) return null;
   const pairs = effects.map((effect) =>
     effect.ids.map((id) => states[id]?.name || id),
@@ -494,17 +496,29 @@ export function describeSynergies(
 export function evaluateSynergies(
   selected: string[],
   states: Record<string, { name: string; synergies?: string[] }>,
+  definitions?: ScenarioSynergyDefinition[],
 ): SynergyEffect[] {
   const selectedSet = new Set(selected);
-  return synergyEffects.filter((effect) => {
+  const configured = definitions?.length
+    ? definitions.map((definition) => ({
+        key: definition.key,
+        ids: definition.initiativeIds,
+        roiBoost: definition.roiBoost,
+        riskReduction: definition.riskReduction,
+        adoptionBoost: definition.adoptionBoost,
+        costReduction: definition.costReduction,
+        message: `${definition.label}: ${definition.description}`,
+      }))
+    : synergyEffects;
+  return configured.filter((effect) => {
     const [left, right] = effect.ids;
     return (
       selectedSet.has(left) &&
       selectedSet.has(right) &&
-      Boolean(
+      (Boolean(definitions?.length) || Boolean(
         states[left]?.synergies?.includes(right) ||
           states[right]?.synergies?.includes(left),
-      )
+      ))
     );
   });
 }

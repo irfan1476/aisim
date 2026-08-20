@@ -269,6 +269,7 @@ export default function GameDecisionView({
                 </h2>
                 <p className="mt-1 text-sm text-ink/50">
                   Your {formatBudget(state.quarterlyBudget || 10, state.currencyMode)} quarterly transformation envelope
+                  {state.scenarioMode && <span className="ml-2 text-emerald">· {formatBudget(state.scenarioBudgetRemaining ?? state.quarterlyBudget, state.currencyMode)} remaining after crises</span>}
                 </p>
               </div>
               <span

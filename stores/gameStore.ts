@@ -6,7 +6,7 @@ import { initialGameState, type GameState } from '../lib/game/state';
 import { causalChain } from '../lib/game/metrics';
 import { generateCrisis } from '../lib/game/crises';
 import { getScenario } from '../lib/scenarios/registry';
-import { calculateScenarioProgress } from '../lib/scenarios/progress';
+import { calculateProgressPercentages, calculateScenarioProgress } from '../lib/scenarios/progress';
 import { generateProactiveRecommendations } from '../lib/game/recommendations';
 import { resolveQuarter, deriveScore } from '../lib/game/engine';
 import { describeSynergies } from '../lib/game/generator';
@@ -112,6 +112,7 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
       scenarioMode: true,
       scenarioId: scenario.id,
       quarterlyBudget: scenario.startingState.budget,
+      scenarioBudgetRemaining: scenario.startingState.budget,
       scenarioStartingMetrics: startingMetrics,
       scenarioProgress: progress,
       scenarioState: { metrics: startingMetrics, progress, flags: {} },
@@ -135,12 +136,12 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
     const overspendRisk = state.scenarioMode && state.quarterlyBudget > 0 ? Math.min(15, overspend / state.quarterlyBudget * 10) : 0;
     const adjustedMetrics = { ...result.metrics, risk: Math.min(95, Number(result.metrics.risk ?? state.risk) + overspendRisk) };
     const resolvedState = { ...state, ...adjustedMetrics, initiativeStates: result.initiativeStates, scenarioState: result.scenarioState };
-    const discovery = describeSynergies(state.selected, result.initiativeStates);
+    const scenario = state.scenarioMode ? getScenario(state.scenarioId) : undefined;
+    const discovery = describeSynergies(state.selected, result.initiativeStates, scenario?.synergies);
     const newlyDiscovered = discovery?.effects.map(effect => effect.key) || [];
     const discoveredSynergies = Array.from(new Set([...state.discoveredSynergies, ...newlyDiscovered]));
     const resolvedRisk = Number(adjustedMetrics.risk ?? state.risk);
     const crisisProbability = Math.max(.08, Math.min(.7, (resolvedRisk - 15) / 75));
-    const scenario = state.scenarioMode ? getScenario(state.scenarioId) : undefined;
     const scenarioProgress = scenario ? (result.scenarioState?.progress || calculateScenarioProgress(resolvedState, scenario)?.values) : state.scenarioProgress;
     const scenarioBonus = state.scenarioMode && state.q >= 12 && scenario ? Math.round((calculateScenarioProgress(resolvedState, scenario)?.overall || 0) / 20) : state.scenarioBonus;
     const scenarioCrisis = scenario && state.q % 3 === 0 && crisisRoll(state.initiativeGeneration.seed, state.q) < crisisProbability
@@ -164,9 +165,43 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
   },
 
   respondToCrisis: (impact, cost = 0) => set((state) => {
-    const next = { ...state, ...impact, spent: state.spent + (state.scenarioMode ? cost : 0), quarterlyCrisisCost: state.quarterlyCrisisCost + (state.scenarioMode ? cost : 0), crisis: null, stage: 'results' as const };
-    const scenario = next.scenarioMode ? getScenario(next.scenarioId) : undefined;
-    return { ...next, scenarioProgress: scenario ? calculateScenarioProgress(next, scenario)?.values : next.scenarioProgress };
+    const scenario = state.scenarioMode ? getScenario(state.scenarioId) : undefined;
+    const scenarioKeys = new Set(scenario?.progress.map((definition) => definition.key) || []);
+    const nativeImpact = Object.fromEntries(Object.entries(impact).filter(([key]) => !scenarioKeys.has(key)));
+    const scenarioMetrics = scenario
+      ? { ...(state.scenarioState?.metrics || {}) }
+      : undefined;
+    if (scenarioMetrics) {
+      for (const [key, delta] of Object.entries(impact)) {
+        const definition = scenario?.progress.find((item) => item.key === key);
+        if (definition) {
+          scenarioMetrics[key] = Math.min(
+            definition.max,
+            Math.max(definition.min, (scenarioMetrics[key] || definition.start) + Number(delta)),
+          );
+        }
+      }
+    }
+    const next = {
+      ...state,
+      ...nativeImpact,
+      spent: state.spent + (state.scenarioMode ? cost : 0),
+      scenarioBudgetRemaining: state.scenarioMode ? Math.max(0, state.scenarioBudgetRemaining - cost) : state.scenarioBudgetRemaining,
+      quarterlyCrisisCost: state.quarterlyCrisisCost + (state.scenarioMode ? cost : 0),
+      crisis: null,
+      stage: 'results' as const,
+      ...(scenarioMetrics ? { scenarioState: { ...state.scenarioState, metrics: scenarioMetrics } } : {}),
+    };
+    return {
+      ...next,
+      scenarioProgress: scenario ? calculateScenarioProgress(next, scenario)?.values : next.scenarioProgress,
+      ...(scenarioMetrics && scenario ? {
+        scenarioState: {
+          ...next.scenarioState,
+          progress: calculateProgressPercentages(scenarioMetrics, scenario),
+        },
+      } : {}),
+    };
   }),
 
   advanceQuarter: () => {
@@ -180,6 +215,7 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
       causalChain: [],
       proactiveRecommendations: [],
       quarterlyCrisisCost: 0,
+      scenarioBudgetRemaining: state.scenarioBudgetRemaining === undefined ? state.quarterlyBudget : state.quarterlyBudget,
       scenarioOverspend: 0,
       feedback: `Quarter ${state.q + 1} is ready.`,
     });

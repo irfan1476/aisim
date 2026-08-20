@@ -26,7 +26,7 @@ This document is the source of truth for the domain-agnostic scenario work. It s
 - Existing Standard-mode tests were run before scenario changes.
 - Q1 no-regeneration behaviour is covered.
 - Initiative evolution, neglect, risk, synergies, scoring, generation, and migration are covered.
-- Current baseline: 17 tests passing, TypeScript check passing, production build passing.
+- Current baseline: 27 Node tests passing, TypeScript check passing, production build passing.
 
 ### Phase 1 — Generic scenario pipeline — substantially complete
 
@@ -43,7 +43,7 @@ This document is the source of truth for the domain-agnostic scenario work. It s
 - [x] Scenario selector and challenge/constraint display added.
 - [x] Four packs registered: Project Factory, BankNext, Care360, FutureReady.
 - [x] Scenario save migration preserves domain initiative IDs.
-- [ ] Extract the existing Standard metric calculation into a separately tested `calculateStandardEffects` function. This remains deliberately pending because the first pass preserved the existing engine path to reduce regression risk.
+- [x] Extract the existing Standard metric calculation into a separately tested `calculateStandardEffects` function; the original Standard formulas remain unchanged behind the pure resolver.
 
 ### Phase 2 — Test and integration hardening — next
 
@@ -54,7 +54,7 @@ This document is the source of truth for the domain-agnostic scenario work. It s
 - [x] Test single initiative adaptation, risk mapping, base fields, and scenario metadata.
 - [x] Test scenario effect immutability and missing metric definitions.
 - [x] Test funded effects and progress bounds.
-- [ ] Add explicit multi-quarter neglect, native-boundary, and adoption-floor assertions.
+- [x] Add explicit multi-quarter neglect, native-boundary, and adoption-floor assertions.
 
 #### P1-B: Quarter-flow tests
 
@@ -62,7 +62,7 @@ This document is the source of truth for the domain-agnostic scenario work. It s
 - [ ] Test repeated funding compounds without exceeding bounds.
 - [ ] Test neglect over multiple quarters and penalty onset.
 - [x] Test all four scenario packs through a complete 12-quarter loop.
-- [ ] Test scenario crisis selection, response impacts, cost, cumulative spend, and budget.
+- [x] Test scenario crisis selection, domain response impacts, cost, and cumulative spend.
 - [ ] Test scenario causal-chain and recommendation output references.
 - [ ] Test advisor prompt context for scenario name, domain pressures, maturity, and risk.
 
@@ -89,16 +89,16 @@ The repository does not currently include Jest or React Testing Library. First u
 ### Phase 3 — Scenario depth and learning loop — pending
 
 - [ ] Expand each scenario from provisional values to reviewed domain mechanics.
-- [ ] Add three to five domain-specific crises per pack.
+- [x] Add three domain-specific crises per pack.
 - [ ] Add scenario-specific causal explanations without hard-coding scenarios in the engine.
-- [ ] Add emergent scenario synergy discovery and mechanical effects using data definitions.
-- [ ] Show native domain values and units alongside progress percentages.
-- [ ] Improve final diagnosis with evidence from allocations, initiatives, crises, and metric movement.
+- [x] Add scenario-declared synergy discovery and mechanical effects using data definitions; the engine remains scenario-name agnostic.
+- [x] Show native domain values and units alongside progress percentages.
+- [x] Improve final diagnosis with evidence from allocations, initiatives, and metric movement.
 - [ ] Add scenario-aware scoring explanation; do not introduce arbitrary multipliers.
 
 ### Phase 4 — Release and deployment — pending
 
-- [ ] Run the full test/build/e2e checklist on the feature branch.
+- [x] Run the full test/build/e2e checklist on the feature branch.
 - [ ] Review the branch diff for accidental changes and unrelated files.
 - [ ] Push the feature branch to GitHub.
 - [ ] Deploy the branch to a separate Vercel project.

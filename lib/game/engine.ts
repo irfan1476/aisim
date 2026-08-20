@@ -32,7 +32,8 @@ export function resolveQuarter(
     { adoption: current.adoption },
   );
   const chosen = decision.selected.map((id) => evolved[id]).filter(Boolean);
-  const synergies = evaluateSynergies(decision.selected, evolved);
+  const scenario = current.scenarioMode ? getScenario(current.scenarioId) : undefined;
+  const synergies = evaluateSynergies(decision.selected, evolved, scenario?.synergies);
   const synergyMultiplier =
     1 + synergies.reduce((sum, effect) => sum + effect.roiBoost, 0);
   const synergyRiskReduction = synergies.reduce(
@@ -53,7 +54,6 @@ export function resolveQuarter(
     synergyAdoption,
     synergyCostReduction,
   });
-  const scenario = current.scenarioMode ? getScenario(current.scenarioId) : undefined;
   const scenarioState = scenario
     ? applyScenarioEffects(
         scenario,
@@ -64,6 +64,7 @@ export function resolveQuarter(
         decision.selected,
         decision.alloc,
         current.adoption,
+        synergies,
       )
     : current.scenarioState;
   const resolvedMetrics = scenario

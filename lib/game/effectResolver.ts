@@ -4,6 +4,7 @@ import type { InitiativeState } from './initiativeState';
 import type { Allocation } from './state';
 import { allocationToReadiness } from './allocation';
 import { maturityReadiness } from './maturity';
+import type { SynergyEffect } from './generator';
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
@@ -57,11 +58,13 @@ export function applyScenarioEffects(
   selected: string[],
   allocation: Allocation,
   adoption: number,
+  synergies: SynergyEffect[] = [],
 ): ScenarioState {
   const metrics = { ...previous.metrics };
   const readiness = allocationToReadiness(allocation);
   const adoptionFactor = 0.7 + clamp(adoption / 100, 0, 1) * 0.3;
   const definitions = new Map(scenario.progress.map((item) => [item.key, item]));
+  const synergyMultiplier = 1 + synergies.reduce((sum, item) => sum + item.roiBoost, 0);
 
   selected.forEach((id) => {
     const state = states[id];
@@ -71,7 +74,7 @@ export function applyScenarioEffects(
     if (!definition) return;
     const readinessFactor = 0.55 + readiness.data * 0.2 + readiness.people * 0.15 + readiness.governance * 0.1;
     const diminishingReturns = 1 / (1 + Math.max(0, state.quartersFunded - 1) * 0.08);
-    const effect = metadata.baseEffect * maturityReadiness(state.maturityLevel) * readinessFactor * adoptionFactor * diminishingReturns;
+    const effect = metadata.baseEffect * maturityReadiness(state.maturityLevel) * readinessFactor * adoptionFactor * diminishingReturns * synergyMultiplier;
     metrics[metadata.primaryMetric] = clamp((metrics[metadata.primaryMetric] ?? definition.start) + effect, definition.min, definition.max);
   });
 
