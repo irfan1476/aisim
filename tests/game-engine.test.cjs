@@ -42,6 +42,10 @@ const { normalizeGameState } = require('../lib/game/persistence.ts');
 const { useGameStore } = require('../stores/gameStore.ts');
 const { getScenario } = require('../lib/scenarios/registry.ts');
 const { scenarioInitiativesToStates } = require('../lib/game/initiativeAdapter.ts');
+const { scenarioInitiativeToState } = require('../lib/game/initiativeAdapter.ts');
+const { allocationToReadiness } = require('../lib/game/allocation.ts');
+const { maturityMultiplier } = require('../lib/game/maturity.ts');
+const { applyScenarioEffects } = require('../lib/game/effectResolver.ts');
 
 const allocation = {
   infra: 35,
@@ -219,4 +223,52 @@ test('scenario initialization clears Standard-mode default selections', () => {
   const state = useGameStore.getState();
   assert.deepEqual(state.selected, []);
   assert.deepEqual(Object.keys(state.initiativeStates).sort(), getScenario('bankNext').initiatives.map((item) => item.id).sort());
+});
+
+test('maturity and allocation helpers stay bounded and deterministic', () => {
+  assert.equal(maturityMultiplier('nascent'), 0.72);
+  assert.equal(maturityMultiplier('optimized'), 1.08);
+  assert.equal(allocationToReadiness({ infra: 0, data: 0, people: 0, mlops: 0, compliance: 0, innovation: 100 }).data, 0.3);
+  assert.equal(allocationToReadiness({ infra: 50, data: 30, people: 25, mlops: 50, compliance: 20, innovation: 0 }).technical, 1);
+  assert.equal(allocationToReadiness({ infra: 50, data: 30, people: 25, mlops: 50, compliance: 20, innovation: 0 }).governance, 1);
+});
+
+test('scenario initiative adapter produces complete state and metadata', () => {
+  const scenario = getScenario('bankNext');
+  const state = scenarioInitiativeToState(scenario.initiatives[0]);
+  assert.equal(state.id, 'fraudDetection');
+  assert.equal(state.currentData, state.data);
+  assert.equal(state.currentRoi, state.roi);
+  assert.equal(state.quartersFunded, 0);
+  assert.equal(state.maturityLevel, 'nascent');
+  assert.equal(state.baseRiskScore, 48);
+  assert.equal(state.scenarioMetadata.primaryMetric, 'fraudPressure');
+});
+
+test('scenario effects are immutable and skip unknown metrics safely', () => {
+  const scenario = getScenario('bankNext');
+  const states = scenarioInitiativesToStates(scenario.initiatives);
+  const previous = { metrics: { fraudPressure: 80 }, progress: {}, flags: {} };
+  const before = structuredClone(previous);
+  const result = applyScenarioEffects(scenario, previous, states, ['fraudDetection'], scenario.startingState.defaultAllocation, 45);
+  assert.deepEqual(previous, before);
+  assert.ok(result.metrics.fraudPressure < 80);
+  const unknown = { ...states.fraudDetection, scenarioMetadata: { ...states.fraudDetection.scenarioMetadata, primaryMetric: 'missingMetric' } };
+  assert.doesNotThrow(() => applyScenarioEffects(scenario, previous, { ...states, fraudDetection: unknown }, ['fraudDetection'], scenario.startingState.defaultAllocation, 45));
+});
+
+test('all four scenarios survive a twelve-quarter decision loop', () => {
+  ['projectFactory', 'bankNext', 'care360', 'futureReady'].forEach((id) => {
+    const scenario = getScenario(id);
+    let state = initialGameState(undefined, { scenarioMode: true, scenarioId: id, scenarioStartingMetrics: scenario.startingState.startingMetrics });
+    state = { ...state, selected: [], alloc: scenario.startingState.defaultAllocation, initiativeStates: scenarioInitiativesToStates(scenario.initiatives), scenarioState: { metrics: { ...scenario.startingState.startingMetrics }, progress: {}, flags: {} } };
+    for (let quarter = 1; quarter <= 12; quarter += 1) {
+      const selected = scenario.initiatives.slice((quarter - 1) % 4, ((quarter - 1) % 4) + 3).map((item) => item.id);
+      const result = resolveQuarter(state, { selected, alloc: scenario.startingState.defaultAllocation });
+      assert.equal(Object.keys(result.initiativeStates).length, 6);
+      Object.values(result.scenarioState.progress).forEach((value) => assert.ok(value >= 0 && value <= 100));
+      state = { ...state, ...result.metrics, initiativeStates: result.initiativeStates, scenarioState: result.scenarioState, q: quarter + 1 };
+    }
+    assert.equal(state.q, 13);
+  });
 });

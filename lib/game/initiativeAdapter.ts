@@ -29,3 +29,7 @@ export function scenarioInitiativesToStates(initiatives: ScenarioInitiative[]): 
   });
   return states;
 }
+
+export function scenarioInitiativeToState(initiative: ScenarioInitiative): InitiativeState {
+  return scenarioInitiativesToStates([initiative])[initiative.id];
+}
