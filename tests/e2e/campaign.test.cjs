@@ -98,6 +98,7 @@ async function startCampaign(page, profile) {
       .click();
   }
   await page.getByRole("button", { name: "Enter the boardroom" }).click();
+  await page.getByRole("button", { name: "Begin campaign" }).click();
   await expect(page.getByTestId("campaign-quarter")).toContainText("Quarter 1");
 }
 
