@@ -161,6 +161,14 @@ export function normalizeGameState(value: unknown): GameState {
     q1: reflections.q1 === 'yes' || reflections.q1 === 'partial' || reflections.q1 === 'no' ? reflections.q1 : undefined,
     q6: typeof reflections.q6 === 'string' ? reflections.q6.slice(0, 500) : undefined,
   };
+  next.scenarioMode = source.scenarioMode === true;
+  next.scenarioId = typeof source.scenarioId === 'string' ? source.scenarioId : undefined;
+  next.currencyMode = source.currencyMode === '₹' ? '₹' : '$';
+  next.quarterlyBudget = numberOr(source.quarterlyBudget, next.scenarioMode ? 5 : 10);
+  next.scenarioStartingMetrics = isRecord(source.scenarioStartingMetrics) ? Object.fromEntries(Object.entries(source.scenarioStartingMetrics).filter(([, item]) => typeof item === 'number' && Number.isFinite(item))) as Record<string, number> : undefined;
+  next.scenarioProgress = isRecord(source.scenarioProgress) ? Object.fromEntries(Object.entries(source.scenarioProgress).filter(([, item]) => typeof item === 'number' && Number.isFinite(item))) as Record<string, number> : undefined;
+  next.quarterlyCrisisCost = numberOr(source.quarterlyCrisisCost, 0);
+  next.scenarioOverspend = numberOr(source.scenarioOverspend, 0);
   next.causalChain = Array.isArray(source.causalChain) ? source.causalChain as GameState['causalChain'] : defaults.causalChain;
   next.proactiveRecommendations = Array.isArray(source.proactiveRecommendations)
     ? source.proactiveRecommendations as GameState['proactiveRecommendations']

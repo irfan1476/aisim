@@ -1,6 +1,7 @@
 import type { InitiativeState } from '../lib/game/initiativeState';
 import type { InitiativeGeneration } from '../lib/game/generator';
 import type { UserReflections } from '../lib/game/state';
+import type { CurrencyMode } from '../lib/scenarios/types';
 
 export type MetricColor = 'gold' | 'emerald' | 'blue' | 'purple' | 'red' | 'cyan';
 
@@ -55,6 +56,14 @@ export interface GameViewState {
   initiativeStates: Record<string, InitiativeState>;
   initiativeGeneration?: InitiativeGeneration;
   userReflections: UserReflections;
+  scenarioMode: boolean;
+  scenarioId?: string;
+  currencyMode: CurrencyMode;
+  quarterlyBudget: number;
+  scenarioStartingMetrics?: Record<string, number>;
+  scenarioProgress?: Record<string, number>;
+  quarterlyCrisisCost: number;
+  scenarioOverspend: number;
 }
 
 export interface Metric {
