@@ -79,8 +79,10 @@ The first P1 foundation slice is implemented on
 - **Integration seam added:** `lib/game/v3Runtime.ts` now composes the pure contracts behind an additive `resolveV3Decision` façade. It is not invoked by legacy `resolveQuarter` or the V2 store path until a V3 pack/UI explicitly opts in.
 - **Complete in this slice:** the façade is available through opt-in `confirmV3Decisions`; PF2.4/PF2.5 evidence-room and initiative-plan panels are mounted only when a pack supplies V3 metadata. Legacy scenario screens remain unchanged.
 - **Complete in this slice:** the provisional Project Factory V3 pack is registered as `project-factory-2030`; PF2.6 selectors, PF6.1c fixtures, and the core P2 sidecar tabs are implemented. The sidecar remains read-only and is not part of the legacy quarter path.
-- **P2 exit:** PF6.2 browser coverage now passes for the opt-in Project Factory V3 flow and Standard-mode isolation. The core P2 sidecar is complete.
-- **Next boundary:** remaining operational sidecar tabs, exports, pilot calibration, and reuse are P3 work. Pause here for product-owner direction before expanding into reuse or broader calibration.
+- **Technical P2 exit:** PF6.2 browser coverage passes for the opt-in Project Factory V3 flow and Standard-mode isolation.
+- **Learning P2 status:** **not accepted yet.** The current panels are technically mounted but do not sufficiently connect evidence, initiative plan, V3 runtime outcome, ledger, and sidecar into one learner-understandable loop.
+- **Corrective slice:** rebuild one end-to-end Predictive Maintenance loop before declaring P2 learner-ready. Acceptance requires evidence citation, lifecycle/capacity/gate decision, resolver-authored metric outcome, ledger replay, and matching sidecar projection.
+- **Next boundary:** P3 reuse, additional event cards, broader calibration, and other operational sidecar tabs remain paused until this corrective slice is accepted.
 
 ### WP0 — Baseline and contract
 

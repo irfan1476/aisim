@@ -386,3 +386,13 @@ Status: P2 complete; paused at the documented P3/product-owner boundary
 - **Verification:** 67/67 unit/regression tests, production build, and 10/10 E2E tests pass.
 - **P3 boundary reached:** remaining stakeholder/capacity/events-exposures/resources/export tabs, richer event options/exposure register/seeded ranges, pilot calibration, and reuse of primitives in BankNext/Care360/FutureReady are now the next work. These require product-owner prioritisation and/or calibration direction, so implementation pauses here.
 - **Commits:** `bddd205`, `eeda26e`, and `1c32970`.
+
+## 2026-08-21 — P2 learner-experience acceptance reopened
+
+Status: agreed corrective action; P3 remains paused
+
+- **Product-owner finding:** although the P2 panels, runtime pack, selectors, and browser tests exist, the learner experience is not yet coherent enough to accept. Evidence is presented as a catalogue, the initiative plan is not visibly driving the live V3 quarter, and the sidecar is not yet experienced as a replay of the learner's own evidence → decision → outcome chain.
+- **Correction:** treat the current implementation as a technical slice, not learner-ready P2. Rebuild one end-to-end Predictive Maintenance loop before expanding scope.
+- **Acceptance contract:** the learner opens and cites evidence; selects a lifecycle action; sees cost, capacity, dependencies, owner, gate, and stop criterion; records prediction/assumption; resolves through the V3 path; observes metric/gate/stakeholder/uncertainty movement; and sees the same records replayed in the ledger and sidecar.
+- **Compatibility:** this corrective work remains additive and opt-in. Standard, V1, V2, and the legacy `projectFactory` path remain untouched.
+- **Explicit pause:** no P3 reuse, additional event-card authoring, broader scenario conversion, or unrelated sidecar expansion until the corrective slice passes learner-facing acceptance.
