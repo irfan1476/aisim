@@ -111,6 +111,9 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
       satisfaction: startingMetrics.satisfaction ?? state.satisfaction,
     };
     const progress = Object.fromEntries(scenario.progress.map((item) => [item.key, 0]));
+    const v3Metrics = scenario.v3
+      ? Object.fromEntries([...(scenario.v3.metrics || []), ...(scenario.v3.reportedMetrics || [])].filter((metric) => metric.start !== undefined).map((metric) => [metric.key, metric.start as number]))
+      : {};
     return {
       ...state,
       scenarioMode: true,
@@ -119,7 +122,7 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
       scenarioBudgetRemaining: scenario.startingState.budget,
       scenarioStartingMetrics: startingMetrics,
       scenarioProgress: progress,
-      scenarioState: { metrics: startingMetrics, progress, flags: {} },
+      scenarioState: { metrics: { ...startingMetrics, ...v3Metrics }, progress, flags: {} },
       alloc: { ...scenario.startingState.defaultAllocation },
       selected: [],
       stage: 'decide',

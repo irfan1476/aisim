@@ -232,6 +232,14 @@ export function normalizeGameState(value: unknown): GameState {
     progress: isRecord(savedScenarioState.progress) ? Object.fromEntries(Object.entries(savedScenarioState.progress).filter(([, item]) => typeof item === 'number' && Number.isFinite(item))) as Record<string, number> : { ...(next.scenarioProgress || {}) },
     flags: isRecord(savedScenarioState.flags) ? Object.fromEntries(Object.entries(savedScenarioState.flags).filter(([, item]) => typeof item === 'boolean')) as Record<string, boolean> : {},
   };
+  // Seed authored V3 metric starts when hydrating a fresh/legacy-shaped V3
+  // save. Existing saved values win, so this remains additive and lossless.
+  if (scenarioDefinition?.v3) {
+    const v3Starts = Object.fromEntries([...(scenarioDefinition.v3.metrics || []), ...(scenarioDefinition.v3.reportedMetrics || [])]
+      .filter((metric) => metric.start !== undefined && next.scenarioState.metrics[metric.key] === undefined)
+      .map((metric) => [metric.key, metric.start as number]));
+    next.scenarioState = { ...next.scenarioState, metrics: { ...next.scenarioState.metrics, ...v3Starts } };
+  }
   // V3 state is opt-in and additive. Legacy Standard/v1/v2 saves, including
   // legacy Project Factory saves, never gain V3 state without pack metadata.
   const v3Defaults = scenarioDefinition?.v3
