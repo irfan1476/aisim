@@ -78,6 +78,10 @@ export type V3InitiativeProfile = {
   dependencies?: string[];
   evidenceRequired?: string[];
   ownerRole?: string;
+  controlBoundary?: string;
+  pilotSuccessCriteria?: string[];
+  scaleGate?: string[];
+  stopOrPauseCriteria?: string[];
   affectedStakeholders?: string[];
   valueMetric?: string;
   effect?: { metric: string; delta: number; unit: string; sourceRuleId?: string; sourceEvidenceIds?: string[] };
