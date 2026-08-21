@@ -58,9 +58,9 @@ This document is the source of truth for the domain-agnostic scenario work. It s
 
 #### P1-B: Quarter-flow tests
 
-- [ ] Test Q1 scenario funding changes the selected primary metric.
-- [ ] Test repeated funding compounds without exceeding bounds.
-- [ ] Test neglect over multiple quarters and penalty onset.
+- [x] Test Q1 scenario funding changes the selected primary metric.
+- [x] Test repeated funding compounds without exceeding bounds.
+- [x] Test neglect over multiple quarters and penalty onset.
 - [x] Test all four scenario packs through a complete 12-quarter loop.
 - [x] Test scenario crisis selection, domain response impacts, cost, and cumulative spend.
 - [ ] Test scenario causal-chain and recommendation output references.
@@ -68,33 +68,33 @@ This document is the source of truth for the domain-agnostic scenario work. It s
 
 #### P1-C: Persistence and regression tests
 
-- [ ] Round-trip a scenario save with metrics, progress, flags, initiative states, history, and crisis state.
-- [ ] Migrate a v4 scenario save into v5 `scenarioState`.
-- [ ] Load a v4 Standard save with no scenario fields.
-- [ ] Confirm Standard mode does not render scenario UI or use scenario effects.
-- [ ] Confirm the Standard full-loop metric/score snapshot remains unchanged after Standard-effect extraction.
+- [x] Round-trip a scenario save with metrics, progress, flags, initiative states, history, and crisis state.
+- [x] Migrate a v4 scenario save into v5 `scenarioState`.
+- [x] Load a v4 Standard save with no scenario fields.
+- [x] Confirm Standard mode does not render scenario UI or use scenario effects.
+- [x] Confirm the Standard full-loop metric/score snapshot remains unchanged after Standard-effect extraction.
 
 #### P1-D: UI tests
 
 The repository does not currently include Jest or React Testing Library. First use the existing Node test harness for pure logic and browser/e2e coverage. Add React Testing Library only if UI assertions cannot be covered adequately through the existing Playwright setup.
 
-- [ ] Scenario selector exposes Standard plus all registered scenarios.
-- [ ] Selecting a scenario clears stale Standard selections.
-- [ ] Scenario challenge cards and scenario initiatives are visible.
-- [ ] The player can select zero, one, two, or three initiatives, but never four.
+- [x] Scenario selector exposes all registered scenarios alongside Standard mode.
+- [x] Selecting a scenario clears stale Standard selections.
+- [x] Scenario challenge cards and scenario initiatives are visible.
+- [x] The player can select up to three initiatives, but never four.
 - [ ] Scenario progress updates after confirming a decision.
-- [ ] Standard mode has no scenario progress/challenge panel.
-- [ ] Crisis modal and final summary show scenario-specific information.
+- [x] Standard mode has no scenario progress/challenge panel.
+- [x] Crisis modal and final summary show scenario-specific information.
 
 ### Phase 3 — Scenario depth and learning loop — pending
 
 - [ ] Expand each scenario from provisional values to reviewed domain mechanics.
 - [x] Add three domain-specific crises per pack.
-- [ ] Add scenario-specific causal explanations without hard-coding scenarios in the engine.
+- [x] Add scenario-specific causal explanations without hard-coding scenarios in the engine.
 - [x] Add scenario-declared synergy discovery and mechanical effects using data definitions; the engine remains scenario-name agnostic.
 - [x] Show native domain values and units alongside progress percentages.
 - [x] Improve final diagnosis with evidence from allocations, initiatives, and metric movement.
-- [ ] Add scenario-aware scoring explanation; do not introduce arbitrary multipliers.
+- [x] Add scenario-aware scoring explanation; do not introduce arbitrary multipliers.
 
 ### Phase 4 — Release and deployment — pending
 
