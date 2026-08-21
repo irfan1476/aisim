@@ -11,6 +11,8 @@ import { generateProactiveRecommendations } from '../lib/game/recommendations';
 import { resolveQuarter, deriveScore } from '../lib/game/engine';
 import { describeSynergies } from '../lib/game/generator';
 import { scenarioInitiativesToStates } from '../lib/game/initiativeAdapter';
+import { resolveV3Decision, type V3DecisionResolution } from '../lib/game/v3Runtime';
+import type { V3LedgerPlan, V3PortfolioPlan } from '../lib/game/v3Decisions';
 import {
   clearPersistedCampaign,
   clearPersistedGameData,
@@ -47,6 +49,8 @@ type GameStore = GameState & {
   saveReflection: (reflection: Partial<GameState['userReflections']>) => void;
   loadGame: (state: unknown) => void;
   initializeScenario: (scenarioId: string) => void;
+  /** Opt-in V3 decision seam; legacy confirmDecisions remains unchanged. */
+  confirmV3Decisions: (plan: V3PortfolioPlan[], ledger?: V3LedgerPlan) => V3DecisionResolution;
 };
 
 const browserStorage: StateStorage = {
@@ -163,6 +167,28 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
       feedback: discovery?.message || `Quarter ${state.q} resolved. Your portfolio is now showing the consequences of this allocation.`,
       history: [...state.history, { ...result.snapshot, metrics: adjustedMetrics }],
     });
+  },
+
+  confirmV3Decisions: (plan, ledger) => {
+    const state = normalizeGameState(get());
+    const scenario = state.scenarioMode ? getScenario(state.scenarioId) : undefined;
+    if (!scenario?.v3) {
+      return { accepted: false, errors: [{ code: 'v3-pack-required', message: 'The current scenario is not opted into V3.' }], metrics: {}, value: [] };
+    }
+    const metricKeys = new Set([...(scenario.v3.metrics || []), ...(scenario.v3.reportedMetrics || [])].map((metric) => metric.key));
+    const metrics = Object.fromEntries(Object.entries(state.scenarioState?.metrics || {}).filter(([key]) => metricKeys.has(key)));
+    const resolution = resolveV3Decision({ gameState: state, pack: scenario.v3, plan, ledger, metrics });
+    if (!resolution.accepted || !resolution.state) return resolution;
+    const nextScenarioMetrics = { ...(state.scenarioState?.metrics || {}) };
+    Object.entries(resolution.metrics).forEach(([key, value]) => { if (metricKeys.has(key)) nextScenarioMetrics[key] = value; });
+    set({
+      v3State: resolution.state,
+      scenarioState: { ...state.scenarioState, metrics: nextScenarioMetrics },
+      scenarioProgress: state.scenarioProgress,
+      stage: 'results',
+      feedback: 'V3 decision recorded. Review the evidence and outcome before the next board window.',
+    });
+    return resolution;
   },
 
   respondToCrisis: (impact, cost = 0) => set((state) => {
