@@ -1165,6 +1165,34 @@ Workflow evidence is a leading indicator, not an outcome guarantee. It must be
 shown alongside operational movement and cannot be converted directly into cash
 value or a learner trait.
 
+### Executive decision ledger: “you said → you did → what happened → what you learned”
+
+The decision ledger is the auditable learning spine for the four board windows.
+It makes the learner’s reasoning visible before results are known and connects
+it to a source-bound resolution and a later reflection. It is not a writing
+test, a personality diagnosis, or a hidden scoring system.
+
+| Ledger layer | Captured content | Capture boundary |
+|---|---|---|
+| Decision snapshot | Window and quarter range; lifecycle actions; requested capacity/capital; accountable owner; gate/stop criterion. | Generated from the confirmed plan and retained as an immutable pre-resolution snapshot. |
+| Prediction and uncertainty | Predicted indicator/direction; short rationale; key assumption or known unknown; learner-selected confidence `1–5`; evidence cited. | Captured before the window resolves. A concise prediction and assumption are required for a material board-window plan; confidence is optional and never converted into a calibration score. |
+| Evidence trail | Evidence artefacts opened and evidence artefacts explicitly cited. | Opening is recorded as an interaction trail; citation is the learner’s stated basis. Neither proves that an artefact was correctly interpreted. |
+| Resolution snapshot | Observed metric deltas; lifecycle/gate result; events; stakeholder effects; declared rule, evidence, and uncertainty references. | Written by the deterministic resolver after the window. It is not learner-authored text and must remain traceable to the pack, seed, and decision snapshot. |
+| Reflection and adjustment | Supported/challenged assumption; what surprised the learner; continuation, pause, stop, or redesign decision; next experiment. | One concise, skippable shared-team or private-solo prompt per window. It is learner-owned and never alters a resolved outcome or scorecard state. |
+
+The ledger uses `window` and `quarter_range` as its authoritative timing fields.
+An optional display timestamp may be stored for the user interface, but it is
+not an input to resolution or deterministic fixtures. The opening baseline is
+not an initial scenario hypothesis: it remains a reflection-only posture that
+can be compared with the ledger during the final debrief.
+
+The final debrief presents the four entries in sequence rather than asserting
+an automated diagnosis such as “you consistently underestimated risk.” The
+learner and facilitator can identify a pattern from the visible record. Any
+future pattern analysis or advisor use remains deferred until pilot evidence,
+a neutral rubric, and safeguards against unsupported trait or blind-spot claims
+are approved.
+
 ### Scorecard dimensions
 
 No composite score is shown in the first pilot. Each dimension displays one of **Evidence of strength**, **Mixed evidence**, **Needs attention**, or **Not yet observable**, followed by learner-visible support.
@@ -1172,7 +1200,7 @@ No composite score is shown in the first pilot. Each dimension displays one of *
 | Dimension | Objective | Learner-visible evidence | Formative feedback rule |
 |---|---|---|---|
 | Operational outcomes | Protect and improve the most relevant operational measures without breaching non-negotiables. | Metric trends, targets, event impact, line/plant scope. | Do not reward an outcome that required bypassing a stated safety, quality, or governance boundary. Explain adverse seeded-event impact separately. |
-| Decision quality | Form a defensible view from incomplete evidence and explicit assumptions. | Evidence opened/used, ledger rationale, prediction, unresolved assumption. | Stronger when the learner compares sources and names uncertainty; never score the learner’s baseline posture. |
+| Decision quality | Form a defensible view from incomplete evidence and explicit assumptions. | Evidence opened/cited, ledger rationale, pre-resolution prediction, unresolved assumption, and response to contrary evidence. | Stronger when the learner compares sources and names uncertainty. Do not score confidence, prose quality, fortunate prediction accuracy, or the learner’s baseline posture. |
 | Execution and sequencing | Use lifecycle, capacity, budget, and dependencies coherently. | Lifecycle history, active-delivery count, capacity/capital history, pause/stop decisions. | Stronger when research/pilot/scale timing follows evidence and capacity rather than when the greatest number of initiatives is funded. |
 | Governance | Make ownership, control boundaries, gates, monitoring, and escalation operational. | Gate results, named owners, override/escalation paths, evidence status. | A blocked gate with a reasoned repair plan can be better evidence than premature scale. |
 | Stakeholder and workforce health | Protect viable adoption, technician trust, quality/OEM confidence, and accountable support. | Stakeholder state, trust/readiness, traceability/feedback evidence. | Do not infer sentiment from a metric alone; show the declared stakeholder rule and relevant evidence. |
@@ -1182,9 +1210,9 @@ No composite score is shown in the first pilot. Each dimension displays one of *
 
 | Phase / timing | Prompt | Required evidence boundary | Stored output |
 |---|---|---|---|
-| Reconstruct — end of Window 1 (Q1–Q3) | “What problem did you decide to address first, what result did you predict, and which two evidence items mattered most?” | Visible initial evidence, lifecycle plan, ledger prediction. | Shared team response or private solo note; factual reconstruction and prediction. |
-| Interpret — end of Window 2 (Q4–Q6) | “What evidence supported or challenged your initial hypothesis? Which assumption now needs qualification?” | Actual metric change, gate result, event explanation if present. | Supported/challenged assumption and evidence reference. |
-| Reframe — end of Window 3 (Q7–Q9) | “What will you continue, pause, stop, or redesign? What capacity, stakeholder, or control trade-off makes that necessary?” | Portfolio/capacity state, stakeholder signals, ledger and gate history. | Next adjustment and explicit trade-off. |
+| Reconstruct — end of Window 1 (Q1–Q3) | “What problem did you decide to address first, what result did you predict, and which two evidence items mattered most?” | Visible initial evidence, lifecycle plan, ledger prediction and resolution snapshot. | Shared team response or private solo note; factual reconstruction, observed outcome, and prediction comparison. |
+| Interpret — end of Window 2 (Q4–Q6) | “What evidence supported or challenged your initial hypothesis? Which assumption now needs qualification?” | Actual metric change, gate result, event explanation if present. | Ledger-linked supported/challenged assumption and evidence reference. |
+| Reframe — end of Window 3 (Q7–Q9) | “What will you continue, pause, stop, or redesign? What capacity, stakeholder, or control trade-off makes that necessary?” | Portfolio/capacity state, stakeholder signals, ledger and gate history. | Ledger-linked next adjustment and explicit trade-off. |
 | Transfer — final debrief (Q10–Q12) | “What decision principle would you take to a real transformation? Name one action, the trigger that would make you act, and the measure you would review.” | Full learner-visible ledger, scorecard evidence, outcomes, baseline comparison. | Learner-owned action, trigger, and metric; not used to score or alter future outcomes. |
 
 ### Baseline-to-debrief comparison prompts

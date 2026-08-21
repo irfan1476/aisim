@@ -234,3 +234,13 @@ Status: agreed planning sequence; execution remains pending explicit authorisati
 - **Priority 2 — learner-pilot readiness:** add truthful report integrity, board memo, responsible-impact reflection, workshop/self-paced flows, and two or three reviewed deterministic events; then conduct the formative pilot.
 - **Priority 3 — reuse:** calibrate from pilot evidence before porting primitives to the other existing scenarios or BharatMart; continue to defer the AI reflection coach.
 - **Authorisation boundary:** this plan does not itself freeze V2, create a branch, start engine work, or merge/deploy anything.
+
+## 2026-08-21 — Executive decision-ledger contract
+
+Status: agreed V3 first-slice requirement; planning/content only
+
+- **Decision:** elevate the decision ledger from a generic decision record to the auditable four-window learning spine: “you said → you did → what happened → what you learned.” It is a P1 reference-slice capability, not a later enhancement.
+- **Pre-resolution record:** persist an immutable material-decision snapshot with lifecycle/capacity/cost action, rationale, predicted indicator/direction, assumption or known unknown, accountable owner, cited evidence, optional 1–5 confidence, and gate/stop criterion.
+- **Resolution and reflection separation:** the deterministic resolver writes the outcome snapshot—metrics, gates, events, stakeholders, rule/evidence references, and uncertainty. The learner may then record a concise, skippable reflection and next adjustment. Neither confidence, timestamp, evidence-opening telemetry, nor learner text may affect outcomes or scorecard state.
+- **Safeguards:** baseline attitudes remain reflection-only and are not an initial scenario hypothesis. The first pilot does not produce automatic blind-spot, trait, or prediction-accuracy diagnoses; the debrief presents visible entries for learner/facilitator interpretation. Any advisor/pattern-analysis use stays deferred until pilot evidence and a bounded rubric justify it.
+- **Artefact updates:** [content pack](./project-factory-v3-content-pack.md), [design brief](./project-factory-v3-design-brief.md), [implementation backlog](./project-factory-v3-implementation-backlog.md), and [authoring template](./scenario-v3-content-authoring-template.md).

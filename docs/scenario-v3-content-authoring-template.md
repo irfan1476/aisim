@@ -238,6 +238,7 @@ event_coverage:
 | Element | Required content |
 |---|---|
 | Scorecard dimension | Objective, source metrics/ledger evidence, display label, formative feedback rule |
+| Decision-ledger contract | One entry per material board window: immutable pre-resolution decision snapshot; concise prediction, assumption/known unknown, owner, cited evidence, optional confidence, and gate/stop criterion; resolver-authored outcome snapshot; skippable learner reflection/next adjustment. Specify that confidence, timestamps, evidence-opening telemetry, and learner reflection cannot alter outcomes or scorecard state. Do not conflate a reflection-only baseline with a scenario hypothesis or generate automated blind-spot/trait claims. |
 | Debrief prompt | Reconstruction, analysis, and workplace-transfer question linked to an objective |
 | Known-seed fixture | Pack version, seed, start state, learner decisions, expected metrics/state/gates/events/explanations |
 | Negative fixture | Invalid dependency, failed gate, over-capacity plan, or boundary condition and expected validation |

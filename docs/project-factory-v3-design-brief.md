@@ -41,7 +41,7 @@ Creating an implementation branch alone does not authorise engine work, merge V3
 
 ## Baseline assessment: agreed v3 contract
 
-The existing five prompts are useful because they make an opening decision posture visible before the learner sees results. They should remain a short, non-graded baseline and be used in the hypothesis screen, advisor coaching, and final debrief.
+The existing five prompts are useful because they make an opening decision posture visible before the learner sees results. They should remain a short, non-graded baseline and be displayed alongside—but never used to produce—the separate evidence-led scenario hypothesis in the hypothesis screen, future advisor coaching, and final debrief.
 
 However, V3 should distinguish **reflection** from **scenario calibration**:
 
@@ -382,7 +382,7 @@ Do not build every planned feature at once. The first working Project Factory v3
 2. pre-brief with four evidence artefacts and known unknowns;
 3. lifecycle choice for **research, pilot, scale, pause/defer**;
 4. explicit delivery capacity and one prerequisite gate per initiative;
-5. a decision ledger with rationale, prediction, owner, and scale gate;
+5. an executive decision ledger that captures the immutable pre-resolution plan, rationale, prediction, assumption, cited evidence, owner, and gate/stop criterion; then attaches a resolver-authored outcome snapshot and concise learner reflection;
 6. three representative causal-rule shapes: a delayed benefit, a trade-off, and a dependency;
 7. one condition-triggered line-failure event with authored explanation;
 8. a five-part visible scorecard and structured debrief;
