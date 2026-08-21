@@ -257,4 +257,14 @@ Status: current-state clarification; product-owner decisions remain pending
 ### Product-owner acknowledgement
 
 - **Accepted:** the alternative review route defers broad post-pilot calibration but does not waive the light operations/manufacturing and learning-design review gate.
-- **Still pending:** explicit approval of `Branch1-version-2` / `dc34433` as the V3 code baseline, and assignment of the two qualified reviewers (or approval to draft briefs while reviewer identities are being identified). No branch cut, documentation transfer, reviewer outreach, or engine work follows from the acknowledgement alone.
+- **Completed:** the product owner subsequently approved `Branch1-version-2` / `dc34433` as the V3 code baseline; the implementation branch is recorded below.
+- **Still pending:** assignment of the two qualified reviewers (or approval to draft briefs while reviewer identities are being identified). No documentation transfer, reviewer outreach, or engine work follows from the branch cut alone.
+
+## 2026-08-21 — V3 implementation branch created from frozen V2 baseline
+
+Status: implemented branch boundary; content review and engine implementation remain pending
+
+- **Product-owner decision:** freeze the reproducible V2 snapshot identified by `Branch1-version-2` / `dc34433` for V3 implementation lineage.
+- **Repository action:** created worktree `/Users/irfan/projects/AISim-v3-impl` on branch `codex/project-factory-v3-impl`, with HEAD exactly at `dc34433` (`Present multi-domain scenarios on homepage`).
+- **Safety boundary:** the active V2 worktree and branch were not modified. No V3 application code, documentation transfer, merge, deployment, or engine work was performed by this branch cut.
+- **Next gate:** transfer reviewed documentation-only V3 planning commits as a separate operation, complete the bounded operations and learning-design review, and pass the P0 content-calibration gate before starting P1 engine work.

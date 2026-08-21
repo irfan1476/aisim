@@ -11,7 +11,7 @@ Date: 2026-08-21
 | Active v2 scenario line | `feature/scenario-generic-pipeline` | `dc34433` | Checked out in the current worktree; actively being developed | Contains the generic scenario pipeline and its committed Project Factory, BankNext, Care360, and FutureReady packs. |
 | Historical precursor | `feat/domain-agnostic-scenario-mode` | `fdf709f` | Not active | Earlier domain-agnostic scenario work. |
 | v3 planning/content line | `codex/project-factory-v3` | `d71a6ea` base; planning/content commits begin at `ea1fa29` | Dedicated worktree at `/Users/irfan/projects/AISim-v3`; V3 planning baseline and provisional content pack | Intentionally starts from `main` for planning isolation only. It is not the V3 implementation branch. |
-| future v3 implementation line | Name and V2 freeze point to be recorded when implementation is authorised | Must start from frozen `feature/scenario-generic-pipeline` commit | Not created | Additive V3 extension of the V2 scenario pipeline, preserving non-V3 behaviour. |
+| future v3 implementation line | `codex/project-factory-v3-impl` | Frozen `Branch1-version-2` / `dc34433` | Created at `/Users/irfan/projects/AISim-v3-impl`; code baseline only | Additive V3 extension of the V2 scenario pipeline, preserving non-V3 behaviour. |
 
 Git commits do not themselves use the labels “v1,” “v2,” or “v3.” The product labels above are the agreed working vocabulary, not inferred release tags.
 
@@ -28,7 +28,7 @@ Git commits do not themselves use the labels “v1,” “v2,” or “v3.” Th
 ### Explicitly not done
 
 - No v2 scenario code has been merged, rebased, cherry-picked, or copied into v3.
-- No v3 code has been implemented.
+- No v3 code has been implemented; the new implementation worktree currently contains only the inherited V2 code at the frozen baseline.
 - No deployment, hosting, or production branch configuration has been changed.
 - The active V2 worktree has not been switched.
 
@@ -53,10 +53,10 @@ the V3 product independently from V2.
 
 ## Agreed implementation-branch approach
 
-When V3 engine implementation is authorised, create a new V3 implementation
-branch from a named frozen commit of `feature/scenario-generic-pipeline`. Bring
-across the reviewed documentation-only V3 planning commits as required. V3
-therefore starts with the working V2 scenario pipeline and adds opt-in V3
+The V3 implementation branch has now been created from the named frozen commit
+of `feature/scenario-generic-pipeline`. Bring across the reviewed
+documentation-only V3 planning commits as a separate, reviewable operation.
+V3 therefore starts with the working V2 scenario pipeline and adds opt-in V3
 schema, rules, content, and UI without changing V2 behaviour for existing
 packs.
 
@@ -65,9 +65,10 @@ documentation-only cherry-pick into the V2-based implementation branch is the
 default transfer mechanism because it avoids rewriting the planning record and
 does not merge unrelated `main` code into V2.
 
-No branch cut, cherry-pick, code merge, or application change is authorised by
-this strategy alone. The exact V2 freeze commit and implementation-branch name
-are recorded at the implementation-authorisation checkpoint.
+The branch cut is complete. No documentation cherry-pick, code merge, or
+application change is authorised by this strategy alone. The exact V2 freeze
+commit and implementation-branch name are now recorded; documentation transfer
+and engine implementation remain separate approval gates.
 
 ## V3 implementation readiness
 
