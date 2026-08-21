@@ -353,3 +353,13 @@ Status: implemented; V3 UI/store opt-in remains next
 - **Verification:** a focused façade test confirms composition, ledger capture, gate evaluation, causal movement, and value attribution without mutating the input state.
 - **Next:** wire the façade to the V3 decision UI/store, then implement PF2.4/PF2.5 and sidecar projection selectors. This preserves the approved ordering and prevents accidental V2 behavior changes.
 - **Commit:** `b5f738e` on `codex/project-factory-v3-impl`.
+
+## 2026-08-21 — PF2.4/PF2.5 opt-in flow integrated
+
+Status: implemented and verified; sidecar selectors/UI remain deferred to P2/P3
+
+- **Store seam:** `confirmV3Decisions(plan, ledger?)` now calls the additive V3 façade only when the active scenario explicitly supplies `scenario.v3`. It updates V3 state and declared V3 metrics without entering the legacy `confirmDecisions` path.
+- **UI seam:** `V3EvidenceRoom` and `V3InitiativePlan` are mounted conditionally in the game shell for opted-in V3 packs. They expose provenance, claim status, lifecycle, owner, evidence requirements, and authored transitions. Current four V2 packs do not mount them.
+- **Tests:** orchestration/UI contract coverage was added; the full unit/regression suite passes 57/57, production build passes, and existing E2E passes 8/8.
+- **Compatibility:** no V2 scenario, Standard mode, fixed three-selection flow, legacy score, or legacy quarter resolver was changed. V3 UI remains opt-in and the sidecar remains a separate P2/P3 read-only projection.
+- **Commits:** `0c66fb7`, `cb05857`, and `71235b7` on `codex/project-factory-v3-impl`.
