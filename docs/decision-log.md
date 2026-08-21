@@ -449,3 +449,13 @@ Status: learner-journey direction agreed; storyboard proposed for review
 - **Outcome principle:** research consumes resources and changes lifecycle/evidence readiness; it does not automatically improve downtime, defects, or workforce readiness. Outcome must explain both what changed and what did not.
 - **Review gate:** settle whether Window 1 authorises one primary research priority, whether these are the correct three opening options, how deferral is presented, and the provisional research-result contract before visual wireframes or production code.
 - **Artefact:** [Project Factory V3 — Window 1 Low-Fidelity Storyboard](./project-factory-v3-window-1-storyboard.md).
+
+## 2026-08-21 — Window 1 reviews synthesised
+
+Status: recommended revisions; awaiting product-owner approval
+
+- **Accepted:** stable shell, single primary action, one Window 1 research authorisation, three opening priorities, skippable reflection, sidecar removal, explicit carried-forward state, and `changed / did not change / why / uncertainty` outcome structure.
+- **Modified:** energy is acknowledged as monitored context rather than a fourth equal signal; Energy, Demand, and Supply appear as a collapsed later-window portfolio line rather than full selectable packets.
+- **Rejected:** a recommended initiative, immediate Energy pilot, invented Q0 changes or pressure scores, required free-text prediction/assumption, full Evidence Room access in Orient, research-stage downtime/trust/readiness benefits, and research consuming an active pilot/scale slot. These conflict with the content pack or reintroduce cognitive/causal ambiguity.
+- **Guardrail:** wireframes may represent only authored content and state transitions. Numeric outcome movements require a reviewed rule and deterministic fixture; presentation design cannot invent resolver behavior.
+- **Artefact:** [Project Factory V3 — Window 1 Review Synthesis](./project-factory-v3-window-1-review-synthesis.md).
