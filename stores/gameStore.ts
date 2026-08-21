@@ -131,13 +131,14 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
   confirmDecisions: () => {
     const state = normalizeGameState(get());
     const result = resolveQuarter(state, { selected: state.selected, alloc: state.alloc });
-    const selectedCost = state.selected.reduce((sum, id) => sum + Number(result.initiativeStates[id]?.currentCost || 0), 0);
+    const scenario = state.scenarioMode ? getScenario(state.scenarioId) : undefined;
+    const discovery = describeSynergies(state.selected, result.initiativeStates, scenario?.synergies);
+    const synergyCostReduction = Math.min(0.15, discovery?.effects.reduce((sum, effect) => sum + effect.costReduction, 0) || 0);
+    const selectedCost = state.selected.reduce((sum, id) => sum + Number(result.initiativeStates[id]?.currentCost || 0), 0) * (1 - synergyCostReduction);
     const overspend = state.scenarioMode ? Math.max(0, selectedCost - state.quarterlyBudget) : 0;
     const overspendRisk = state.scenarioMode && state.quarterlyBudget > 0 ? Math.min(15, overspend / state.quarterlyBudget * 10) : 0;
     const adjustedMetrics = { ...result.metrics, risk: Math.min(95, Number(result.metrics.risk ?? state.risk) + overspendRisk) };
     const resolvedState = { ...state, ...adjustedMetrics, initiativeStates: result.initiativeStates, scenarioState: result.scenarioState };
-    const scenario = state.scenarioMode ? getScenario(state.scenarioId) : undefined;
-    const discovery = describeSynergies(state.selected, result.initiativeStates, scenario?.synergies);
     const newlyDiscovered = discovery?.effects.map(effect => effect.key) || [];
     const discoveredSynergies = Array.from(new Set([...state.discoveredSynergies, ...newlyDiscovered]));
     const resolvedRisk = Number(adjustedMetrics.risk ?? state.risk);

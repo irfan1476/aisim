@@ -422,6 +422,24 @@ test('scenario crisis domain impacts update scenario metrics and progress', () =
   assert.equal(afterResponse.fraudPressure, undefined);
 });
 
+test('scenario synergy cost relief is used consistently for overspend risk', () => {
+  const scenario = getScenario('bankNext');
+  const base = initialGameState(undefined, {
+    scenarioMode: true,
+    scenarioId: scenario.id,
+    quarterlyBudget: 2.85,
+    scenarioStartingMetrics: scenario.startingState.startingMetrics,
+  });
+  useGameStore.getState().loadGame({
+    ...base,
+    selected: ['fraudDetection', 'complianceMonitoring'],
+    initiativeStates: scenarioInitiativesToStates(scenario.initiatives),
+    scenarioState: { metrics: { ...scenario.startingState.startingMetrics }, progress: {}, flags: {} },
+  });
+  useGameStore.getState().confirmDecisions();
+  assert.equal(useGameStore.getState().scenarioOverspend, 0);
+});
+
 test('Standard mode remains scenario-free when resolving a quarter', () => {
   const state = initialGameState();
   const result = resolveQuarter(state, { selected: ['demand'], alloc: allocation });

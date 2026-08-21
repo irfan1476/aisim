@@ -22,10 +22,10 @@ export const projectFactory: ScenarioDefinition = {
     description: 'A 24×7 manufacturer balancing uptime, quality, energy costs, and workforce resilience.',
   },
   challenges: [
-    { id: 'downtime', label: 'Equipment Downtime', severity: '+12%', metric: 'efficiency', direction: 'higher-is-better', description: 'Unplanned downtime is putting pressure on production reliability.' },
-    { id: 'scrap', label: 'Scrap & Defect Rates', severity: '+8%', metric: 'roi', direction: 'higher-is-better', description: 'Quality variation is increasing rework and reducing realised value.' },
-    { id: 'energy', label: 'Energy Costs', severity: '+15%', metric: 'efficiency', direction: 'higher-is-better', description: 'Energy pressure is making efficiency improvements more valuable.' },
-    { id: 'talent', label: 'Workforce Risk', severity: 'Retiring technicians', metric: 'satisfaction', direction: 'higher-is-better', description: 'Critical operating knowledge is leaving with retiring technicians.' },
+    { id: 'downtime', label: 'Equipment Downtime', severity: '+12%', metric: 'downtimePressure', direction: 'lower-is-better', description: 'Unplanned downtime is putting pressure on production reliability.' },
+    { id: 'scrap', label: 'Scrap & Defect Rates', severity: '+8%', metric: 'defectRate', direction: 'lower-is-better', description: 'Quality variation is increasing rework and reducing realised value.' },
+    { id: 'energy', label: 'Energy Costs', severity: '+15%', metric: 'energyPressure', direction: 'lower-is-better', description: 'Energy pressure is making efficiency improvements more valuable.' },
+    { id: 'talent', label: 'Workforce Risk', severity: 'Retiring technicians', metric: 'workforceResilience', direction: 'higher-is-better', description: 'Critical operating knowledge is leaving with retiring technicians.' },
   ],
   startingState: {
     budget: 5,
