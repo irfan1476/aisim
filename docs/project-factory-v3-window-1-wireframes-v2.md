@@ -221,6 +221,91 @@ decision-specific context is:
 The learner should not have to infer these connections from initiative names or
 generic evidence links.
 
+### Complete reference packet — Visual Quality
+
+~~~text
+VISUAL QUALITY INSPECTION · RESEARCH
+
+WHY NOW
+Escaped defects are 1,240 PPM; first-pass yield is 91.2%; OEM containment
+requires a traceable human decision within 24 hours of a confirmed escape.
+
+WHAT WE KNOW
+• Two inspection-heavy lines produce 46% of reported scrap cost.
+• PF-E05 has early Q1 excerpts; the full OEM brief is available in Q2.
+
+WHAT RESEARCH WILL RESOLVE
+• Are selected Q-2 defects visually observable and repeatable?
+• Can labels, lighting/camera conditions, and a representative sample be used?
+• Can the Quality owner trace override, rework, release, and containment?
+
+DECISION TEST
+Accepted Q-2 boundary, sample/capture feasibility, owner, and traceability →
+bounded Pilot may be considered. Repairable gaps → remediation; an unsafe or
+non-observable inspection point → priority not supported.
+
+COMMITMENT
+₹0.20 Cr · Data Engineering 1/4 · Plant Integration 1/3 ·
+Governance Assurance 1/2 · Q1 only · Owner: Quality head
+
+IF DEFERRED
+Quality/OEM exposure remains; review when the full Q2 brief or a material escape
+changes the evidence. No generic defect penalty is applied.
+
+THIS IS NOT A PROMISE
+Research does not lower defects, improve yield, or satisfy G-PF-02.
+~~~
+
+Plain-language terms: **traceability** is the record linking a flagged unit to
+its review and disposition; a **false reject** is a good unit sent to rework;
+**containment** is the controlled response that prevents a suspected defect from
+moving to the customer.
+
+### Complete reference packet — Technician Knowledge
+
+~~~text
+TECHNICIAN KNOWLEDGE ASSISTANT · RESEARCH
+
+WHY NOW
+Workforce readiness is 52/100 and 18% of senior technicians are retirement-
+eligible within 18 months.
+
+WHAT WE KNOW
+• Only 1.5 trainer-days per plant per quarter are protected for workflow change.
+• Technician representatives support knowledge capture only with review time,
+  safe boundaries, and a correction route.
+
+WHAT RESEARCH WILL RESOLVE
+• Is there a bounded knowledge set for one shift workflow?
+• Can a technician review panel and protected review time be named?
+• Are safety, intellectual-property, provenance, withdrawal, and escalation
+  controls usable in that workflow?
+
+DECISION TEST
+Accepted knowledge boundary, review panel/time, accountable source owner, and
+safety/IP controls → bounded Pilot may be considered. Repairable governance or
+content gaps → remediation; no safely validated source/review path → priority
+not supported.
+
+COMMITMENT
+₹0.18 Cr · Data Engineering 1/4 · Frontline Change 1/3 ·
+Governance Assurance 1/2 · Q1 only · Owner: Maintenance lead with technician rep
+
+IF DEFERRED
+Continuity exposure remains; review when protected review capacity or a material
+workflow/retirement trigger changes the evidence. No departure prediction is
+invented.
+
+THIS IS NOT A PROMISE
+Research does not raise workforce readiness, trust, or usage, and does not pass
+G-PF-05.
+~~~
+
+Plain-language terms: a **knowledge boundary** is the set of procedures the
+assistant is allowed to retrieve; **provenance** identifies the source and review
+status; a **withdrawal route** removes unsafe or stale content; an **escalation
+route** sends disputed guidance to the accountable human owner.
+
 ## State 3 — Commit
 
 ~~~text

@@ -565,3 +565,12 @@ Status: proposed UX revision; Quality/Workforce variants and learner validation 
 - **Progressive disclosure:** Only the decision-relevant summary is visible in the packet; source detail remains in a contextual drawer. This preserves orientation without recreating the full Evidence Room.
 - **Transfer pattern:** Visual Quality and Technician Knowledge now have compact context requirements with their own why-now, Research findings, and deferral trigger; their full packets still need authoring.
 - **Validation:** A non-manufacturing reviewer must be able to explain what is known, what Research will establish, what will not change, and what the commitment buys before UX-W1-08 can close.
+
+## 2026-08-21 — Context packets completed for all opening priorities
+
+Status: proposed UX revision; non-manufacturing validation pending
+
+- **Visual Quality:** The packet now explains the 1,240 PPM problem, Q2 OEM-evidence timing, visually observable defect/capture questions, traceability ownership, commitment, deferral trigger, and plain-language terms.
+- **Technician Knowledge:** The packet now explains readiness/retirement exposure, protected trainer capacity, bounded knowledge/review/safety questions, commitment, deferral trigger, and plain-language terms.
+- **Consistency:** All three packets use the same decision-context order and explicitly state what Research will not change. The learner can compare choices without knowing plant-specific internals.
+- **Next validation:** Test the packets with a non-manufacturing reviewer or representative learner. UX-W1-08 is draft-complete but remains open until comprehension is observed.
