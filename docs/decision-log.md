@@ -517,3 +517,13 @@ Status: proposed observation; walkthrough gate remains open
 - **Reflection evidence:** The participant wrote, “evidence that research will give clear directions for the pilot,” demonstrating that the reflection prompt can elicit a pre-Pilot condition without changing the result.
 - **Design signal:** The path currently provides a coherent evidence → decision → authored outcome → next decision chain. No new contradiction was found in this path.
 - **Remaining validation:** Walk the `remediation-required` and `priority-not-supported` variants, then test the package with 3–5 representative learners/facilitators. UX-W1-04 remains in progress and UX-W1-05 remains blocked.
+
+## 2026-08-21 — Walkthrough finding: remediation action is under-authored
+
+Status: proposed blocker requiring content decision
+
+- **Observed choice:** In the `remediation-required` Window 2 branch, the product owner selected “fund the named remediation.”
+- **Finding:** The current pack names repairable evidence gaps but does not define a bounded remediation action with cost, capacity, duration, accountable owner, completion evidence, exit condition, or an explicit boundary on operating metrics.
+- **Implication:** The UI can present remediation as a discussion option, but the resolver must not treat it as fundable or apply an invented effect until that content exists. Otherwise the branch would repeat the ambiguity the V3 reset is intended to remove.
+- **Required next decision:** Decide whether remediation is a real Window 2 action. If yes, author a provisional synthetic remediation profile and review it before continuing the branch walkthrough; if no, remove “fund remediation” and offer only switch/defer choices.
+- **Artefact:** [V3 implementation backlog](./project-factory-v3-implementation-backlog.md), item UX-W1-07.
