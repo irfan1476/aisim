@@ -10,7 +10,7 @@ Date: 2026-08-21
 | Stable baseline | `main` | `d71a6ea` | Existing stable line | Treated as the base for v3 separation, based on product-owner direction. |
 | Active v2 scenario line | `feature/scenario-generic-pipeline` | `dc34433` | Checked out in the current worktree; actively being developed | Contains the generic scenario pipeline and its committed Project Factory, BankNext, Care360, and FutureReady packs. |
 | Historical precursor | `feat/domain-agnostic-scenario-mode` | `fdf709f` | Not active | Earlier domain-agnostic scenario work. |
-| v3 planning line | `codex/project-factory-v3` | `d71a6ea` base; planning/content commits `ea1fa29`, `aa2622e` | Dedicated worktree at `.worktrees/project-factory-v3`; V3 planning baseline and provisional content pack committed | Intentionally starts from `main`, with no v2 code integration yet. |
+| v3 planning line | `codex/project-factory-v3` | `d71a6ea` base; planning/content commits `ea1fa29`, `aa2622e`, `8b4f330` | Dedicated worktree at `/Users/irfan/projects/AISim-v3`; V3 planning baseline and provisional content pack committed | Intentionally starts from `main`, with no v2 code integration yet. |
 
 Git commits do not themselves use the labels “v1,” “v2,” or “v3.” The product labels above are the agreed working vocabulary, not inferred release tags.
 
@@ -20,7 +20,7 @@ Git commits do not themselves use the labels “v1,” “v2,” or “v3.” Th
 
 - Created `codex/project-factory-v3` from `main` at `d71a6ea`.
 - Kept `feature/scenario-generic-pipeline` checked out and unchanged as the active v2 line.
-- Created a dedicated V3 worktree at `/Users/irfan/projects/AISim/.worktrees/project-factory-v3`.
+- Created and then relocated the dedicated V3 worktree to `/Users/irfan/projects/AISim-v3` so it is not an untracked subdirectory of the active V2 worktree.
 - Committed the self-contained V3 planning baseline in `ea1fa29`.
 - Committed the provisional Project Factory V3 content pack in `aa2622e`.
 
