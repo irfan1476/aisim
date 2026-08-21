@@ -493,3 +493,16 @@ Status: wireframe interaction architecture accepted; behavioral-contract revisio
 - **Scope correction:** contracts are Project Factory reference contracts and candidate generic primitives until pilot evidence supports reuse across V3 scenarios.
 - **Implementation boundary:** production remains paused until the revised contracts, three-initiative branch content, wireframe variants, and representative-learner walkthrough are approved.
 - **Artefact:** [Project Factory V3 — Revised Wireframe and Behavioral-Contract Review](./project-factory-v3-revised-wireframe-contract-review.md).
+
+## 2026-08-21 — Window 1 v2 design package delivered
+
+Status: proposed package complete; representative walkthrough and product-owner approval pending
+
+- **Source:** product-owner/Codex instruction accepted the stable-shell interaction architecture and required branch-complete wireframes, corrected behavioral contracts, a consistency check, and no production implementation.
+- **Wireframes delivered:** all three Research-review branches now have distinct Outcome, Reflect, and Next Window states. Capacity names are explicit, PF-E05 is labelled as early Q1 excerpts/full Q2 brief, and responsive, keyboard, focus-return, non-colour-status, and sticky-action behavior is specified.
+- **Contracts delivered:** the Project Factory reference contract now uses `state.v3State.ledger`, opt-in V3 window history, an idempotent resolution cursor, separate `researchReview` state, lifecycle/action relevance filters, data-type aggregation, four evidence meanings, and branch-specific outcome artefacts.
+- **Content authored for review:** Predictive Maintenance, Visual Quality, and Technician Knowledge each have `pilot-ready-with-conditions`, `remediation-required`, and `priority-not-supported` conditions plus deterministic fixtures. Learner prediction, note, reflection, and evidence-opening telemetry remain outcome-neutral.
+- **Consistency finding:** PF-I05 currently lists G-PF-05 under `scale_gate`, while G-PF-05 applies to the Technician Knowledge Pilot. Treat it as a Pilot gate, show it as `not yet evaluated` after Research, and correct the action-specific profile mapping before implementation. No new Knowledge Scale gate is invented.
+- **Compatibility boundary:** documentation only. V2 code, Standard mode, existing packs, production UI, persistence, and runtime were not changed. Contracts remain Project Factory reference contracts/candidate primitives until pilot evidence supports reuse.
+- **Next gate:** run a structured walkthrough with the product owner and 3–5 representative learners/facilitators, resolve feedback, and explicitly approve the design package before Window 1 production work.
+- **Artefacts:** [Window 1 Wireframes v2](./project-factory-v3-window-1-wireframes-v2.md), [Window 1 Behavioral Contracts v2](./project-factory-v3-behavioral-contracts-v2.md), and [Window 1 Consistency Check](./project-factory-v3-window-1-consistency-check.md).

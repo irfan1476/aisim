@@ -203,11 +203,22 @@ The current additive UI is explicitly not learner-accepted. Do not add more tabs
 
 | ID | Status | Required outcome |
 |---|---|---|
-| UX-RESET-01 | Open | Produce a one-page V3 learner journey/state map with the exact action available at each state and the single transition that advances the quarter. |
-| UX-RESET-02 | Open | Decide whether V3 replaces the V2 cockpit for opted-in packs or shares it with legacy controls hidden. Recommendation: dedicated V3 experience. |
-| UX-RESET-03 | Open | Define a visual grammar: primary action, evidence, constraint/gate, outcome, and reflection; colours must encode meaning consistently and never be decoration. |
-| UX-RESET-04 | Open | Reduce the first playable slice to one initiative, one evidence set, one operating metric, one gate, one outcome, and one reflection prompt. |
-| UX-RESET-05 | Blocked on UX-RESET-01–04 | Re-author the V3 screen and only then revalidate the engine contracts and browser flow. |
+| UX-RESET-01 | Complete — design agreed | The six-state learner journey and exact primary transition are documented in the learner-journey and Window 1 storyboard artefacts. |
+| UX-RESET-02 | Complete — design agreed | An opted-in Project Factory V3 pack uses a dedicated stable V3 workspace; the V2 cockpit and active-play sidecar are not the primary path. |
+| UX-RESET-03 | Complete — design agreed | Blue/action, teal/evidence, amber/constraint, red/blocked, green/resolved, and grey/context are semantic and paired with non-colour labels/icons. |
+| UX-RESET-04 | Complete — design agreed | Window 1 presents three comparable Research packets but permits one primary Research decision, one outcome branch, and one contextual reflection. |
+| UX-RESET-05 | Blocked on walkthrough/approval | Re-author the production V3 screen only after the revised wireframes/contracts pass representative-learner walkthrough and product-owner approval. |
+
+### Window 1 design-review checkpoint
+
+| ID | Status | Required outcome |
+|---|---|---|
+| UX-W1-01 | Draft complete — proposed | [Window 1 Wireframes v2](./project-factory-v3-window-1-wireframes-v2.md) includes branch-specific Outcome/Reflect/Next Window states, explicit capacity labels, PF-E05 timing, responsive behavior, keyboard interaction, focus return, non-colour status, and a non-trapping primary action. |
+| UX-W1-02 | Draft complete — proposed | [Window 1 Behavioral Contracts v2](./project-factory-v3-behavioral-contracts-v2.md) defines opt-in window history/cursor, Research review state, three branches and fixtures for all three opening initiatives, action-specific gate semantics, and four evidence meanings. |
+| UX-W1-03 | Complete — one content correction recorded | [Window 1 Consistency Check](./project-factory-v3-window-1-consistency-check.md) aligns state, persistence, content, gates, and UI wording. Before implementation, correct PF-I05's `scale_gate` reference because G-PF-05 is authored as a Pilot gate. |
+| UX-W1-04 | Pending | Walk through the v2 wireframes and all three branches with the product owner and 3–5 representative learners/facilitators; capture orientation, action clarity, evidence connection, branch comprehension, and next-state prediction. |
+| UX-W1-05 | Blocked on UX-W1-04 | Resolve walkthrough feedback and explicitly approve the wireframes, behavioral contracts, branch content, and PF-I05/G-PF-05 correction. |
+| UX-W1-06 | Blocked on UX-W1-05 | Only after approval, implement Window 1 additively and opt-in, migrate V3 state safely, and re-run V2/Standard regression plus V3 browser/contract tests. |
 
 #### Mandatory state-screen contract
 
