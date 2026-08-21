@@ -438,3 +438,14 @@ Status: proposed; awaiting product-owner review
 - **Validation strategy:** storyboard and test Window 1 before production code. A learner must independently identify the decision, relevant options, consequence/cost, primary action, and resulting change.
 - **Compatibility:** existing V3 engine contracts remain potentially reusable; the current V3 UI remains a non-accepted technical prototype. No V2 integration, P3 reuse, event expansion, or further production UI is authorised by this proposal.
 - **Artefact:** [Project Factory V3 — Learner-Journey Redesign Proposal](./project-factory-v3-learner-journey-redesign.md).
+
+## 2026-08-21 — Dedicated V3 learner journey approved; Window 1 storyboard authored
+
+Status: learner-journey direction agreed; storyboard proposed for review
+
+- **Agreed by product owner:** dedicated V3 workspace; one stable shell; Orient → Compare → Commit → Outcome → Reflect → Next Window; co-located initiative decision packets; progressive disclosure; one primary action; semantic colour grammar; removal of the additive V2-plus-panels pattern and disconnected five-page approach.
+- **Scope boundary retained:** no production implementation, P3 reuse, additional event cards, active-play analytics sidecar, AI reflection coach, new scoring, or cosmetic repair of the rejected V3 screen.
+- **Storyboard:** Window 1 compares predictive-maintenance, visual-quality, and technician-knowledge research. Each packet co-locates the current problem, cost, capacity, relevant evidence, decision-use boundary, metric, and trade-off. Immediate pilot/scale is explicitly wrong for now because required evidence is absent.
+- **Outcome principle:** research consumes resources and changes lifecycle/evidence readiness; it does not automatically improve downtime, defects, or workforce readiness. Outcome must explain both what changed and what did not.
+- **Review gate:** settle whether Window 1 authorises one primary research priority, whether these are the correct three opening options, how deferral is presented, and the provisional research-result contract before visual wireframes or production code.
+- **Artefact:** [Project Factory V3 — Window 1 Low-Fidelity Storyboard](./project-factory-v3-window-1-storyboard.md).
