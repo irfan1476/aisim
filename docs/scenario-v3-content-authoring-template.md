@@ -1,6 +1,6 @@
 # Scenario v3 Content-Authoring Template
 
-Status: reusable draft template
+Status: reusable V3 authoring template v0.2 — agreed first-checkpoint additions; planning only
 Use this to author Project Factory v3 first, then every future v3 scenario pack. Complete each required field with scenario-specific content; do not place engine logic in the narrative sections.
 
 ## 1. Pack identity and review
@@ -45,7 +45,7 @@ Define only the facts the learner needs to make the intended decisions.
 | Trigger | External or internal change creating the decision window |
 | Time horizon | Number of quarters and decision windows |
 | Non-negotiables | Safety, legal, financial, service, or equity constraints |
-| Metrics | Key, label, unit, starting value, target, range, direction, owner, reporting lag, distributional impact if applicable |
+| Metrics | Key, label, unit, starting value, target, range, direction, owner, reporting lag, and distributional impact; document a domain-specific non-applicability rationale where needed. |
 
 ## 4. Evidence pack
 
@@ -62,10 +62,20 @@ evidence:
     available_from: Q1
     format: table # table, memo, dashboard, quote, process-map
     informs: [predictive_maintenance.research, predictive_maintenance.scale_gate]
+    source_status: provisional_synthetic # provenance status: provisional_synthetic, anonymised, public, expert_reviewed
+    claim_status: supported # supported, contested, insufficient_for_decision, superseded, withdrawn
+    decision_use: "What decision this can support, qualify, or explicitly cannot support"
     facts: ["..."]
     limitations: ["..."]
     accessibility_summary: "..."
 ```
+
+Keep **source status** separate from **claim status**. A synthetic provisional
+source is not automatically weak evidence; it must not trigger a warning merely
+because its provenance is provisional. The decision ledger asks for a rationale
+only when contested or insufficient evidence is the sole substantive basis for a
+material decision. The warning is formative, source-bound, and never an
+automatic penalty.
 
 ## 5. Portfolio policy and capacity
 
@@ -74,6 +84,8 @@ portfolio_policy:
   minimum_active_delivery_initiatives: 0
   maximum_active_delivery_initiatives: 2
   lifecycle_states: [deferred, research, pilot, scale, sustain, pause, stop]
+  budget_posture: constrained # constrained, balanced, transformation-scale
+  budget_rationale: "Why this envelope creates the intended learning trade-off"
   budget:
     currency: INR_Cr
     capital_envelope: 0
@@ -88,6 +100,10 @@ portfolio_policy:
   exception_policy: "Who can approve a capacity/budget exception and what evidence is required?"
 ```
 
+The scenario library must deliberately vary budget posture. A pack is not made
+more realistic merely by changing the currency amount; its budget, capacity,
+and operating context must create a distinct decision problem.
+
 ## 6. Initiative delivery profiles
 
 Create one profile per initiative. State a value hypothesis, not a benefit promise.
@@ -97,6 +113,10 @@ initiative:
   id: predictive-maintenance
   name: "..."
   value_hypothesis: "If ... then ... because ..."
+  why_not_now:
+    status: "credible_but_unready" # credible_but_unready, low_value_in_context, capacity_incompatible, not_applicable
+    evidence: ["..."]
+    explanation: "Why a sensible leader could consider this but should defer, pause, or reject it in the current context"
   lifecycle:
     allowed_transitions: [deferred_to_research, research_to_pilot, pilot_to_scale, scale_to_sustain, any_to_pause, pause_to_resume, any_to_stop]
     time_to_signal_quarters: 0
@@ -119,7 +139,21 @@ initiative:
   scale_gate: ["..."]
   stop_or_pause_criteria: ["..."]
   known_risks: ["..."]
+  operating_change_plan:
+    required_for: [pilot, scale]
+    workflow_scope: "Process/workflow changed; what does not change"
+    affected_roles: ["..."]
+    data_or_process_remediation: ["..."]
+    capability_and_release_plan: ["training, co-design, protected time, support"]
+    accountable_owner: "..."
+    monitoring_and_feedback: ["workflow evidence, override/rework, stakeholder signal"]
+    rollback_or_escalation: "..."
 ```
+
+The existence or polish of a change plan must not itself move an outcome. Only
+observed workflow, training, remediation, feedback, and control evidence may
+affect a declared causal or stakeholder rule. Keep plan input structured and
+concise; optional free text is reflection, not resolver state.
 
 ## 7. Stakeholders and governance gates
 
@@ -174,6 +208,31 @@ event:
   debrief_explanation: "..."
 ```
 
+### Event coverage map
+
+Every learner-ready pack needs a coverage map linking material exposures to
+events, even if the first vertical slice implements only one event. A complete
+pack normally authors two or three event cards, not an arbitrary event for
+every initiative. Event eligibility must use authored context, evidence, and
+state; it must not use a generic “unfunded for N quarters” penalty.
+
+~~~yaml
+event_coverage:
+  first_vertical_slice_events: [critical-line-failure]
+  learner_ready_event_target: 2 # normally 2 or 3
+  exposures:
+    - id: reliability
+      event_status: implemented # implemented, authored_not_implemented, candidate
+      candidate_events: [critical-line-failure]
+      owner: maintenance_lead
+      review_trigger: "..."
+    - id: quality_oem
+      event_status: candidate
+      candidate_events: [quality-escape]
+      owner: quality_oem_lead
+      review_trigger: "..."
+~~~
+
 ## 9. Scorecard, debrief, and test fixtures
 
 | Element | Required content |
@@ -183,6 +242,8 @@ event:
 | Known-seed fixture | Pack version, seed, start state, learner decisions, expected metrics/state/gates/events/explanations |
 | Negative fixture | Invalid dependency, failed gate, over-capacity plan, or boundary condition and expected validation |
 | Accessibility check | Plain-language summary, colour-independent meaning, keyboard/screen-reader considerations |
+| Final board memo | Source-bound summary of decision, evidence, uncertainty, cost, gate/exposure status, operating-change plan, accountable owner, and next action. It is editable and formative, not engine-scored or LLM-invented. |
+| Responsible-impact record | Risk, equity/distributional impact, accessibility, sustainability, residual risk, monitoring cadence, escalation authority, and incident-learning response. Complete at material scale decisions and final memo; it does not alter outcomes or create a grade. |
 
 ## 10. Review and publication checklist
 
@@ -193,4 +254,9 @@ event:
 - [ ] Technical validator and deterministic fixtures pass.
 - [ ] The learner cannot obtain the intended answer solely by reading one card.
 - [ ] Every metric, event, and score component has a learner-visible explanation.
+- [ ] Each initiative has a credible wrong-for-now/defer explanation supported by named evidence.
+- [ ] Pilot/scale work has a concise operating-change plan and declared workflow evidence.
+- [ ] The event-coverage map distinguishes implemented, authored-not-implemented, and candidate events; learner-ready packs have two or three authored event cards.
+- [ ] The board memo and responsible-impact record are source-bound, formative, and do not use learner text to change outcomes.
+- [ ] Distributional impact, accessibility, sustainability, residual risk, monitoring, and incident learning have been considered; an author must explain any domain-specific non-applicability.
 - [ ] Pack version and migration impact are recorded in the decision log.

@@ -1,6 +1,6 @@
 # V3 First Checkpoint: Realism, Learning, and Responsible-AI Traceability
 
-Status: checkpoint review complete; refinements proposed; no engine or V2 code change authorised  
+Status: checkpoint review complete; five authoring-contract additions agreed; no engine or V2 code change authorised
 Date: 2026-08-21  
 Scope: Project Factory V3 content and reusable V3 authoring/architecture direction.
 
@@ -85,6 +85,5 @@ yet complete or empirically validated. The next planning refinements are:
 4. Add pack-level risk, equity/distributional-impact, accessibility, and sustainability checks, with residual-risk and incident-learning fields.
 5. Add library-level budget-posture guidance before creating BharatMart.
 
-These are proposed documentation refinements. They require product-owner
-confirmation before altering the authoring contract or starting implementation.
-
+These authoring-contract refinements are agreed. They do not authorise
+implementation; the V2-based branch and engine work remain separate decisions.

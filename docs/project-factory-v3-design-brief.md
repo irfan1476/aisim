@@ -172,6 +172,35 @@ calibration follows the pilot and versions any rule, value, event, or prompt
 change before broader reuse. This parallel review route preserves momentum but
 does not make provisional content a claim about a real factory.
 
+### First-checkpoint authoring contract additions
+
+The following are agreed for the reusable V3 authoring contract and Project
+Factory content baseline:
+
+1. Evidence provenance status is separate from decision-use claim status. A
+   provisional synthetic source is not automatically inadequate evidence. A
+   reflective ledger prompt appears only when contested or insufficient evidence
+   is the sole substantive basis for a material claim.
+2. Each initiative includes a visible credible-but-wrong-for-now lifecycle
+   explanation. It explains why the action is unready, low value in context, or
+   capacity-incompatible; it is not a trick answer.
+3. Pilot and scale decisions include a concise operating-change plan covering
+   workflow, affected roles, data/process remediation, capability/release,
+   owner, feedback, and rollback/escalation. The plan text itself never causes
+   an outcome; only observed, declared operating evidence may do so.
+4. A first vertical slice may implement one event. A learner-ready pack needs
+   two or three reviewed, deterministic event cards mapped to material
+   exposures. Events arise from authored conditions, not a generic unfunded
+   duration.
+5. The closing deliverable is a formative, source-bound board memo with a
+   responsible-impact record: risk, equity/distributional impact, accessibility,
+   sustainability, residual risk, monitoring, escalation, and incident learning.
+   These learner reflections never affect outcome or scorecard state.
+
+The scenario library also requires intentionally varied budget postures:
+constrained, balanced, and transformation-scale. The amount, capacity, and
+operating context must each create the stated learning tension.
+
 ## Scenario model
 
 ### Situation and operating constraints

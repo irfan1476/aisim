@@ -20,6 +20,7 @@ Reference: [Project Factory 2030 v3 Design Brief](./project-factory-v3-design-br
 |---|---|---|
 | PF0.1 | Freeze current v1 regression fixtures and save samples. | Existing Standard and all four v1 scenario tests pass unchanged; representative v5 saves are stored as non-sensitive test fixtures. |
 | PF0.2 | Finalise the v3 schema contract and authoring template. | Types cover learning, evidence, lifecycle/delivery, capacity, gates, causal rules, events, stakeholders, scorecard, and fixtures; no runtime functions occur in pack data. |
+| PF0.2a | Add first-checkpoint authoring fields to the schema and validator contract. | Evidence provenance is separate from claim status; initiative profiles support wrong-for-now and operating-change-plan fields; packs declare budget posture, event coverage, board memo, and responsible-impact fields. Missing required fields are identified with an author-facing explanation. |
 | PF0.3 | Define test seed policy. | A scenario run records seed/version; same pack, state, seed, and decisions produce identical outcomes. |
 
 ### WP1 — Compatibility foundation
@@ -40,7 +41,8 @@ Reference: [Project Factory 2030 v3 Design Brief](./project-factory-v3-design-br
 | PF2.1 | Implement lifecycle transition validation. | Only authored transitions are accepted; scale is rejected/pending when its pilot or gate is incomplete; pause/stop behaviour is explicit. |
 | PF2.2 | Implement budget and active-delivery capacity resolver. | Fewer than three initiatives are valid; more than two pilot/scale initiatives is prevented with an explanatory reason; research has the agreed lightweight capacity treatment. |
 | PF2.3 | Implement decision ledger. | Every decision window persists rationale, prediction, owner, evidence used, unresolved assumption, and gate/stop criterion; concise validation messages protect empty or excessive entries. |
-| PF2.4 | Add pre-brief and evidence-room UI. | Learner can inspect four initial evidence artefacts and known unknowns before the first decision; artefact provenance is visible. |
+| PF2.3a | Add operating-change-plan and contested-evidence rationale capture. | Pilot/scale decisions capture concise workflow, roles, remediation, capability/release, owner, feedback, and rollback fields. A rationale is prompted only when contested/insufficient evidence is the sole substantive basis for a material claim. Plan text itself has no direct metric effect. |
+| PF2.4 | Add pre-brief and evidence-room UI. | Learner can inspect four initial evidence artefacts and known unknowns before the first decision; artefact provenance and decision-use/claim status are visible. |
 | PF2.5 | Add initiative-plan UI. | Learner chooses lifecycle action and sees cost, capacity, prerequisites, owner, and stop/scale criterion before confirming. |
 
 ### WP3 — Governance and causal runtime slice
@@ -52,6 +54,7 @@ Reference: [Project Factory 2030 v3 Design Brief](./project-factory-v3-design-br
 | PF3.2a | Implement the operational-value attribution resolver. | Value is derived only from declared operational deltas, cost types, timing, and labelled assumption ranges; it can return observed, estimated, or not-yet-observable and cannot compound independently of scenario evidence. |
 | PF3.3 | Add three Project Factory reference rules. | Test fixtures cover: delayed predictive-maintenance benefit, visual-quality false-reject trade-off, and knowledge/maintenance dependency. |
 | PF3.4 | Implement condition-triggered event resolver. | A line-failure event becomes eligible from declared asset/gate conditions; cause, seed, evidence, response, and impact are saved and displayed. |
+| PF3.4a | Validate event-coverage maps. | The validator distinguishes implemented, authored-not-implemented, and candidate events; a learner-ready pack requires two or three authored events with deterministic fixtures. The first vertical slice may implement one declared event. No generic unfunded-duration trigger is allowed. |
 | PF3.5 | Implement deterministic stakeholder resolver. | Technician/maintenance, plant/COO, OEM/quality, CFO, and data-owner states change only through authored rules and are visible in the snapshot. |
 | PF3.5a | Implement exposure and deferral rules. | A pack can declare adverse trend, unaddressed condition, rationale/review trigger, stakeholder, and event-eligibility relationships. The engine does not impose a generic “unfunded for N quarters” penalty. Project Factory must surface all five declared exposures even though only reliability has an initial conditional event. |
 | PF3.5b | Implement initiative-specific workflow-adoption evidence. | Each initiative records its authored use/review/override/correction evidence. A derived state, if used, remains initiative-scoped and source-bound; funding or people allocation alone cannot change it, and no global campaign-adoption metric can overwrite scenario state. |
@@ -67,6 +70,8 @@ Reference: [Project Factory 2030 v3 Design Brief](./project-factory-v3-design-br
 | PF4.2a | Add the baseline-to-debrief comparison. | Each baseline dimension displays its initial response, relevant decisions/evidence, and a neutral reflection prompt; it never creates a score bonus or penalty. |
 | PF4.2b | Add one guided reflection checkpoint per board window. | The learner can record observation, interpretation, and next adjustment after a material result, gate, or event; prompts use visible evidence, are skippable/concise, and have no effect on resolver state or assessment. |
 | PF4.2c | Add final transfer reflection and facilitator guidance. | Final debrief supports an action, trigger, and metric for real-work transfer; a facilitator can run the four-window discussion without the product presenting one answer as authoritative. |
+| PF4.2d | Add a source-bound final board memo. | Learner can edit a structured memo from visible ledger/evidence only: decision, operating change, uncertainty, cost/value status, gate/exposure, responsible-impact record, and next action. It is formative, exportable, and never engine-scored or LLM-invented. |
+| PF4.2e | Add responsible-impact reflection. | At material scale decisions and final memo, learner records risk, equity/distributional impact, accessibility, sustainability, residual risk, monitoring, escalation authority, and incident learning. It is discussable/visible but cannot alter outcome, baseline, or scorecard. |
 | PF4.3 | Add workshop decision-window mode. | Facilitator view can group the 12 quarters into four windows; self-paced mode retains quarter-by-quarter play. |
 | PF4.4 | Ground the advisor in v3 context. | Advisor receives only visible evidence, ledger, gates, and current state; prompt directs it to flag uncertainty and never select, score, or invent effects. |
 
@@ -79,8 +84,11 @@ Authoring output: [Project Factory V3 Provisional Content Pack](./project-factor
 | PF5.1 | Author and review the evidence pack. | Seven evidence artefacts have source type, confidence, visibility, learning purpose, accessible text, and manufacturing-review sign-off. |
 | PF5.1a | Calibrate economic-conversion assumptions. | Operations and CFO review records values/ranges, units, time horizon, eligible scope, downside, and evidence for `VA-PF-01` through `VA-PF-04`; before that, the product reports monetary benefit as not yet observable rather than generic ROI. |
 | PF5.2 | Author initiative delivery profiles, gates, and rules. | All six initiatives have lifecycle/cost/capacity/dependency/owner/control-boundary/stop-scale content; synthetic values are labelled as such. |
+| PF5.2a | Complete first-checkpoint initiative authoring. | Every initiative has a visible wrong-for-now lifecycle explanation and a concise operating-change-plan requirement. Evidence claim status is tailored to decision use, not confused with provisional synthetic provenance. |
 | PF5.3 | Author events, stakeholder rules, and debrief prompts. | At least one condition-triggered event and the five stakeholder perspectives produce testable, explained effects. |
 | PF5.3a | Calibrate non-event exposure content. | Quality/OEM, energy/throughput, workforce, and supply-continuity exposure conditions have reviewer-approved signals, owners, and review consequences. New events are added only with an authored causal explanation and deterministic fixture. |
+| PF5.3b | Complete learner-ready event coverage. | Two or three reviewed Project Factory event cards have conditions, seed scope, trade-off choices, stakeholder effects, causal boundaries, and deterministic fixtures. Candidate events that do not meet this bar remain visible as exposures, not pseudo-events. |
+| PF5.3c | Add a library-level budget-posture review. | Before BharatMart or another new pack is authored, the library plan demonstrates constrained, balanced, and transformation-scale budget postures across the scenario set, each with an explicit learning rationale. |
 | PF5.4 | Run content, learning-design, and accessibility review. | Review comments and resolutions are recorded; no content presents synthetic values as real company evidence. |
 
 ### WP6 — Validation and pilot
@@ -88,13 +96,14 @@ Authoring output: [Project Factory V3 Provisional Content Pack](./project-factor
 | ID | Task | Acceptance criteria |
 |---|---|---|
 | PF6.1 | Extend unit and migration coverage. | Resolver, validator, lifecycle, metric authority, value attribution, workflow-adoption, exposure, gate, capacity, causal, event, stakeholder, scorecard, report-integrity, and v5→v6 tests cover success/failure boundaries. Fixtures prove that a baseline change cannot alter an outcome; a scenario metric cannot silently overwrite a core metric; a met target never produces a contrary recommendation; initiative workflow evidence cannot appear as a static global adoption value; and units/currency remain consistent. |
+| PF6.1a | Add first-checkpoint contract tests. | Tests prove source status cannot be mistaken for claim status; contested/insufficient evidence prompts reflection only under declared conditions; operating-plan text has no direct outcome effect; responsible-impact text has no outcome/score effect; and incomplete learner-ready event coverage is rejected or clearly marked. |
 | PF6.2 | Add browser flows. | A v3 Project Factory learner can pre-brief, make an evidence-led decision, encounter an explained event, defer with an explicit trigger, resume a save, and reach a source-grounded debrief; v1 scenario and Standard flows continue to pass. |
 | PF6.3 | Run a formative learner pilot. | Observe target learners in a 90-minute team session and self-paced fallback; collect evidence about comprehension, cognitive load, discussion quality, and misleading mechanics. |
 | PF6.4 | Calibrate before reuse. | Rule/content changes from pilot are versioned; only validated primitives are copied into BankNext, Care360, and FutureReady. |
 
 ## Suggested implementation order
 
-`PF0 → PF1/PF1.2a → PF2 → PF3.1–PF3.2a/PF3.4–PF3.5b → PF4.0–PF4.2b → PF5 → PF6 → PF4.2c/PF4.3/PF4.4 as pilot evidence warrants`
+`PF0/PF0.2a → PF1/PF1.2a → PF2/PF2.3a → PF3.1–PF3.5b → PF4.0–PF4.2e → PF5 → PF6 → PF4.3/PF4.4 as pilot evidence warrants`
 
 This order gets an end-to-end, individually playable reference slice before adding facilitation mode or deeper stakeholder interactions. It reduces the risk of designing a rich authoring system whose learner loop has not been validated.
 

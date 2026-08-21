@@ -195,3 +195,16 @@ Status: proposed next step; no authoring-contract or engine change authorised ye
 - **Recommendation:** refine the reusable V3 authoring contract before further Project Factory expansion or implementation. The checkpoint review identified five linked gaps: wrong-for-now evidence, an operating-change plan, complete event coverage, a source-bound final board memo, and pack-level risk/equity/accessibility/sustainability fields.
 - **Proposed sequence:** update and version the authoring template; run Project Factory through the revised template; obtain the agreed light operations and learning-design review; then name the frozen V2 commit and create the V2-based V3 implementation branch for the agreed thin vertical slice.
 - **Boundary:** no new domain pack, V2 integration, engine, UI, persistence, or deployment work starts in this checkpoint.
+
+## 2026-08-21 — First-checkpoint authoring-contract additions
+
+Status: agreed; V3 planning/content baseline advanced to 0.2; no engine or V2 code change authorised
+
+- **Language preference:** communicate in English only.
+- **Evidence status:** add separate provenance and decision-use claim status. Reject the proposed rule that any decision based on provisional evidence is flagged, because every current source is transparently provisional synthetic. Prompt reflection only when contested or insufficient evidence is the sole substantive basis for a material claim.
+- **Operating-change plan:** require concise structured workflow, role, remediation, capability/release, owner, feedback, and rollback content for pilot/scale. Reject direct effects from plan quality or completion; observed workflow/change evidence alone may affect authored rules.
+- **Event coverage:** map five Project Factory exposures. The first vertical slice implements the line-failure event; a learner-ready pack needs two or three reviewed deterministic event cards. Reject generic neglect-duration triggers and do not approve a detailed probability/trigger risk-map UI at this point.
+- **Board memo:** require an editable, source-bound, formative memo. It supports facilitator or peer discussion and is never engine-scored or LLM-invented.
+- **Responsible-impact record:** require risk, equity/distributional impact, accessibility, sustainability, residual risk, monitoring, escalation, and incident-learning reflection at material scale decisions and in the final memo. To protect cognitive load, it is not a four-question form on every minor action and it never affects outcomes or assessment.
+- **Architecture consequence:** these additions require additive schema, validator, persistence, UI, and test work alongside content. They fit the V3 approach but are not “content and UI only.”
+- **Artefact updates:** [authoring template](./scenario-v3-content-authoring-template.md), [Project Factory content pack](./project-factory-v3-content-pack.md), [design brief](./project-factory-v3-design-brief.md), [implementation backlog](./project-factory-v3-implementation-backlog.md), and [first-checkpoint review](./v3-first-checkpoint-traceability-review.md).

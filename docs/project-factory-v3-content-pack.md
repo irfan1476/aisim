@@ -1,7 +1,7 @@
 # Project Factory 2030 V3 — Provisional Content Pack
 
 Status: authored planning content; not executable scenario data
-Content version: `0.1.0-provisional`
+Content version: `0.2.0-provisional`
 Target pack ID: `project-factory-2030`
 Target compatibility contract: `scenario-depth-v3` (proposed; no engine implementation exists yet)
 Date: 2026-08-21
@@ -12,7 +12,7 @@ Date: 2026-08-21
 
 | Field | Authored content |
 |---|---|
-| Pack ID / version | `project-factory-2030` / `0.1.0-provisional`; target compatibility `scenario-depth-v3`; migration impact: none until the V3 state schema is implemented. |
+| Pack ID / version | `project-factory-2030` / `0.2.0-provisional`; target compatibility `scenario-depth-v3`; migration impact: none until the V3 state schema is implemented. |
 | Content owner | Product owner — **TBC**. This draft is maintained as a planning artefact, not approved operational content. |
 | Technical owner | Simulation-engine owner — **TBC**. |
 | Required reviewers | Automotive operations/maintenance SME; quality/OEM-supply SME; learning-design reviewer; responsible-AI/governance reviewer. |
@@ -341,6 +341,29 @@ The learner sees evidence progressively. Each artefact is intentionally incomple
 - Passing a generic checklist does not demonstrate plant-specific safety or model validity.
 - The brief does not prescribe a particular AI technology or vendor.
 
+### Evidence claim status and decision use
+
+All seven artefacts retain the provenance label **expert-calibrated synthetic —
+provisional**. Claim status below is separate: it tells the learner whether the
+particular decision use is supported, contested, or insufficient. It prevents a
+provenance badge from becoming an automatic warning when all learning evidence
+is transparently synthetic.
+
+| Artefact | Decision-use claim status | Appropriate use / boundary |
+|---|---|---|
+| PF-E01 plant performance | Supported for problem framing; insufficient for root-cause attribution. | Use with other evidence to prioritise investigation; do not select a technology from the dashboard alone. |
+| PF-E02 asset-data readiness | Supported for research and constrained pilot; insufficient for maintenance or energy scale. | The low readiness and unresolved ownership make an attractive scale proposal wrong for now. |
+| PF-E03 value-stream map | Supported for capacity/change-window constraints; contested for a specific local workflow without line-owner confirmation. | Use it to sequence and plan, then validate with the relevant line owner. |
+| PF-E04 workforce brief | Supported for protected-review/training capacity; contested as a complete account of technician attitudes. | Do not infer workforce adoption from illustrative quotations alone. |
+| PF-E05 OEM brief | Supported for traceability/containment constraints; insufficient for a complete commercial forecast. | Treat quality and delivery red lines as binding, while retaining OEM commercial uncertainty. |
+| PF-E06 finance brief | Supported for capital/run-capacity constraints; insufficient for monetary-benefit attribution. | Report operating movement and cost; benefit remains not yet observable until value assumptions are calibrated. |
+| PF-E07 governance brief | Supported for baseline control boundaries; insufficient to demonstrate local model or workflow validity. | Passing a generic control check does not replace initiative-specific gate evidence. |
+
+When contested or insufficient evidence is the sole substantive basis for a
+material lifecycle, exception, or board-memo claim, the ledger asks the learner
+to record why they proceeded and what would change their view. It is a
+reflection prompt, not an automatic outcome penalty.
+
 ## 5. Portfolio policy and capacity
 
 ~~~yaml
@@ -348,6 +371,11 @@ portfolio_policy:
   minimum_active_delivery_initiatives: 0
   maximum_active_delivery_initiatives: 2
   lifecycle_states: [deferred, research, pilot, scale, sustain, pause, stop]
+  budget_posture: constrained
+  budget_rationale: >
+    A ₹5 Cr cumulative envelope forces sequencing and selective foundation
+    work. It is not a universal library default; future packs must use a
+    context-specific constrained, balanced, or transformation-scale posture.
   capital_envelope:
     currency: INR_Cr
     amount: 5.0
@@ -387,6 +415,16 @@ portfolio_policy:
 | Sustain | Operate, monitor, retrain/revalidate, and improve an established capability. | Uses declared run/monitoring capacity but does not automatically occupy a pilot/scale slot. |
 | Pause | Stop expansion while retaining a safe, explainable state and a review point. | Releases future growth capacity; may retain limited run/exit effort. |
 | Stop | Retire the work safely and record learning, debt, or handover. | Releases capacity after stated exit obligations. |
+
+### Operating-change plan contract
+
+Before an initiative can enter pilot or scale, the learner records a concise,
+source-bound operating-change plan. It identifies workflow scope, affected
+roles, data/process remediation, protected capability/release time, accountable
+owner, workflow-feedback evidence, and rollback/escalation route. The plan is
+not a free-text performance test and does not itself change a metric. Only the
+observed workflow, training, remediation, feedback, and control evidence
+declared elsewhere in the pack can affect stakeholder or causal rules.
 
 ## 6. Initiative delivery profiles
 
@@ -720,6 +758,25 @@ initiative:
     - "Inventory buffers may protect delivery while harming working capital."
 ~~~
 
+### Explicit credible-but-wrong-for-now decisions
+
+The intended learning point is not that an initiative is categorically good or
+bad. It is that a lifecycle action can be credible but wrong in the current
+state.
+
+| Initiative/action | Why it is plausible | Why it is wrong for now | Evidence that can change the decision |
+|---|---|---|---|
+| Predictive-maintenance scale | M-4 downtime is material and sensor data exists in part. | Asset readiness is 43, sensor coverage 38%, and failure-code coverage 44%; scale would bypass the learning and safety boundary. | PF-E02 remediation, technician workflow evidence, and G-PF-01. |
+| Visual-quality scale | Quality escape and rework pressure make detection valuable. | Labels, capture conditions, false rejects, and operator override traceability have not yet been demonstrated in a pilot. | PF-E01, PF-E03, PF-E05, pilot evidence, and G-PF-02. |
+| Demand-forecasting pilot | Schedule disruption and working-capital pressure are real. | Inventory-master reconciliation and named planner action workflow are not yet evidenced. | PF-E03, PF-E05, PF-E06, and G-PF-03. |
+| Energy-optimisation scale | Energy intensity is elevated and operator decisions can matter. | Meter coverage is 54% and comparable production context/safe override evidence are incomplete. | PF-E02, PF-E03, pilot evidence, and G-PF-04. |
+| Knowledge-assistant pilot | Retirement risk makes knowledge transfer urgent. | A pilot without a review panel, protected feedback process, and safety/IP boundary can erode trust rather than build readiness. | PF-E04, PF-E07, and G-PF-05. |
+| Supply-risk-monitoring scale | Late confirmations and short-notice schedule changes threaten continuity. | Supplier data-sharing, escalation ownership, and priority-alert action capacity are not yet evidenced. | PF-E03, PF-E05, PF-E06, and G-PF-06. |
+
+These are visible deferral or lifecycle reasons, not intended-answer labels.
+Research can still be defensible where its stated capacity and evidence purpose
+are met.
+
 ## 7. Stakeholders and governance gates
 
 ### Stakeholder definitions and declared response rules
@@ -1030,6 +1087,26 @@ event:
     evidence use, and resilience choices.
 ~~~
 
+### Event coverage map
+
+Project Factory has one event implemented in the first vertical slice so the
+engine and facilitation loop can be tested without a dense event deck. A
+learner-ready complete pack should have two or three reviewed, authored events.
+The map deliberately separates implemented, authored-not-implemented, and
+candidate events; it does not force every exposure to become a random shock.
+
+| Exposure | Candidate event | Status | Eligibility direction and intended trade-off |
+|---|---|---|---|
+| Reliability | Critical line failure on M-4 | Implemented | Existing EV-PF-01 conditions; continuity versus durable asset/workflow recovery. |
+| Quality/OEM | Quality escape and OEM containment review | Candidate | Uncontained escape/traceability failure; output, rework, and OEM confidence trade-off. |
+| Workforce | Technician retirement-wave and review-capacity loss | Candidate | Unprotected knowledge transfer/training capacity; near-term cover versus capability and trust trade-off. |
+| Energy/throughput | Energy-price and production-load shock | Candidate | Metered exposure and production context; throughput protection versus energy action trade-off. |
+| Supply continuity | Supplier schedule disruption | Candidate | Weak signal/action capacity and schedule context; inventory/cash versus delivery trade-off. |
+
+Future event authoring must use explicit conditions, seed scope, response
+options, causal boundaries, stakeholder effects, and deterministic fixtures. It
+must not trigger from an arbitrary number of unfunded quarters.
+
 ## 9. Formative scorecard, reflection, and fixtures
 
 ### Operational-value attribution model
@@ -1120,15 +1197,40 @@ No composite score is shown in the first pilot. Each dimension displays one of *
 | Portfolio balance | Active initiatives, capacity allocation, deferred work | “Did focus or breadth create more value in this context?” |
 | CFO communication confidence | Value hypothesis, capital/run costs, predicted and actual result | “What would you now say differently in a CFO conversation?” |
 
+### Final board memo and responsible-impact record
+
+The closing learner artefact is a structured, editable board memo—not a
+generated verdict. It draws only from learner-visible evidence and the decision
+ledger. It is formative and available for facilitator or peer discussion; it
+does not create a score or alter a resolved outcome.
+
+| Board-memo section | Required source-bound content |
+|---|---|
+| Executive decision | Recommended next funding/lifecycle decision, accountable owner, and decision horizon. |
+| Situation and evidence | Material operating signal, evidence used, contested/insufficient evidence, and unresolved assumption. |
+| Strategy and operating change | Initiative lifecycle, capacity/cost, workflow/data/training plan, stakeholder commitments, and stop/scale condition. |
+| Value and uncertainty | Operational movement, capital/run/event costs, value-attribution status, and unobservable or uncalibrated assumptions. |
+| Risk and governance | Gate state, residual exposure, control boundary, escalation/rollback route, and monitoring cadence. |
+| Responsible-impact record | Risk, equity/distributional impact, accessibility, sustainability, residual risk, escalation authority, and incident-learning response. |
+| Next action | Specific decision, trigger, evidence to review, and timeframe. |
+
+The responsible-impact record is completed at material scale decisions and in
+the final memo. In Project Factory, equity includes shift/plant access to
+training and workflow burden; accessibility includes usable access across shift
+conditions; sustainability includes energy, equipment-care, and additional
+digital-operating load. Learners may record a reasoned non-applicability, but
+cannot silently omit a dimension. These reflections never change engine state
+or assessment.
+
 ### Known-seed fixtures for later implementation
 
 These fixtures define deterministic expectations once the V3 schema and resolver exist. They are not tests of current application code.
 
 | Fixture | Pack / seed | Start and decisions | Expected explained outcome |
 |---|---|---|---|
-| `PFV3-KS-01` | `0.1.0-provisional` / seed `203007` | Q1: research predictive maintenance and knowledge assistant; Q2: pilot knowledge assistant only after G-PF-05; Q3: pilot predictive maintenance after local readiness repair; Q4–Q5: retain pilots, record alert/workflow evidence; Q6: scale predictive maintenance only if G-PF-01 passes. | At no point are more than two pilot/scale initiatives active. CR-PF-01 becomes eligible after the pilot conditions are met. If G-PF-01 fails, scale is limited and the ledger gives the missing evidence. EV-PF-01 is not eligible if the declared maintenance readiness/outcome conditions have been achieved. |
-| `PFV3-KS-02` | `0.1.0-provisional` / seed `203011` | Q1–Q2: research then pilot visual quality on Q-2 with traceability evidence; Q3: operator override completion reaches 80% and false rejects are 7%; Q4: request scale through G-PF-02. | CR-PF-02 can improve first-pass yield and reduce escaped defects within its bounded seeded range. Scale is allowed only if the stated gate evidence is recorded; outcome explanation mentions both detection and false-reject exposure. |
-| `PFV3-KS-03` | `0.1.0-provisional` / seed `203019` | Leave predictive maintenance deferred; hold asset-data readiness below 70; after Q4 meet EV-PF-01 eligibility and select controlled contingency and root cause. | The event result is determined only by the recorded seed after eligibility. ER-PF-02 produces the documented short-term continuity trade-off and later recovery evidence; the resilience dimension refers to response quality rather than treating the event as a baseline penalty. |
+| `PFV3-KS-01` | `0.2.0-provisional` / seed `203007` | Q1: research predictive maintenance and knowledge assistant; Q2: pilot knowledge assistant only after G-PF-05; Q3: pilot predictive maintenance after local readiness repair; Q4–Q5: retain pilots, record alert/workflow evidence; Q6: scale predictive maintenance only if G-PF-01 passes. | At no point are more than two pilot/scale initiatives active. CR-PF-01 becomes eligible after the pilot conditions are met. If G-PF-01 fails, scale is limited and the ledger gives the missing evidence. EV-PF-01 is not eligible if the declared maintenance readiness/outcome conditions have been achieved. |
+| `PFV3-KS-02` | `0.2.0-provisional` / seed `203011` | Q1–Q2: research then pilot visual quality on Q-2 with traceability evidence; Q3: operator override completion reaches 80% and false rejects are 7%; Q4: request scale through G-PF-02. | CR-PF-02 can improve first-pass yield and reduce escaped defects within its bounded seeded range. Scale is allowed only if the stated gate evidence is recorded; outcome explanation mentions both detection and false-reject exposure. |
+| `PFV3-KS-03` | `0.2.0-provisional` / seed `203019` | Leave predictive maintenance deferred; hold asset-data readiness below 70; after Q4 meet EV-PF-01 eligibility and select controlled contingency and root cause. | The event result is determined only by the recorded seed after eligibility. ER-PF-02 produces the documented short-term continuity trade-off and later recovery evidence; the resilience dimension refers to response quality rather than treating the event as a baseline penalty. |
 
 ### Negative fixtures for later implementation
 
@@ -1160,5 +1262,11 @@ These fixtures define deterministic expectations once the V3 schema and resolver
 - [ ] Technical validator and deterministic fixtures pass; no V3 implementation exists yet.
 - [x] No single evidence artefact reveals an intended “correct” portfolio.
 - [x] Every metric, gate, event, stakeholder rule, scorecard dimension, and reflection prompt has a learner-visible explanation.
+- [x] Each Project Factory initiative now has a visible credible-but-wrong-for-now lifecycle explanation.
+- [x] The first-slice event and four additional event candidates are mapped; two or three reviewed event cards remain required before a learner-ready pack is declared complete.
+- [x] The planned board memo and responsible-impact record are explicitly formative and source-bound.
+- [ ] Operations/learning review has confirmed the concise operating-change-plan fields and no undue cognitive load.
+- [ ] Quality/OEM, workforce, energy, and supply event candidates have been authored, reviewed, and supplied with deterministic fixtures as required for learner-ready event coverage.
+- [ ] Equity/distributional impact, accessibility, sustainability, residual-risk, monitoring, and incident-learning fields have been reviewed for scenario-specific applicability.
 - [x] Pack version and migration impact are recorded in the decision log.
 - [ ] Pilot findings and reviewer changes have been versioned before release.
