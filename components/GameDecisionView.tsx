@@ -65,7 +65,7 @@ export default function GameDecisionView({
               <p className="text-xs font-bold tracking-[.16em]">
                 {scenario?.name || "PROJECT FACTORY 2030"}
               </p>
-              <p className="text-xs text-ink/45">Chief AI Officer cockpit</p>
+              <p className="text-xs text-ink/45">{scenario?.v3 ? "V3 reference cockpit · provisional learning pack" : "Chief AI Officer cockpit"}</p>
             </div>
           </div>
           <div className="flex items-center gap-5">

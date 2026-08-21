@@ -88,3 +88,5 @@ function gate(id: string, appliesTo: string[], ownerRole: string, requiredEviden
 }
 
 export const projectFactoryV3: ScenarioDefinition = { ...projectFactory, id: 'project-factory-2030', schemaVersion: 'v3', packVersion: '0.2.0-provisional', v3: projectFactoryV3Pack };
+projectFactoryV3.name = 'Project Factory 2030 — V3 Reference Pack';
+projectFactoryV3.description = 'Evidence-led transformation under lifecycle, governance, capacity, stakeholder, and conditional-event constraints. Provisional synthetic content for learning use.';
