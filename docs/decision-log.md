@@ -506,3 +506,14 @@ Status: proposed package complete; representative walkthrough and product-owner 
 - **Compatibility boundary:** documentation only. V2 code, Standard mode, existing packs, production UI, persistence, and runtime were not changed. Contracts remain Project Factory reference contracts/candidate primitives until pilot evidence supports reuse.
 - **Next gate:** run a structured walkthrough with the product owner and 3–5 representative learners/facilitators, resolve feedback, and explicitly approve the design package before Window 1 production work.
 - **Artefacts:** [Window 1 Wireframes v2](./project-factory-v3-window-1-wireframes-v2.md), [Window 1 Behavioral Contracts v2](./project-factory-v3-behavioral-contracts-v2.md), and [Window 1 Consistency Check](./project-factory-v3-window-1-consistency-check.md).
+
+## 2026-08-21 — Preliminary Window 1 walkthrough: Predictive Maintenance path
+
+Status: proposed observation; walkthrough gate remains open
+
+- **Participant/context:** Product owner completed one conversational walkthrough path; this is not a representative-learner sample or final approval.
+- **Observed path:** Orient → Compare → Predictive Maintenance → Commit → Research Review (`pilot-ready-with-conditions`) → Reflect → Window 2.
+- **Observed comprehension:** The participant identified Reliability, Quality, and Workforce as the opening priorities; selected Predictive Maintenance; accepted the distinction between Research and operating intervention; and understood that the Pilot decision occurs in Window 2.
+- **Reflection evidence:** The participant wrote, “evidence that research will give clear directions for the pilot,” demonstrating that the reflection prompt can elicit a pre-Pilot condition without changing the result.
+- **Design signal:** The path currently provides a coherent evidence → decision → authored outcome → next decision chain. No new contradiction was found in this path.
+- **Remaining validation:** Walk the `remediation-required` and `priority-not-supported` variants, then test the package with 3–5 representative learners/facilitators. UX-W1-04 remains in progress and UX-W1-05 remains blocked.
