@@ -75,7 +75,8 @@ The first P1 foundation slice is implemented on
 - **Complete:** `PF0.1`, `PF0.2`, `PF1.1`, `PF1.2`, `PF1.2a`, `PF1.3`, and `PF1.4`.
 - **Verified:** 44/44 unit/regression tests, type-check, production build, and the existing 8 E2E tests pass.
 - **Compatibility rule:** V3 state is attached only when a scenario pack explicitly supplies V3 metadata. Legacy Standard/v1/v2 and Project Factory saves remain on the V2 state path.
-- **Next:** `PF2.0`–`PF2.5` decision/evidence/ledger slice, then `PF3` resolver slices with paired `PF6.1*` tests. `PF2.6`/`PF6.1c` define the sidecar projection contract after the state shape is fixed; no sidecar UI or resolver behavior is implied by the foundation types alone.
+- **Complete (pure runtime contracts):** `PF2.0`–`PF2.3b`, `PF3.1`–`PF3.5b`, and initial `PF6.1`/`PF6.1a`/`PF6.1b` coverage are implemented in additive modules (`v3Decisions.ts`, `v3Resolver.ts`) with deterministic focused tests. The resolver was hardened so causal evaluation is source-pure and events require authored trigger conditions.
+- **Next:** integrate these pure contracts into the V3 store/quarter orchestration, then implement `PF2.4`–`PF2.5` UI and `PF2.6`/`PF6.1c` sidecar projection selectors. No sidecar UI is being implemented in this slice.
 
 ### WP0 — Baseline and contract
 

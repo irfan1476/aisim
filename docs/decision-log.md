@@ -331,3 +331,15 @@ Status: agreed architecture and backlog integration; sidecar UI implementation d
 - **Schema reconciliation:** the supplied design examples referenced legacy `scenarioState.*` paths. The implementation will map to the actual V3 contract (`state.v3State`, scenario pack V3 metadata, and `state.history`) through pure selectors; derived analytics are not persisted.
 - **Explicit non-decisions:** no composite score, CEO grade, trait/archetype diagnosis, automated blind-spot inference, or AI reflection coach is added by the sidecar. Any facilitator/post-run analytics expansion remains subject to pilot evidence and retention/access review.
 - **Artefact:** [Project Factory V3 — Analytics Sidecar](./project-factory-v3-analytics-sidecar.md); backlog work package `WP-SC` in [Implementation Backlog](./project-factory-v3-implementation-backlog.md).
+
+## 2026-08-21 — PF2/PF3 pure runtime contracts implemented
+
+Status: implemented; orchestration/UI integration remains the next V3 slice
+
+- **Scope delivered:** PF2.0–PF2.3b baseline reflection contract, authored lifecycle/dependency/gate validation, budget and active-delivery capacity validation, immutable portfolio-plan application, decision-ledger pre-resolution records, resolver-authored outcome attachment, and learner-owned reflection separation.
+- **Resolver scope delivered:** PF3.1–PF3.5b gate evaluation, delayed causal-rule evaluation, operational-value attribution status, condition-triggered events, event coverage lookup, stakeholder movement, contextual exposure/deferral, and initiative-scoped workflow-adoption evidence.
+- **Tests delivered:** deterministic state/ledger/legacy-compatibility coverage plus focused resolver tests. The causal resolver is source-pure; event resolution requires authored trigger conditions when present.
+- **Compatibility:** V2/Standard behavior remains unchanged; V3 modules are additive and are not invoked for packs without explicit V3 metadata. The current Project Factory pack is still a V2 pack, so no legacy run silently acquires V3 mechanics.
+- **Verification:** full unit suite 50/50 passed, production build passed, and existing E2E suite 8/8 passed. Type-check passed with incremental artifacts disabled because the sandbox blocks `.tsbuildinfo` writes.
+- **Not yet delivered:** store/quarter orchestration wiring, PF2.4/PF2.5 UI, PF4 debrief UI, and sidecar selectors/UI. These remain ordered after the pure contracts.
+- **Implementation commits:** `eda81aa`, `859172c`, `5868c00`, and resolver hardening `5aae843` on `codex/project-factory-v3-impl`.
