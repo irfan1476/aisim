@@ -208,3 +208,12 @@ Status: agreed; V3 planning/content baseline advanced to 0.2; no engine or V2 co
 - **Responsible-impact record:** require risk, equity/distributional impact, accessibility, sustainability, residual risk, monitoring, escalation, and incident-learning reflection at material scale decisions and in the final memo. To protect cognitive load, it is not a four-question form on every minor action and it never affects outcomes or assessment.
 - **Architecture consequence:** these additions require additive schema, validator, persistence, UI, and test work alongside content. They fit the V3 approach but are not “content and UI only.”
 - **Artefact updates:** [authoring template](./scenario-v3-content-authoring-template.md), [Project Factory content pack](./project-factory-v3-content-pack.md), [design brief](./project-factory-v3-design-brief.md), [implementation backlog](./project-factory-v3-implementation-backlog.md), and [first-checkpoint review](./v3-first-checkpoint-traceability-review.md).
+
+## 2026-08-21 — V3 implementation-base verification
+
+Status: current-state finding; implementation cut remains pending product-owner authorisation
+
+- **Question addressed:** whether `dc34433` can now be treated as the V2 base for a V3 implementation branch.
+- **Repository evidence:** `dc34433` is the current HEAD of `feature/scenario-generic-pipeline` and is contained by the `Branch1-version-2` tag. The active V2 worktree has unrelated and planning files that remain uncommitted; no V2 code change, merge, or branch cut was performed during this verification.
+- **Interpretation:** the tag makes `dc34433` a reproducible candidate baseline. It is not, by itself, a semantic approval to freeze V2; the product owner must still confirm that the tag/commit is the intended implementation baseline before a V3 implementation branch is created.
+- **Proposed next sequence:** retain the decision to wait for the two calibrated event cards; arrange the agreed light manufacturing-operations and learning-design reviews; then, on explicit approval, create a named V2-based V3 implementation branch from the confirmed baseline and transfer the documentation-only V3 planning commits. No V3 engine work is authorised by this record.
