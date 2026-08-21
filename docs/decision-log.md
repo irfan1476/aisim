@@ -406,3 +406,13 @@ Status: implemented and verified; learner acceptance remains open for product-ow
 - **Source/engine boundaries:** cited evidence and learner text are ledger metadata only. Outcomes remain resolver-authored. The predictive-maintenance causal rule is initiative-scoped and applies only when the initiative is active, preserving delayed/conditional behavior and V2 isolation.
 - **Verification:** TypeScript check, production build, 68/68 unit/regression tests, and 11/11 browser tests pass. The new browser flow proves evidence citation and prediction replay in the ledger after a V3 research decision; Standard/V2 coverage remains green.
 - **Remaining acceptance question:** does this single loop feel understandable and decision-relevant to a learner when exercised locally? Product-owner review of the live flow is now the next gate. P3 reuse, deferred event cards, and broader sidecar expansion remain paused.
+
+## 2026-08-21 — V3 learner-experience reset required
+
+Status: agreed direction to pause implementation; redesign checkpoint required
+
+- **Product-owner finding:** the current V3 screen is not learnable enough to serve as the reference experience. It presents too many simultaneous controls and panels, does not establish a clear action sequence or visual hierarchy, and leaves the learner unsure which evidence, initiative, metric, and action are connected. The sidecar adds reporting surface without improving decision comprehension. The recent coherence patch does not resolve this fundamental problem.
+- **Root cause:** V3 was composited onto the V2 cockpit instead of replacing the quarter decision journey with a state-driven V3 experience. Technical opt-in isolation is not sufficient learner isolation.
+- **Decision:** stop feature implementation and do not proceed to P3, reuse, additional events, or further UI embellishment. Treat the current V3 implementation as a disposable technical prototype/reference for contracts, not as an accepted learner interface.
+- **Required redesign:** define one explicit learner journey before code resumes: orient to the current board window; inspect only evidence relevant to the current decision; choose one bounded action; record a concise prediction; resolve; observe one outcome; reflect; then advance. Every visible element must have a declared role in that sequence.
+- **Open product decision:** whether V3 should be a dedicated state-driven experience (recommended) or continue sharing the V2 cockpit with most legacy controls hidden. This must be settled in the redesign checkpoint before implementation resumes.

@@ -197,6 +197,18 @@ The technical sidecar slice is not considered learner-accepted until one decisio
 | P2-COHERENCE-02 | Implemented | V3 operating metrics are visible in the live screen; authored capacity pools are initialized; V2 confirm is disabled for V3; type-check/build/unit/E2E suites pass. |
 | P2-COHERENCE-03 | Pending product-owner review | Exercise the local V3 flow and confirm that the evidence, initiative plan, live metric context, result dialog, and Ledger tab are understandable as one decision chain. |
 
+### UX reset checkpoint (blocking further implementation)
+
+The current additive UI is explicitly not learner-accepted. Do not add more tabs, styling, fields, event cards, or reuse work until this checkpoint is resolved.
+
+| ID | Status | Required outcome |
+|---|---|---|
+| UX-RESET-01 | Open | Produce a one-page V3 learner journey/state map with the exact action available at each state and the single transition that advances the quarter. |
+| UX-RESET-02 | Open | Decide whether V3 replaces the V2 cockpit for opted-in packs or shares it with legacy controls hidden. Recommendation: dedicated V3 experience. |
+| UX-RESET-03 | Open | Define a visual grammar: primary action, evidence, constraint/gate, outcome, and reflection; colours must encode meaning consistently and never be decoration. |
+| UX-RESET-04 | Open | Reduce the first playable slice to one initiative, one evidence set, one operating metric, one gate, one outcome, and one reflection prompt. |
+| UX-RESET-05 | Blocked on UX-RESET-01–04 | Re-author the V3 screen and only then revalidate the engine contracts and browser flow. |
+
 ## Detailed implementation order after the P0 gates
 
 `PF0/PF0.2a → PF1/PF1.2a → PF1.3/PF1.4 + PF2.0–PF2.3b → PF3.1–PF3.5b → PF2.4/PF2.5 → PF2.6 + PF6.1c → PF4.0/PF4.2–PF4.2c → matching PF6.1/PF6.1a/PF6.1b tests → PF4.1/PF4.1a/PF4.2d/PF4.2e/PF4.3 → PF-SC-UI-01/PF-SC-UI-02 + PF5.3b/PF6.2/PF6.3 → PF-SC-UI-03/PF-SC-TEST-01/PF-SC-TEST-02/PF-SC-PILOT-01 → PF5.1a/PF5.3c/PF6.4 → PF4.4 only as pilot evidence warrants`
