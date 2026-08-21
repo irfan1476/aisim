@@ -76,6 +76,10 @@ function normalizeV3State(value: unknown, fallback: V3ScenarioState): V3Scenario
     scorecard: {
       execution: numberOr(scorecard.execution, 0), governance: numberOr(scorecard.governance, 0), stakeholderHealth: numberOr(scorecard.stakeholderHealth, 0), resilience: numberOr(scorecard.resilience, 0), evidenceQuality: numberOr(scorecard.evidenceQuality, 0), evidence: stringArrayOr(scorecard.evidence, []),
     },
+    baseline: isRecord(source.baseline) ? {
+      version: typeof source.baseline.version === 'string' ? source.baseline.version : fallback.baseline.version,
+      responses: Array.isArray(source.baseline.responses) ? source.baseline.responses.filter(isRecord).map((response) => ({ questionId: typeof response.questionId === 'string' ? response.questionId : '', version: typeof response.version === 'string' ? response.version : fallback.baseline.version, response: typeof response.response === 'string' ? response.response : '' })).filter((response) => response.questionId && response.response) : [],
+    } : fallback.baseline,
   };
 }
 

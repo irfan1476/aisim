@@ -44,6 +44,8 @@ export type V3GateRecord = { id: string; status: 'pending' | 'met' | 'failed' | 
 export type V3EventRecord = { id: string; quarter: number; optionId?: string; impacts: Record<string, number> };
 export type V3StakeholderRecord = { id: string; sentiment: number; history: Array<{ quarter: number; delta: number; reason?: string }> };
 export type V3ScorecardState = { execution: number; governance: number; stakeholderHealth: number; resilience: number; evidenceQuality: number; evidence: string[] };
+export type V3BaselineResponse = { questionId: string; version: string; response: string };
+export type V3BaselineState = { version: string; responses: V3BaselineResponse[] };
 export type V3ScenarioState = {
   schemaVersion: 1;
   scenarioId: string;
@@ -57,6 +59,7 @@ export type V3ScenarioState = {
   eventLog: V3EventRecord[];
   stakeholders: Record<string, V3StakeholderRecord>;
   scorecard: V3ScorecardState;
+  baseline: V3BaselineState;
 };
 import type { InitiativeState } from './initiativeState';
 import { initializeInitiativeStates } from './initiativeState';
@@ -115,6 +118,7 @@ export function createV3State(scenarioId: string, seed = 2030, budget = 5, initi
     eventLog: [],
     stakeholders,
     scorecard: { execution: 0, governance: 0, stakeholderHealth: 0, resilience: 0, evidenceQuality: 0, evidence: [] },
+    baseline: { version: 'v1', responses: [] },
   };
 }
 
