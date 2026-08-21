@@ -38,6 +38,11 @@ export function resolveV3Decision(input: {
   const causal = resolveV3CausalRules(input.pack, state, metrics, state.currentQuarter);
   state = causal.state;
   causal.result.applied.forEach((effect) => { metrics[effect.metric] = (metrics[effect.metric] || 0) + effect.delta; });
-  if (input.eventId) state = resolveV3Event(input.pack, state, input.eventId, input.eventOptionId, metrics).state;
+  if (input.eventId) {
+    const event = input.pack.events?.find((item) => item.id === input.eventId);
+    const eventResult = resolveV3Event(input.pack, state, input.eventId, input.eventOptionId, metrics);
+    state = eventResult.state;
+    if (eventResult.result.triggered) for (const effect of event?.effects || []) metrics[effect.metric] = (metrics[effect.metric] || 0) + effect.delta;
+  }
   return { accepted: true, errors: [], state, metrics, value: attributeV3OperationalValue(input.pack, metrics, input.metrics || {}) };
 }

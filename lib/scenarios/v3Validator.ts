@@ -55,7 +55,7 @@ export function validateScenarioV3Pack(scenario: Pick<ScenarioDefinition, 'id' |
     if (initiative.valueMetric) ref(metricKeys, initiative.valueMetric, 'undeclared-value-reference', `${path}.valueMetric`, 'metric');
     if (initiative.effect) validateEffect(initiative.effect, `${path}.effect`);
     for (const transition of initiative.lifecycle?.allowedTransitions ?? []) {
-      const [from, to] = transition.replace(/_/g, ' ').split(/to|→/).map((x) => x.trim());
+      const [from, to] = transition.replace(/_/g, ' ').split(/\s+to\s+|→/).map((x) => x.trim());
       if (!from || !to || (from !== 'any' && !states.has(from as V3LifecycleState)) || (to !== 'any' && !states.has(to as V3LifecycleState))) errors.push(issue('invalid-lifecycle-transition', `${path}.lifecycle.allowedTransitions`, `Invalid lifecycle transition '${transition}'.`));
     }
   }

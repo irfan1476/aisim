@@ -24,6 +24,7 @@ import {
 import { buildAdvisorSystemPrompt } from "../lib/llm/advisorPrompt";
 import V3EvidenceRoom from "./V3EvidenceRoom";
 import V3InitiativePlan from "./V3InitiativePlan";
+import V3AnalyticsSidecar from "./V3AnalyticsSidecar";
 
 function compactNumber(value: number): number {
   return Number.isFinite(value) ? Number(value.toFixed(2)) : 0;
@@ -319,7 +320,7 @@ export default function Game() {
         onReset={reset}
       />
       {v3Scenario?.v3 && s.v3State && (
-        <section className="mx-auto grid w-full max-w-[1500px] gap-5 px-5 pb-28 lg:grid-cols-2">
+        <section className="mx-auto grid w-full max-w-[1500px] gap-5 px-5 pb-28 lg:grid-cols-[1fr_1fr_360px]">
           <V3EvidenceRoom pack={v3Scenario.v3} />
           {v3InitiativeId && <V3InitiativePlan
             pack={v3Scenario.v3}
@@ -327,6 +328,7 @@ export default function Game() {
             currentState={s.v3State.initiatives[v3InitiativeId]?.lifecycle}
             onConfirm={confirmV3Plan}
           />}
+          <V3AnalyticsSidecar state={s as any} pack={v3Scenario.v3} />
         </section>
       )}
       <GameResultsModal

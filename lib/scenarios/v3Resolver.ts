@@ -16,7 +16,7 @@ export function evaluateV3Gate(pack: V3ScenarioPack, state: V3ScenarioState, gat
   const next = clone(state);
   if (!gate) return { state: next, result: { gateId, status: 'failed', missingEvidence: [], failedConditions: ['Unknown gate.'] } };
   const missingEvidence = (gate.requiredEvidence || []).filter((id) => !evidenceIds.includes(id));
-  const failedConditions = (gate.conditions || []).filter((condition) => !evaluateCondition(condition, metrics));
+  const failedConditions = (gate.conditions || []).filter((condition) => !evaluateCondition(condition, metrics, next.currentQuarter));
   const status = missingEvidence.length || failedConditions.length ? 'failed' : 'met';
   const previous = next.gates[gateId];
   const record: V3GateRecord = previous || { id: gateId, status: 'pending', history: [] };
@@ -26,8 +26,14 @@ export function evaluateV3Gate(pack: V3ScenarioPack, state: V3ScenarioState, gat
   return { state: next, result: { gateId, status, missingEvidence, failedConditions } };
 }
 
-function evaluateCondition(condition: string, metrics: Record<string, number>): boolean {
-  const match = condition.match(/^metric\.([\w.-]+)\s*(>=|<=|>|<|=)\s*(-?\d+(?:\.\d+)?)$/);
+function evaluateCondition(condition: string, metrics: Record<string, number>, quarter = 0): boolean {
+  const normalized = condition.trim().replace(/^metric\./, '');
+  const quarterMatch = normalized.match(/^quarter\s*(>=|<=|>|<|=)\s*(-?\d+(?:\.\d+)?)$/);
+  if (quarterMatch) {
+    const expected = Number(quarterMatch[2]);
+    return quarterMatch[1] === '>=' ? quarter >= expected : quarterMatch[1] === '<=' ? quarter <= expected : quarterMatch[1] === '>' ? quarter > expected : quarterMatch[1] === '<' ? quarter < expected : quarter === expected;
+  }
+  const match = normalized.match(/^([\w.-]+)\s*(>=|<=|>|<|=)\s*(-?\d+(?:\.\d+)?)$/);
   if (!match) return false;
   const value = metrics[match[1]];
   if (value === undefined) return false;
@@ -45,7 +51,7 @@ export function resolveV3CausalRules(pack: V3ScenarioPack, state: V3ScenarioStat
     const availableQuarter = quarter + lag;
     const effects = rule.effects || [];
     const condition = typeof ruleRecord.condition === 'string' ? ruleRecord.condition : undefined;
-    if (condition && !evaluateCondition(condition, nextMetrics)) continue;
+    if (condition && !evaluateCondition(condition, nextMetrics, quarter)) continue;
     if (availableQuarter > quarter) { deferred.push({ ruleId: rule.id, availableQuarter }); continue; }
     for (const effect of effects) {
       nextMetrics[effect.metric] = (nextMetrics[effect.metric] || 0) + effect.delta;
@@ -58,7 +64,7 @@ export function resolveV3CausalRules(pack: V3ScenarioPack, state: V3ScenarioStat
 export function resolveV3Event(pack: V3ScenarioPack, state: V3ScenarioState, eventId: string, optionId?: string, metrics: Record<string, number> = {}): V3ResolverResult<V3EventResult> {
   const next = clone(state); const event = (pack.events || []).find((item) => item.id === eventId);
   if (!event) return { state: next, result: { triggered: false, reason: 'Unknown event.' } };
-  if (event.trigger && !evaluateCondition(event.trigger, metrics)) return { state: next, result: { triggered: false, reason: 'Trigger conditions are not met.' } };
+  if (event.trigger && !evaluateCondition(event.trigger, metrics, next.currentQuarter)) return { state: next, result: { triggered: false, reason: 'Trigger conditions are not met.' } };
   const impacts: Record<string, number> = {};
   for (const effect of event.effects || []) impacts[effect.metric] = (impacts[effect.metric] || 0) + effect.delta;
   const record: V3EventRecord = { id: event.id, quarter: next.currentQuarter, optionId, impacts };
