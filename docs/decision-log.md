@@ -546,3 +546,13 @@ Status: proposed walkthrough progression; calibration pending
 - **Deterministic result contract:** `PF-W2-RM-A` represents accepted ownership/history/review/access evidence and makes a later Pilot decision available; `PF-W2-RM-B` represents an unresolved completion condition and keeps Pilot unavailable.
 - **Guardrail:** Neither fixture improves operating metrics or evaluates G-PF-01. Funding, completion, and reflection remain separate from operating value.
 - **Next walkthrough state:** Continue with `PF-W2-RM-A` to test whether the complete remediation outcome clearly leads to a later Pilot choice.
+
+## 2026-08-21 — Learner context gap identified
+
+Status: proposed UX/content correction; implementation remains paused
+
+- **Product-owner feedback:** The learner does not have internal knowledge of the factory and cannot fairly speculate about asset ownership, failure codes, technician capacity, or remediation value from the current context.
+- **Interpretation:** The deterministic resolver is not the problem by itself. The packets currently expose too little plain-language context about what is known, what is unknown, what Research will establish, and what a later Pilot would require.
+- **Decision:** Add a cross-cutting decision-context contract. Each packet must show why now, sourced known facts, explicit unknowns, the decision test, accountable role, capital/capacity, deferral trigger, and plain-language terms. The exercise pack is the operating truth; private manufacturing knowledge is not required.
+- **Guardrail:** Learner prediction is not a knowledge test and cannot select the branch. If a non-manufacturing reviewer cannot make a bounded Research choice from the packet, add context or simplify the choice rather than adding a recommended answer.
+- **Next validation:** Re-run the Compare and remediation packet with a non-manufacturing reviewer or representative learner after UX-W1-08 is addressed.

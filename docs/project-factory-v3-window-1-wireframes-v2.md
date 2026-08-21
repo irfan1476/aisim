@@ -14,6 +14,20 @@ sidecar. The examples use Predictive Maintenance as the selected initiative; the
 behavioral contract supplies equivalent research branches for Visual Quality and
 Technician Knowledge.
 
+## Learner context contract
+
+The learner is not expected to know Project Factory's real internal operations.
+At the start of the exercise, show this compact orientation statement:
+
+> Treat the scenario pack as the operating truth for this exercise. You are not
+> expected to know this factory in advance. If a fact is not in the evidence,
+> treat it as unknown—not as permission to invent an assumption. Research is a
+> way to resolve an unknown; a Pilot is an operating intervention.
+
+This makes the uncertainty intentional rather than punitive. The learner is
+choosing whether an evidence-building action is worth its cost and capacity, not
+claiming private knowledge about a real plant.
+
 ## Stable shell
 
 ~~~text
@@ -128,6 +142,28 @@ changes selection, evidence citation, state, or outcome.
 - The primary action is disabled until one packet is selected and announces the
   selected initiative in its label.
 
+### What every decision packet must make explicit
+
+The packet is a context bridge, not just a catalogue entry. Alongside the
+problem, cost, capacity, and evidence, it must show:
+
+- **Why this matters now:** the operational consequence in plain language;
+- **What the evidence establishes:** two or three sourced facts;
+- **What the evidence does not establish:** the unknown that Research tests;
+- **What the decision tests:** the named findings that could make a Pilot
+  possible, require remediation, or show the intervention is not actionable;
+- **Who owns the decision:** the role accountable for the operational call;
+- **If deferred:** the visible exposure or review trigger, without an invented
+  penalty;
+- **Plain-language terms:** for example, “failure-code history” means past
+  maintenance records grouped into usable cause categories; “read-only access”
+  means the team can inspect data but cannot change production systems.
+
+The learner should be able to choose Research without knowing whether the
+findings will be positive. The packet explains what will be learned and what a
+later Pilot would require; it does not require the learner to supply hidden plant
+knowledge.
+
 ## State 3 — Commit
 
 ~~~text
@@ -160,6 +196,10 @@ changes selection, evidence citation, state, or outcome.
 
 The prediction and optional note are reflective ledger data. They never select
 the research-result branch or change the resolver outcome.
+
+The prediction is not a knowledge test. A learner receives no penalty because a
+prediction differs from the resolver-authored finding; the debrief asks what the
+evidence changed and what condition matters next.
 
 ## State 4 — Outcome variants
 

@@ -52,6 +52,7 @@ Window 2 funding choice no longer points to an undefined operation.
 | Branch determination | Current pack has no Window 1 research-result branches. | Nine deterministic fixtures and nine source-bound outcome artefacts are authored in the proposed contract. | **Design gap closed.** Merge into pack metadata only after approval. |
 | Prediction/reflection | V3 ledger can store prediction/reflection; current UI previously overconnected fields. | Prediction, note, and reflection are replay/debrief data only. | **Aligned.** Must be protected by contamination tests when implemented. |
 | Evidence meanings | Current initiative profile has one `evidenceRequired` list. | Four collections distinguish visible, learner-cited, resolver-produced, and gate-required evidence. | **Additive gap.** Requires profile metadata, validator rules, and selectors. |
+| Domain context | Existing packets assume the learner can interpret plant terms and infer why a remediation matters. | Every packet supplies why-now, known/unknown facts, decision tests, owners, deferral trigger, plain-language terms, and the no-private-knowledge rule. | **New design requirement.** Validate with a non-manufacturing reviewer before implementation. |
 | Gates | G-PF-01 and G-PF-02 apply to Scale; G-PF-05 applies to Technician Knowledge Pilot. | Gate status mutates only for the applicable requested action/authored review. | **Mostly aligned.** Correct PF-I05 `scale_gate: G-PF-05` mismatch before implementation. |
 | Gate thresholds | Pack has explicit provisional thresholds for later governance gates. | Research branches use named actionability findings, not those thresholds. | **Aligned.** Declared gate thresholds remain valid provisional gate content; they do not choose a Research branch. |
 | Seeded uncertainty | Existing engine can resolve seeded ranges in declared rules. | Window 1 branches use no random selection; later seeded uncertainty must declare range, cause, and explanation. | **Aligned.** Hidden luck prohibited. |
@@ -138,6 +139,24 @@ but old saves must receive empty/default V3 fields without changing outcomes.
 | Three opening initiatives have three branch conditions and fixtures each | **Pass — authored in the proposed behavioral contract** |
 | V2 code, Standard mode, and V2 packs untouched | **Pass — documentation-only change** |
 | Proposed future V3 changes additive and opt-in | **Pass** |
+
+## Newly identified learner-risk control
+
+The learner's lack of plant-specific knowledge is not itself a simulation
+variable. The scenario supplies enough context to make a bounded executive
+choice, while deliberately withholding the evidence that Research is meant to
+produce. This distinction must remain visible:
+
+- **Known:** sourced operational facts and plain-language interpretation;
+- **Unknown:** the named finding Research will establish;
+- **Choice:** whether the cost/capacity is justified to resolve that unknown;
+- **Outcome:** resolver-authored finding, not a test of the learner's prior plant
+  knowledge.
+
+If a walkthrough participant says “I cannot decide because I do not know how the
+factory works,” the first remediation is to improve the packet context. It is
+not to add a recommendation, make the branch predictable, or penalise the
+learner for not guessing correctly.
 
 ## Decision gate
 

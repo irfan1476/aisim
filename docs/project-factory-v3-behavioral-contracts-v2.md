@@ -345,6 +345,72 @@ All fixtures assert unchanged operating metrics, single capital commitment,
 Q1-only Research capacity, no active-delivery slot, an immutable decision ledger
 entry, and a source-bound outcome artefact.
 
+## Cross-cutting contract — decision context without assumed domain expertise
+
+Determinism belongs to the engine; comprehension belongs to the learner
+experience. A deterministic result is not a reason to hide the context needed
+to make a bounded choice.
+
+### Context contract
+
+Every active decision packet must provide a serialisable, source-linked context
+object:
+
+~~~yaml
+decisionContext:
+  boardQuestion: string
+  whyNow: string
+  knownFacts:
+    - evidenceId: PF-E01
+      fact: string
+      plainLanguage: string
+  unknowns:
+    - id: string
+      description: string
+      whyItMatters: string
+  decisionTest:
+    action: research | remediation | pilot | scale
+    findingsToEstablish: []
+    possibleResults: [pilot-ready-with-conditions, remediation-required, priority-not-supported]
+  accountableRole: string
+  costCapacity: string
+  ifDeferred: string
+  terms:
+    - term: string
+      plainLanguage: string
+~~~
+
+Rules:
+
+- All material facts shown in the packet have a source or are labelled as an
+  authored scenario assumption.
+- `unknowns` are visible before the decision. The learner is allowed to choose
+  Research precisely because those facts are not yet known.
+- `possibleResults` describe the decision boundary, not the likely answer. The
+  resolver still determines the branch from authored findings.
+- `ifDeferred` describes a review trigger or exposure from the pack; it cannot be
+  a generic punishment for not funding an initiative.
+- The packet uses plain-language definitions for domain terms and keeps detailed
+  evidence behind a contextual drawer.
+- The learner's real-world experience may inform discussion, but it is not
+  required to resolve the scenario. The pack is the exercise's operating truth.
+
+### Research decision fairness test
+
+Before implementation, a reviewer who does not know manufacturing operations
+must be able to answer from the packet alone:
+
+1. What problem is being addressed?
+2. What is known and what is unknown?
+3. What will Research find out?
+4. What would make Pilot available later?
+5. What will not change immediately?
+6. What capacity/capital is being committed?
+
+If any answer requires private plant knowledge, add context or simplify the
+choice. Do not solve the problem by making the resolver more predictable or by
+adding a recommended answer.
+
 ## Window 2 remediation action — provisional content
 
 The `remediation-required` branch now has one bounded follow-on action. This is
