@@ -122,3 +122,14 @@ Status: implemented for workspace and planning-artefact staging; content authori
 - **Implemented boundary:** a dedicated V3 worktree was established at `/Users/irfan/projects/AISim/.worktrees/project-factory-v3` on `codex/project-factory-v3`. Self-contained, V3-named planning artefacts were prepared there for an initial documentation-only commit. The original uncommitted V2-worktree artefacts were preserved.
 - **Next authorised phase:** author the **Project Factory V3 content pack only**, after the planning-artefact commit. Do not integrate, merge, rebase, or copy V2 application code into V3; do not implement engine, UI, persistence, or deployment changes.
 - **Existing branch context:** the active worktree remains `feature/scenario-generic-pipeline`; the V3 worktree is a separate, clean planning boundary as described in [Version and Branch Strategy](./version-branch-strategy.md).
+
+## 2026-08-21 — Project Factory V3 provisional content pack authored
+
+Status: authored planning content; pending review and commit
+
+- **Objective:** produce the first complete, implementation-independent reference content pack after the V3 planning baseline was committed.
+- **Artefact:** [Project Factory V3 Content Pack](./project-factory-v3-content-pack.md), authored from the [Scenario V3 Content-Authoring Template](./scenario-v3-content-authoring-template.md).
+- **Contents:** seven evidence artefacts; an organisation, metric, and gate-evidence dictionary; portfolio/capacity policy; six initiative delivery profiles and one governance gate per initiative; five stakeholder definitions and declared response rules; three bounded causal-rule shapes; one condition-triggered line-failure event; six formative scorecard dimensions; four structured reflection checkpoints; baseline-to-debrief prompts; positive/negative deterministic fixtures; and accessibility/review criteria.
+- **Content status:** every rule parameter and numerical value is labelled expert-calibrated synthetic — provisional. No claim is made about a real named manufacturer. The pack contains no executable engine, UI, persistence, migration, deployment, or V2 integration change.
+- **Reflection decision applied:** the four Reconstruct, Interpret, Reframe, and Transfer checkpoints are present. Baseline answers are reflection-only; no `selfAwareness` or belief/action alignment score is carried into V3 content. The AI reflection coach remains deferred until post-pilot validation.
+- **Validation still required:** manufacturing operations/maintenance, quality/OEM, learning-design, and responsible-AI/governance review; schema/pack-validator design; deterministic resolver tests; accessibility review; and learner pilot calibration.

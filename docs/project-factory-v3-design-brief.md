@@ -315,4 +315,4 @@ Defer detailed multi-stakeholder negotiation, multiple variants per event, full 
 | Manufacturing reviewers | One operations/maintenance SME plus one learning-design reviewer | Required to calibrate synthetic evidence, rules, and debrief quality. |
 | LLM role | Grounded coach only; no selection, scoring, or outcome generation | Preserves explainability and testability. |
 
-The agreed decisions and detailed engineering tasks are reflected in [Project Factory v3 Implementation Backlog](./project-factory-v3-implementation-backlog.md). The reusable content structure is [Scenario v3 Content-Authoring Template](./scenario-v3-content-authoring-template.md).
+The agreed decisions and detailed engineering tasks are reflected in [Project Factory v3 Implementation Backlog](./project-factory-v3-implementation-backlog.md). The reusable content structure is [Scenario v3 Content-Authoring Template](./scenario-v3-content-authoring-template.md). The first provisional authored instance is [Project Factory v3 Content Pack](./project-factory-v3-content-pack.md).

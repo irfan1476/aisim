@@ -67,6 +67,8 @@ Reference: [Project Factory 2030 v3 Design Brief](./project-factory-v3-design-br
 
 ### WP5 — Project Factory content and calibration
 
+Authoring output: [Project Factory V3 Provisional Content Pack](./project-factory-v3-content-pack.md). This document is planning content; it has not been validated by an engine or subject-matter reviewers.
+
 | ID | Task | Acceptance criteria |
 |---|---|---|
 | PF5.1 | Author and review the evidence pack. | Seven evidence artefacts have source type, confidence, visibility, learning purpose, accessible text, and manufacturing-review sign-off. |
