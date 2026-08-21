@@ -6,6 +6,7 @@ export type V3GateResult = { gateId: string; status: 'pending' | 'met' | 'failed
 export type V3CausalResult = { applied: Array<{ ruleId: string; metric: string; delta: number; availableQuarter: number }>; deferred: Array<{ ruleId: string; availableQuarter: number }> };
 export type V3EventResult = { triggered: boolean; eventId?: string; reason?: string };
 export type V3ExposureResult = { exposed: boolean; deferred: boolean; reason: string };
+export type V3ValueAttribution = { status: 'observed' | 'estimated' | 'not-yet-observable'; metric: string; delta: number; value?: number; sourceRuleIds: string[]; evidenceIds: string[] };
 
 const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 const gatesFor = (pack: V3ScenarioPack) => pack.gates || pack.governanceGates || [];
@@ -36,24 +37,28 @@ function evaluateCondition(condition: string, metrics: Record<string, number>): 
 
 /** Apply only rules whose authored signal lag has elapsed; never mutates input. */
 export function resolveV3CausalRules(pack: V3ScenarioPack, state: V3ScenarioState, metrics: Record<string, number>, quarter = state.currentQuarter): V3ResolverResult<V3CausalResult> {
-  const next = clone(state); const applied: V3CausalResult['applied'] = []; const deferred: V3CausalResult['deferred'] = [];
+  const next = clone(state); const nextMetrics = { ...metrics }; const applied: V3CausalResult['applied'] = []; const deferred: V3CausalResult['deferred'] = [];
   for (const rule of pack.causalRules || []) {
-    const profile = pack.initiatives?.find((item) => item.id === rule.id);
-    const lag = profile?.lifecycle?.timeToSignalQuarters || 0;
+    const ruleRecord = rule as Record<string, unknown>;
+    const profile = pack.initiatives?.find((item) => item.id === String(ruleRecord.initiativeId || ''));
+    const lag = typeof ruleRecord.delayQuarters === 'number' ? ruleRecord.delayQuarters : (profile?.lifecycle?.timeToSignalQuarters || 0);
     const availableQuarter = quarter + lag;
     const effects = rule.effects || [];
+    const condition = typeof ruleRecord.condition === 'string' ? ruleRecord.condition : undefined;
+    if (condition && !evaluateCondition(condition, nextMetrics)) continue;
     if (availableQuarter > quarter) { deferred.push({ ruleId: rule.id, availableQuarter }); continue; }
     for (const effect of effects) {
-      metrics[effect.metric] = (metrics[effect.metric] || 0) + effect.delta;
+      nextMetrics[effect.metric] = (nextMetrics[effect.metric] || 0) + effect.delta;
       applied.push({ ruleId: rule.id, metric: effect.metric, delta: effect.delta, availableQuarter });
     }
   }
   return { state: next, result: { applied, deferred } };
 }
 
-export function resolveV3Event(pack: V3ScenarioPack, state: V3ScenarioState, eventId: string, optionId?: string): V3ResolverResult<V3EventResult> {
+export function resolveV3Event(pack: V3ScenarioPack, state: V3ScenarioState, eventId: string, optionId?: string, metrics: Record<string, number> = {}): V3ResolverResult<V3EventResult> {
   const next = clone(state); const event = (pack.events || []).find((item) => item.id === eventId);
   if (!event) return { state: next, result: { triggered: false, reason: 'Unknown event.' } };
+  if (event.trigger && !evaluateCondition(event.trigger, metrics)) return { state: next, result: { triggered: false, reason: 'Trigger conditions are not met.' } };
   const impacts: Record<string, number> = {};
   for (const effect of event.effects || []) impacts[effect.metric] = (impacts[effect.metric] || 0) + effect.delta;
   const record: V3EventRecord = { id: event.id, quarter: next.currentQuarter, optionId, impacts };
@@ -90,6 +95,16 @@ export function recordV3WorkflowAdoption(state: V3ScenarioState, initiativeId: s
 
 export function applyV3CausalRule(rule: V3CausalRule, metrics: Record<string, number>): Record<string, number> {
   const next = { ...metrics }; for (const effect of rule.effects || []) next[effect.metric] = (next[effect.metric] || 0) + effect.delta; return next;
+}
+
+/** Attribute value only when the pack declares an operational metric and evidence. */
+export function attributeV3OperationalValue(pack: V3ScenarioPack, metrics: Record<string, number>, before: Record<string, number>): V3ValueAttribution[] {
+  return (pack.report?.changes || []).map((change) => {
+    const delta = (metrics[change.metric] ?? 0) - (before[change.metric] ?? metrics[change.metric] ?? 0);
+    const evidenceIds = [...(change.evidenceIds || [])];
+    const sourceRuleIds = change.ruleId ? [change.ruleId] : [];
+    return { status: sourceRuleIds.length || evidenceIds.length ? 'estimated' : 'not-yet-observable', metric: change.metric, delta, sourceRuleIds, evidenceIds };
+  });
 }
 
 export function getV3Event(pack: V3ScenarioPack, eventId: string): V3Event | undefined { return pack.events?.find((event) => event.id === eventId); }

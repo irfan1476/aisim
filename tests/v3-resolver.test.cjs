@@ -23,3 +23,21 @@ test('workflow evidence changes evidence/execution, not a global adoption metric
   assert.deepEqual(result.state.scorecard.evidence, ['workflow:initiative']);
   assert.equal(result.state.metrics, undefined);
 });
+
+test('causal resolution is source-pure and event triggers are conditional', () => {
+  const pack = { causalRules: [{ id: 'r1', condition: 'metric.downtime <= 50', delayQuarters: 1, effects: [{ metric: 'efficiency', delta: 3 }] }], events: [{ id: 'e1', trigger: 'metric.downtime > 70', effects: [{ metric: 'downtime', delta: 5 }] }] };
+  const state = { ...rState(), currentQuarter: 1 };
+  const metrics = { downtime: 60, efficiency: 10 };
+  const before = JSON.stringify(metrics);
+  const deferred = r.resolveV3CausalRules(pack, state, metrics, 1);
+  assert.equal(JSON.stringify(metrics), before);
+  assert.equal(deferred.result.applied.length, 0);
+  const blocked = r.resolveV3Event(pack, state, 'e1', undefined, metrics);
+  assert.equal(blocked.result.triggered, false);
+  const triggered = r.resolveV3Event(pack, state, 'e1', undefined, { downtime: 80 });
+  assert.equal(triggered.result.triggered, true);
+});
+
+function rState() {
+  return { schemaVersion: 1, scenarioId: 'pf', seed: 7, currentQuarter: 1, budget: { envelope: 5, spent: 0, remaining: 5 }, capacity: { pools: {}, used: {}, activeDeliveryLimit: 2 }, initiatives: {}, ledger: [], gates: {}, eventLog: [], stakeholders: {}, scorecard: { execution: 0, governance: 0, stakeholderHealth: 0, resilience: 0, evidenceQuality: 0, evidence: [] }, baseline: { version: 'v1', responses: [] } };
+}
