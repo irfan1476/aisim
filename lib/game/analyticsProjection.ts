@@ -3,7 +3,7 @@ import type { GameState, V3ScenarioState } from './state';
 
 export type V3AnalyticsProjection = {
   dashboard: { quarter: number; budgetRemaining: number; activeInitiatives: number; gateHealth: number; stakeholderHealth: number; evidenceCount: number };
-  metrics: Record<string, { current: number; start?: number; target?: number; unit?: string; owner?: string; sourceRuleIds: string[]; sourceEvidenceIds: string[] }>;
+  metrics: Record<string, { current: number; start?: number; target?: number; progress?: number; direction?: string; unit?: string; owner?: string; sourceRuleIds: string[]; sourceEvidenceIds: string[] }>;
   ledger: V3ScenarioState['ledger'];
   gates: V3ScenarioState['gates'];
   stakeholders: V3ScenarioState['stakeholders'];
@@ -22,13 +22,23 @@ export function projectV3Analytics(state: V3ScenarioState | undefined, pack: V3S
   const definitions = [...(pack.metrics || []), ...(pack.reportedMetrics || [])];
   for (const definition of definitions) {
     const values = history.map((entry) => Number((entry.metrics as Record<string, unknown> | undefined)?.[definition.key] ?? entry[definition.key] ?? NaN)).filter(Number.isFinite);
-    metrics[definition.key] = { current: values.length ? values[values.length - 1] : Number(definition.start || 0), start: definition.start, target: definition.target, unit: definition.unit, owner: definition.ownerRole, sourceRuleIds: [...(definition.sourceRuleIds || [])], sourceEvidenceIds: [...(definition.sourceEvidenceIds || [])] };
+    const current = values.length ? values[values.length - 1] : Number(definition.start || 0);
+    const progress = definition.start !== undefined && definition.target !== undefined && definition.start !== definition.target
+      ? Math.max(0, Math.min(100, definition.direction === 'lower-is-better'
+        ? ((definition.start - current) / (definition.start - definition.target)) * 100
+        : ((current - definition.start) / (definition.target - definition.start)) * 100))
+      : undefined;
+    const reportSources = (pack.report?.changes || []).filter((change) => change.metric === definition.key);
+    metrics[definition.key] = { current, start: definition.start, target: definition.target, progress, direction: definition.direction, unit: definition.unit, owner: definition.ownerRole, sourceRuleIds: Array.from(new Set([...(definition.sourceRuleIds || []), ...reportSources.map((item) => item.ruleId).filter((item): item is string => Boolean(item))])), sourceEvidenceIds: Array.from(new Set([...(definition.sourceEvidenceIds || []), ...reportSources.flatMap((item) => item.evidenceIds || [])])) };
   }
   const activeInitiatives = Object.values(state.initiatives).filter((item) => ['research', 'pilot', 'scale', 'sustain'].includes(item.lifecycle)).length;
   const gateValues = Object.values(state.gates);
   const gateHealth = gateValues.length ? gateValues.filter((gate) => gate.status === 'met' || gate.status === 'repaired').length / gateValues.length * 100 : 100;
   const sourceLinks: V3AnalyticsProjection['sourceLinks'] = {};
-  for (const definition of definitions) sourceLinks[definition.key] = { ruleIds: [...(definition.sourceRuleIds || [])], evidenceIds: [...(definition.sourceEvidenceIds || [])] };
+  for (const definition of definitions) {
+    const reportSources = (pack.report?.changes || []).filter((change) => change.metric === definition.key);
+    sourceLinks[definition.key] = { ruleIds: Array.from(new Set([...(definition.sourceRuleIds || []), ...reportSources.map((item) => item.ruleId).filter((item): item is string => Boolean(item))])), evidenceIds: Array.from(new Set([...(definition.sourceEvidenceIds || []), ...reportSources.flatMap((item) => item.evidenceIds || [])])) };
+  }
   const exposures = Object.entries(state.initiatives).map(([initiativeId, item]) => ({ initiativeId, exposed: item.lifecycle !== 'deferred', deferred: item.lifecycle === 'deferred', reason: item.lifecycle === 'deferred' ? 'Not yet exposed to delivery.' : 'Initiative is in the learner decision path.' }));
   return {
     dashboard: { quarter: state.currentQuarter, budgetRemaining: state.budget.remaining, activeInitiatives, gateHealth, stakeholderHealth: state.scorecard.stakeholderHealth, evidenceCount: (pack.evidence || []).length },
