@@ -1,4 +1,4 @@
-import { initialGameState, type Allocation, type GameState, type MetricKey, type QuarterSnapshot } from './state';
+import { createV3State, initialGameState, type Allocation, type GameState, type MetricKey, type QuarterSnapshot, type V3ScenarioState } from './state';
 import { initializeInitiativeStates, type InitiativeState } from './initiativeState';
 import { createInitiativeGeneration, generateInitiatives, inferArchetypeFromDecisions, type InitiativeGeneration, type ScenarioArchetype } from './generator';
 import { getScenario } from '../scenarios/registry';
@@ -9,7 +9,8 @@ export const LEGACY_GAME_STORAGE_KEY = 'ai-investment-save';
 export const WHAT_IF_STORAGE_KEY = 'ai-whatif-applied';
 export const LEADERBOARD_STORAGE_KEY = 'ai_simulation_leaderboard';
 export const LEGACY_MIGRATION_KEY = 'ai-investment-legacy-migrated';
-export const GAME_PERSISTENCE_VERSION = 5;
+export const GAME_PERSISTENCE_VERSION = 6;
+export const PREVIOUS_GAME_PERSISTENCE_VERSION = 5;
 
 export type WhatIfDraft = {
   name?: string;
@@ -41,6 +42,45 @@ function stringArrayOr(value: unknown, fallback: string[]): string[] {
   return Array.isArray(value)
     ? value.filter((item): item is string => typeof item === 'string')
     : [...fallback];
+}
+
+function normalizeV3State(value: unknown, fallback: V3ScenarioState): V3ScenarioState {
+  if (!isRecord(value)) return fallback;
+  const source = value;
+  const budget = isRecord(source.budget) ? source.budget : {};
+  const capacity = isRecord(source.capacity) ? source.capacity : {};
+  const scorecard = isRecord(source.scorecard) ? source.scorecard : {};
+  const numberMap = (input: unknown): Record<string, number> => isRecord(input)
+    ? Object.fromEntries(Object.entries(input).filter(([, item]) => typeof item === 'number' && Number.isFinite(item)) as Array<[string, number]>)
+    : {};
+  const initiatives = isRecord(source.initiatives) ? source.initiatives : {};
+  const normalizedInitiatives = Object.fromEntries(Object.entries(fallback.initiatives).map(([id, base]) => {
+    const saved = isRecord(initiatives[id]) ? initiatives[id] : {};
+    const lifecycle = ['deferred', 'research', 'pilot', 'scale', 'sustain', 'pause', 'stop'].includes(String(saved.lifecycle))
+      ? saved.lifecycle as V3ScenarioState['initiatives'][string]['lifecycle'] : base.lifecycle;
+    return [id, { ...base, lifecycle, ownerId: typeof saved.ownerId === 'string' ? saved.ownerId : base.ownerId, gateIds: stringArrayOr(saved.gateIds, base.gateIds), capacity: numberMap(saved.capacity), rationale: typeof saved.rationale === 'string' ? saved.rationale : base.rationale, reviewQuarter: typeof saved.reviewQuarter === 'number' ? saved.reviewQuarter : base.reviewQuarter }];
+  }));
+  return {
+    ...fallback,
+    schemaVersion: 1,
+    scenarioId: typeof source.scenarioId === 'string' ? source.scenarioId : fallback.scenarioId,
+    seed: numberOr(source.seed, fallback.seed),
+    currentQuarter: Math.max(1, Math.round(numberOr(source.currentQuarter, fallback.currentQuarter))),
+    budget: { envelope: numberOr(budget.envelope, fallback.budget.envelope), spent: numberOr(budget.spent, 0), remaining: numberOr(budget.remaining, fallback.budget.remaining) },
+    capacity: { pools: numberMap(capacity.pools), used: numberMap(capacity.used), activeDeliveryLimit: Math.max(0, Math.round(numberOr(capacity.activeDeliveryLimit, 2))) },
+    initiatives: normalizedInitiatives,
+    ledger: Array.isArray(source.ledger) ? source.ledger.filter(isRecord).map((entry) => entry as V3ScenarioState['ledger'][number]) : [],
+    gates: isRecord(source.gates) ? source.gates as V3ScenarioState['gates'] : {},
+    eventLog: Array.isArray(source.eventLog) ? source.eventLog.filter(isRecord).map((entry) => entry as V3ScenarioState['eventLog'][number]) : [],
+    stakeholders: isRecord(source.stakeholders) ? source.stakeholders as V3ScenarioState['stakeholders'] : {},
+    scorecard: {
+      execution: numberOr(scorecard.execution, 0), governance: numberOr(scorecard.governance, 0), stakeholderHealth: numberOr(scorecard.stakeholderHealth, 0), resilience: numberOr(scorecard.resilience, 0), evidenceQuality: numberOr(scorecard.evidenceQuality, 0), evidence: stringArrayOr(scorecard.evidence, []),
+    },
+  };
+}
+
+function isV3Scenario(scenarioId: string | undefined): boolean {
+  return scenarioId === 'projectFactory' || scenarioId === 'project-factory-2030';
 }
 
 function normalizeGeneration(value: unknown, baseline: number[]): InitiativeGeneration {
@@ -192,6 +232,12 @@ export function normalizeGameState(value: unknown): GameState {
     progress: isRecord(savedScenarioState.progress) ? Object.fromEntries(Object.entries(savedScenarioState.progress).filter(([, item]) => typeof item === 'number' && Number.isFinite(item))) as Record<string, number> : { ...(next.scenarioProgress || {}) },
     flags: isRecord(savedScenarioState.flags) ? Object.fromEntries(Object.entries(savedScenarioState.flags).filter(([, item]) => typeof item === 'boolean')) as Record<string, boolean> : {},
   };
+  // V3 state is opt-in and additive. Legacy Standard/v1/v2 saves never gain
+  // V3 mechanics; an old Project Factory save receives deterministic defaults.
+  const v3Defaults = isV3Scenario(next.scenarioId)
+    ? createV3State(next.scenarioId as string, next.initiativeGeneration.seed, next.quarterlyBudget, Object.keys(next.initiativeStates), scenarioDefinition?.v3)
+    : undefined;
+  next.v3State = v3Defaults ? normalizeV3State(source.v3State, v3Defaults) : undefined;
   next.quarterlyCrisisCost = numberOr(source.quarterlyCrisisCost, 0);
   next.scenarioOverspend = numberOr(source.scenarioOverspend, 0);
   next.scenarioBonus = numberOr(source.scenarioBonus, 0);
@@ -205,6 +251,19 @@ export function normalizeGameState(value: unknown): GameState {
     ? { title: source.nextQuarterGuidance.title, action: source.nextQuarterGuidance.action, allocationKey: typeof source.nextQuarterGuidance.allocationKey === 'string' ? source.nextQuarterGuidance.allocationKey : undefined, target: typeof source.nextQuarterGuidance.target === 'string' ? source.nextQuarterGuidance.target : undefined }
     : defaults.nextQuarterGuidance;
   return next;
+}
+
+/**
+ * Explicit persistence migration seam for callers that keep the envelope
+ * version outside Zustand. V5 is structurally compatible; normalization adds
+ * only the opt-in V3 defaults and retains all existing history snapshots.
+ */
+export function migrateV5ToV6(value: unknown): GameState {
+  return normalizeGameState(value);
+}
+
+export function migrateGameState(value: unknown, _fromVersion = PREVIOUS_GAME_PERSISTENCE_VERSION): GameState {
+  return normalizeGameState(value);
 }
 
 export function hasCampaignProgress(value: unknown): boolean {

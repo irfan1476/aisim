@@ -9,10 +9,59 @@ export type ScenarioState = {
   flags: Record<string, boolean>;
 };
 export type ScenarioStateOptions = { scenarioMode?: boolean; scenarioId?: string; currencyMode?: CurrencyMode; quarterlyBudget?: number; scenarioStartingMetrics?: Record<string, number>; scenarioProgress?: Record<string, number>; defaultAllocation?: Allocation; startingMetrics?: Partial<Record<'efficiency' | 'adoption' | 'data' | 'satisfaction', number>> };
+
+/**
+ * Serializable state owned by an opted-in scenario-depth (V3) pack.
+ *
+ * This is deliberately separate from the generic V2 scenario state.  The
+ * legacy engine can therefore continue to read/write its state without
+ * acquiring V3 lifecycle or scoring semantics.
+ */
+export type V3Lifecycle = 'deferred' | 'research' | 'pilot' | 'scale' | 'sustain' | 'pause' | 'stop';
+export type V3InitiativeState = {
+  lifecycle: V3Lifecycle;
+  ownerId?: string;
+  gateIds: string[];
+  capacity: Record<string, number>;
+  rationale?: string;
+  reviewQuarter?: number;
+};
+export type V3LedgerEntry = {
+  id: string;
+  quarter: number;
+  initiativeIds: string[];
+  rationale: string;
+  prediction: string;
+  assumption?: string;
+  evidenceIds: string[];
+  ownerId?: string;
+  gateIds: string[];
+  stopCriterion?: string;
+  outcome?: Record<string, unknown>;
+  reflection?: string;
+};
+export type V3GateRecord = { id: string; status: 'pending' | 'met' | 'failed' | 'repaired'; history: Array<{ quarter: number; status: 'pending' | 'met' | 'failed' | 'repaired'; evidenceIds: string[] }> };
+export type V3EventRecord = { id: string; quarter: number; optionId?: string; impacts: Record<string, number> };
+export type V3StakeholderRecord = { id: string; sentiment: number; history: Array<{ quarter: number; delta: number; reason?: string }> };
+export type V3ScorecardState = { execution: number; governance: number; stakeholderHealth: number; resilience: number; evidenceQuality: number; evidence: string[] };
+export type V3ScenarioState = {
+  schemaVersion: 1;
+  scenarioId: string;
+  seed: number;
+  currentQuarter: number;
+  budget: { envelope: number; spent: number; remaining: number };
+  capacity: { pools: Record<string, number>; used: Record<string, number>; activeDeliveryLimit: number };
+  initiatives: Record<string, V3InitiativeState>;
+  ledger: V3LedgerEntry[];
+  gates: Record<string, V3GateRecord>;
+  eventLog: V3EventRecord[];
+  stakeholders: Record<string, V3StakeholderRecord>;
+  scorecard: V3ScorecardState;
+};
 import type { InitiativeState } from './initiativeState';
 import { initializeInitiativeStates } from './initiativeState';
 import { createInitiativeGeneration, generateInitiatives, type InitiativeGeneration } from './generator';
-import type { CurrencyMode } from '../scenarios/types';
+import type { CurrencyMode, V3ScenarioPack } from '../scenarios/types';
 export type MetricKey = 'roi' | 'revenue' | 'efficiency' | 'adoption' | 'risk' | 'data' | 'satisfaction' | 'literacy' | 'turnover' | 'compliance' | 'innovation' | 'spent' | 'score';
 export type MetricsSnapshot = Partial<Record<MetricKey, number>>;
 export type QuarterSnapshot = {
@@ -35,7 +84,39 @@ export type GameState = {
   initiativeGeneration: InitiativeGeneration; userReflections: UserReflections;
   scenarioMode: boolean; scenarioId?: string; currencyMode: CurrencyMode; quarterlyBudget: number; scenarioBudgetRemaining: number; scenarioStartingMetrics?: Record<string, number>; scenarioProgress?: Record<string, number>; scenarioState: ScenarioState; quarterlyCrisisCost: number; scenarioOverspend: number; scenarioBonus: number;
   baseline: number[]; experimental: boolean; causalChain: CausalItem[]; proactiveRecommendations: Recommendation[]; approvedRecommendations: string[]; discoveredSynergies: string[]; nextQuarterGuidance: { title: string; action: string; allocationKey?: string; target?: string } | null;
+  /** Present only for packs that explicitly opt into V3 depth mechanics. */
+  v3State?: V3ScenarioState;
 };
+
+/** Pure, deterministic defaults for a V3 scenario run. */
+export function createV3State(scenarioId: string, seed = 2030, budget = 5, initiativeIds: string[] = [], pack?: V3ScenarioPack): V3ScenarioState {
+  const profiles = pack?.initiatives || [];
+  const initiatives = Object.fromEntries((initiativeIds.length ? initiativeIds : profiles.map((item) => item.id)).map((id) => {
+    const profile = profiles.find((item) => item.id === id);
+    return [id, {
+    lifecycle: 'deferred' as const,
+    gateIds: (pack?.gates || pack?.governanceGates || []).filter((gate) => (gate.appliesTo || []).some((target) => target.split('.')[0] === id)).map((gate) => gate.id),
+    capacity: Object.fromEntries(Object.entries(profile?.capacityRequired || {}).map(([pool, values]) => [pool, values.research || values.pilot || values.scale || 0])),
+  }];
+  }));
+  const gates = Object.fromEntries((pack?.gates || pack?.governanceGates || []).map((gate) => [gate.id, { id: gate.id, status: 'pending' as const, history: [] }]));
+  const stakeholders = Object.fromEntries((pack?.stakeholders || []).map((stakeholder) => [stakeholder.id, { id: stakeholder.id, sentiment: 0, history: [] }]));
+  const pools = Object.fromEntries(profiles.flatMap((profile) => Object.keys(profile.capacityRequired || {})).map((pool) => [pool, 0]));
+  return {
+    schemaVersion: 1,
+    scenarioId,
+    seed,
+    currentQuarter: 1,
+    budget: { envelope: budget, spent: 0, remaining: budget },
+    capacity: { pools, used: {}, activeDeliveryLimit: 2 },
+    initiatives,
+    ledger: [],
+    gates,
+    eventLog: [],
+    stakeholders,
+    scorecard: { execution: 0, governance: 0, stakeholderHealth: 0, resilience: 0, evidenceQuality: 0, evidence: [] },
+  };
+}
 
 export function initialGameState(generation?: InitiativeGeneration, options: ScenarioStateOptions = {}): GameState {
   const initiativeGeneration = generation || createInitiativeGeneration('balanced', [3, 3, 3, 3, 3], 2030);
