@@ -18,7 +18,7 @@ The ordering below separates branch control and content calibration from engine 
 
 | Priority | Work | Status and exit criterion | Why it comes here |
 |---|---|---|---|
-| **P0 — Product lineage** | `PF-PLAN-01` confirm `Branch1-version-2` / `dc34433` as the frozen V2 baseline; `PF-PLAN-02` create `codex/project-factory-v3-impl` from that exact commit and transfer documentation-only V3 planning commits. | Pending product-owner approval. The branch cut does not authorise implementation. | V3 must inherit the V2 scenario pipeline from a reproducible point, while V2 remains independently active. |
+| **P0 — Product lineage** | `PF-PLAN-01` confirm `Branch1-version-2` / `dc34433` as the frozen V2 baseline; `PF-PLAN-02` create `codex/project-factory-v3-impl` from that exact commit; transfer documentation-only V3 planning commits as a separate step. | Baseline confirmation and branch cut are complete. Documentation transfer remains pending. The branch cut does not authorise implementation. | V3 must inherit the V2 scenario pipeline from a reproducible point, while V2 remains independently active. |
 | **P0 — Content-calibration gate** | `PF-PLAN-03` prepare bounded reviewer briefs; `PF5.1`, `PF5.2`, `PF5.3a`, and `PF5.4` obtain and resolve light operations and learning-design review. `PF5.3b` authors the two additional event cards only after operations review. | Required before engine work. Reviewer resolutions and retained provisional assumptions are recorded. | Prevents encoding uncalibrated operational triggers, causal magnitudes, or reflection load into the engine. |
 | **P1 — Core playable reference slice** | `PF0` through `PF3`, then `PF4.0`–`PF4.2c`, with `PF6.1`/`PF6.1a`/`PF6.1b` developed alongside their corresponding work. | A deterministic, saveable Project Factory V3 run can support evidence-led lifecycle decisions, an executive decision ledger, gates, capacity, causal rules, one implemented event, stakeholders, and a source-grounded formative debrief. | Proves the reusable V3 engine primitives against one reviewed pack before breadth or polish. |
 | **P2 — Learner-pilot readiness** | `PF4.1`, `PF4.1a`, `PF4.2d`, `PF4.2e`, `PF4.3`, `PF5.3b`, `PF6.2`, and `PF6.3`. | A 90-minute facilitated run and self-paced fallback are accessible, report truthfully, include two or three reviewed deterministic event cards, and produce an editable board memo. | Completes the agreed learning experience without adding an AI coach or a high-stakes score. |
@@ -28,9 +28,41 @@ The ordering below separates branch control and content calibration from engine 
 
 | ID | Task | Acceptance criteria |
 |---|---|---|
-| PF-PLAN-01 | Confirm the V2 implementation baseline. | Product owner explicitly confirms whether tagged commit `Branch1-version-2` / `dc34433` is the intended V3 code base. The record states that later V2 work is not included automatically. |
-| PF-PLAN-02 | Establish the V2-based V3 implementation line. | A separate `codex/project-factory-v3-impl` worktree/branch starts exactly at the approved V2 commit. Only reviewed documentation-only V3 commits are transferred; no V3 application implementation begins; V2 worktree and branch remain untouched. |
+| PF-PLAN-01 | Confirm the V2 implementation baseline. | **Complete:** product owner confirmed tagged commit `Branch1-version-2` / `dc34433` as the intended V3 code base. Later V2 work is not included automatically. |
+| PF-PLAN-02 | Establish the V2-based V3 implementation line. | **Complete:** separate `codex/project-factory-v3-impl` worktree/branch starts exactly at the approved V2 commit. Documentation-only transfer is a separate pending operation; no V3 application implementation began; V2 worktree and branch remain untouched. |
 | PF-PLAN-03 | Run the light content review. | One operations/manufacturing reviewer and one learning-design reviewer receive a bounded brief. Each comment is accepted, rejected, or deferred with rationale. Quality-escape and technician-retirement cards remain un-authored until operations review is complete. A plan to identify reviewers later does not satisfy this gate. |
+
+### Parallel workstreams and dependencies
+
+| Workstream | Can run now in parallel with | Depends on | Must not do yet |
+|---|---|---|---|
+| Documentation transfer | Reviewer-brief drafting, compatibility mapping, review scheduling | Clean V3 planning commits and the V2-based implementation worktree | Copy application code or silently merge planning-branch history |
+| Operations/manufacturing review | Learning-design review, documentation transfer, compatibility/test planning | Assigned qualified reviewer and bounded brief | Author the two held event cards before dispositions are recorded |
+| Learning-design review | Operations review, documentation transfer, compatibility/test planning | Assigned qualified reviewer and bounded brief | Approve cognitive-load or pilot readiness from planning alone |
+| Compatibility and test design | Both reviews and documentation transfer | Read-only inspection of the frozen V2 seams; final APIs still depend on the V3 schema contract | Modify V2 behavior or start runtime implementation before P0 review gate |
+| Schema/validator contract preparation | Documentation transfer and review preparation | P0 content-review completion before implementation | Encode unreviewed event thresholds as executable rules |
+| Event-card authoring | — | Operations dispositions, plus quality/OEM and workforce input where applicable | Use generic “unfunded for N quarters” triggers or unbounded effects |
+
+The active coordination rule is: each workstream reports dependencies and
+contradictions to the lead, and sends overlapping findings to the affected
+workstreams. The lead owns the consolidated backlog and resolves conflicts;
+agents do not independently change branch state or declare a gate passed.
+
+### P1 dependency graph after P0 review
+
+Once `PF-PLAN-03` passes, the first implementation slice can be decomposed into
+parallel lanes after the schema contract is fixed:
+
+1. **Contract lane:** `PF0`, `PF0.2a`, `PF1.1`, `PF1.2`, and `PF1.2a` — schema, validator, metric authority, units, and fixtures.
+2. **State/decision lane:** `PF1.3`, `PF1.4`, `PF2.0`–`PF2.3b` — v5→v6 migration, state factory, lifecycle/capacity, evidence-led decisions, and the executive ledger.
+3. **Resolver lane:** `PF3.1`–`PF3.5b` — gates, delayed causal rules, value attribution, one event, stakeholders, exposure, and workflow evidence; it consumes the contract and state APIs.
+4. **Test lane:** `PF6.1`, `PF6.1a`, and `PF6.1b` follow each contract/state/resolver slice, not a final testing phase.
+5. **UI lane:** `PF2.4`, `PF2.5`, and then `PF4.0`–`PF4.2c` depend on stable store actions/selectors and resolver explanations. UI can be designed in parallel, but runtime implementation waits for those APIs.
+
+Compatibility constraints for every lane: preserve Standard and non-V3 packs;
+do not globally alter the V2 generic neglect penalty, periodic crisis logic,
+generic adoption metric, composite score, or three-selection UI assumptions.
+Opted-in V3 behavior must use separate state, rules, and report paths.
 
 ## Work packages
 
@@ -125,7 +157,7 @@ Authoring output: [Project Factory V3 Provisional Content Pack](./project-factor
 
 ## Detailed implementation order after the P0 gates
 
-`PF0/PF0.2a → PF1/PF1.2a → PF2/PF2.3b → PF3.1–PF3.5b → PF4.0/PF4.2–PF4.2c → matching PF6.1/PF6.1a/PF6.1b tests → PF4.1/PF4.1a/PF4.2d/PF4.2e/PF4.3 → PF5.3b/PF6.2/PF6.3 → PF5.1a/PF5.3c/PF6.4 → PF4.4 only as pilot evidence warrants`
+`PF0/PF0.2a → PF1/PF1.2a → PF1.3/PF1.4 + PF2.0–PF2.3b → PF3.1–PF3.5b → PF2.4/PF2.5 → PF4.0/PF4.2–PF4.2c → matching PF6.1/PF6.1a/PF6.1b tests → PF4.1/PF4.1a/PF4.2d/PF4.2e/PF4.3 → PF5.3b/PF6.2/PF6.3 → PF5.1a/PF5.3c/PF6.4 → PF4.4 only as pilot evidence warrants`
 
 This order gets an end-to-end, individually playable reference slice before adding workshop polish, a board memo, deeper event coverage, or advisor support. It reduces the risk of designing a rich authoring system whose learner loop has not been validated.
 
@@ -140,6 +172,8 @@ Implementation should begin only when:
 5. The agreed four-window workshop cadence and quarter-by-quarter self-paced fallback are represented in the implementation plan, with pilot measures for timing, cognitive load, and discussion quality.
 6. `PF-PLAN-01` has been explicitly approved and `PF-PLAN-02` has created the V2-based implementation line.
 7. `PF-PLAN-03` has recorded light review resolutions and any resulting content updates, including the decision to retain, revise, or defer additional event cards.
+8. The product owner has separately authorised engine implementation after the P0 content gate; branch creation alone is not that authorisation.
+9. Compatibility expectations are tied to `PF0.1`, `PF1.3`, and `PF6.1`: v1/v2 saves, Standard mode, the existing four packs, deployment assumptions, and the full regression suite remain protected.
 
 ## Deferred after the first pilot — AI reflection coach
 

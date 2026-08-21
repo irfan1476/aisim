@@ -268,3 +268,14 @@ Status: implemented branch boundary; content review and engine implementation re
 - **Repository action:** created worktree `/Users/irfan/projects/AISim-v3-impl` on branch `codex/project-factory-v3-impl`, with HEAD exactly at `dc34433` (`Present multi-domain scenarios on homepage`).
 - **Safety boundary:** the active V2 worktree and branch were not modified. No V3 application code, documentation transfer, merge, deployment, or engine work was performed by this branch cut.
 - **Next gate:** transfer reviewed documentation-only V3 planning commits as a separate operation, complete the bounded operations and learning-design review, and pass the P0 content-calibration gate before starting P1 engine work.
+
+## 2026-08-21 — Parallel V3 workstream orchestration
+
+Status: agreed execution coordination model; implementation remains P0-gated
+
+- **Orchestration:** the primary agent remains the workstream lead. Parallel agents may inspect and prepare bounded outputs, exchange dependency findings directly, and report contradictions to the lead; only the lead consolidates the plan and declares gates. Agents do not independently edit code, alter branches, contact reviewers, or mark review complete.
+- **Parallel now:** documentation-only transfer into the V2-based implementation branch; operations/manufacturing review; learning-design review; reviewer-brief preparation; compatibility/test mapping; and authoring-validator planning can proceed independently where their interfaces are explicit.
+- **Blocked:** quality-escape and technician-retirement event cards remain blocked on operations and relevant quality/workforce review. P1 engine/UI/persistence implementation remains blocked until the bounded light reviews are completed and the product owner separately authorises engine work.
+- **P1 coordination:** after the schema contract is fixed, contract/validator, state/decision-ledger, resolver, and test lanes can progress in parallel. UI runtime work depends on stable state/store/resolver APIs. Tests must track each slice.
+- **Compatibility hazards:** V3 must not globally change the V2 generic neglect penalty, periodic crisis logic, generic adoption metric, composite score, or fixed three-selection assumptions. Opted-in V3 paths must remain additive and source-bound.
+- **Agent findings inspected:** V3 planning/dependency audit, frozen-V2 compatibility map, and content/reviewer-readiness review. Their conclusions are consolidated in [the implementation backlog](./project-factory-v3-implementation-backlog.md).
