@@ -343,3 +343,13 @@ Status: implemented; orchestration/UI integration remains the next V3 slice
 - **Verification:** full unit suite 50/50 passed, production build passed, and existing E2E suite 8/8 passed. Type-check passed with incremental artifacts disabled because the sandbox blocks `.tsbuildinfo` writes.
 - **Not yet delivered:** store/quarter orchestration wiring, PF2.4/PF2.5 UI, PF4 debrief UI, and sidecar selectors/UI. These remain ordered after the pure contracts.
 - **Implementation commits:** `eda81aa`, `859172c`, `5868c00`, and resolver hardening `5aae843` on `codex/project-factory-v3-impl`.
+
+## 2026-08-21 — V3 decision-resolution integration seam added
+
+Status: implemented; V3 UI/store opt-in remains next
+
+- **Decision:** expose the PF2/PF3 pure contracts through additive `lib/game/v3Runtime.ts` (`resolveV3Decision`). It validates the portfolio plan, appends the immutable ledger plan, evaluates declared gates, applies delayed causal effects, records optional event resolution, and returns source-labelled operational-value attribution.
+- **Compatibility:** the façade is not called by legacy `resolveQuarter` or the V2 Zustand store. A scenario must explicitly provide V3 metadata and a future V3 UI/store action must opt in before these mechanics run.
+- **Verification:** a focused façade test confirms composition, ledger capture, gate evaluation, causal movement, and value attribution without mutating the input state.
+- **Next:** wire the façade to the V3 decision UI/store, then implement PF2.4/PF2.5 and sidecar projection selectors. This preserves the approved ordering and prevents accidental V2 behavior changes.
+- **Commit:** `b5f738e` on `codex/project-factory-v3-impl`.
