@@ -120,14 +120,12 @@ async function setAllocation(page, allocation) {
 }
 
 async function chooseInitiatives(page, ids) {
-  for (const id of [
-    "maintenance",
-    "quality",
-    "demand",
-    "energy",
-    "knowledge",
-    "supply",
-  ]) {
+  const availableIds = await page
+    .locator('[data-testid^="initiative-"]')
+    .evaluateAll((cards) =>
+      cards.map((card) => card.getAttribute("data-testid").replace("initiative-", "")),
+    );
+  for (const id of availableIds) {
     const card = page.getByTestId(`initiative-${id}`);
     if (
       (await card.getAttribute("data-selected")) === "true" &&
@@ -135,19 +133,36 @@ async function chooseInitiatives(page, ids) {
     )
       await card.click();
   }
-  for (const id of [
-    "maintenance",
-    "quality",
-    "demand",
-    "energy",
-    "knowledge",
-    "supply",
-  ]) {
+  for (const id of availableIds) {
     const card = page.getByTestId(`initiative-${id}`);
     const selected = (await card.getAttribute("data-selected")) === "true";
     if (!selected && ids.includes(id)) await card.click();
   }
   await expect(page.getByText("3 / 3 selected")).toBeVisible();
+}
+
+async function startScenarioCampaign(page, scenarioId) {
+  await page.goto("/");
+  await page.evaluate(() => localStorage.clear());
+  await page.reload();
+  await page
+    .getByRole("button", { name: "Start your transformation" })
+    .first()
+    .click();
+
+  const scenarioToggle = page.locator('button[aria-pressed]').first();
+  await expect(scenarioToggle).toHaveAttribute("aria-pressed", "false");
+  await scenarioToggle.click();
+  await expect(scenarioToggle).toHaveAttribute("aria-pressed", "true");
+  await page.locator("#scenario-select").selectOption(scenarioId);
+  await page.getByRole("button", { name: "Take the baseline assessment" }).click();
+
+  for (let index = 0; index < 5; index += 1) {
+    await page.getByTestId(`baseline-${index}-3`).click();
+  }
+  await page.getByRole("button", { name: "Enter the boardroom" }).click();
+  await page.getByRole("button", { name: "Begin campaign" }).click();
+  await expect(page.getByTestId("campaign-quarter")).toContainText("Quarter 1");
 }
 
 async function resolveQuarter(page, profile) {
@@ -253,6 +268,47 @@ test("full campaign preserves Q1 values, survives reloads, and ends with evidenc
   await expect(page.getByText(/Pattern confidence/)).toBeVisible();
   await expect(page.getByText(profile.reveal, { exact: false })).toBeVisible();
   expect(errors).toEqual([]);
+});
+
+test("scenario mode shows domain challenges, scenario initiatives, and a three-bet limit", async ({
+  page,
+}) => {
+  await startScenarioCampaign(page, "bankNext");
+
+  await expect(page.getByText("Scenario progress")).toBeVisible();
+  await expect(page.getByText("Digital fraud incidents")).toBeVisible();
+  await expect(page.getByText("Credit approval speed")).toBeVisible();
+  await expect(page.getByText("Compliance readiness").first()).toBeVisible();
+
+  const scenarioIds = [
+    "fraudDetection",
+    "creditRiskAssessment",
+    "customerCopilot",
+    "complianceMonitoring",
+    "rmSalesAssistant",
+    "personalizedEngine",
+  ];
+  for (const id of scenarioIds) {
+    await expect(page.getByTestId(`initiative-${id}`)).toBeVisible();
+  }
+
+  await chooseInitiatives(page, scenarioIds.slice(0, 3));
+  await page.getByTestId("initiative-complianceMonitoring").click();
+  await expect(page.getByText("3 / 3 selected")).toBeVisible();
+  await expect(
+    page.getByTestId("initiative-complianceMonitoring"),
+  ).toHaveAttribute("data-selected", "false");
+});
+
+test("Standard mode keeps scenario-only UI and initiative IDs absent", async ({
+  page,
+}) => {
+  await startCampaign(page, profiles.balanced);
+
+  await expect(page.getByText("Scenario progress")).toHaveCount(0);
+  await expect(page.getByText("Digital fraud incidents")).toHaveCount(0);
+  await expect(page.getByTestId("initiative-demand")).toBeVisible();
+  await expect(page.getByTestId("initiative-fraudDetection")).toHaveCount(0);
 });
 
 for (const [name, profile] of Object.entries(profiles).filter(
