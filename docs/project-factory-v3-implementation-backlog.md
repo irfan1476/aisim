@@ -209,6 +209,17 @@ The current additive UI is explicitly not learner-accepted. Do not add more tabs
 | UX-RESET-04 | Open | Reduce the first playable slice to one initiative, one evidence set, one operating metric, one gate, one outcome, and one reflection prompt. |
 | UX-RESET-05 | Blocked on UX-RESET-01–04 | Re-author the V3 screen and only then revalidate the engine contracts and browser flow. |
 
+#### Mandatory state-screen contract
+
+Before implementation resumes, each V3 state must have one primary action and a compact orientation header containing:
+
+1. **Previous state:** last decision, relevant evidence, and observable outcome.
+2. **Current state:** current quarter/window, initiative under consideration, spend/capacity available, and the one decision question.
+3. **Expected action:** one clearly labelled primary action; secondary actions are hidden or deferred.
+4. **Next state preview:** what will resolve, which metric/gate will be reviewed, and how the learner advances.
+
+Initiative-linked insights must be co-located with the initiative decision. Generic dashboards, sidecars, and full evidence catalogues must not appear in the primary decision path; they belong behind deliberate disclosure after the learner is oriented.
+
 ## Detailed implementation order after the P0 gates
 
 `PF0/PF0.2a → PF1/PF1.2a → PF1.3/PF1.4 + PF2.0–PF2.3b → PF3.1–PF3.5b → PF2.4/PF2.5 → PF2.6 + PF6.1c → PF4.0/PF4.2–PF4.2c → matching PF6.1/PF6.1a/PF6.1b tests → PF4.1/PF4.1a/PF4.2d/PF4.2e/PF4.3 → PF-SC-UI-01/PF-SC-UI-02 + PF5.3b/PF6.2/PF6.3 → PF-SC-UI-03/PF-SC-TEST-01/PF-SC-TEST-02/PF-SC-PILOT-01 → PF5.1a/PF5.3c/PF6.4 → PF4.4 only as pilot evidence warrants`

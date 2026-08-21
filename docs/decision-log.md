@@ -416,3 +416,14 @@ Status: agreed direction to pause implementation; redesign checkpoint required
 - **Decision:** stop feature implementation and do not proceed to P3, reuse, additional events, or further UI embellishment. Treat the current V3 implementation as a disposable technical prototype/reference for contracts, not as an accepted learner interface.
 - **Required redesign:** define one explicit learner journey before code resumes: orient to the current board window; inspect only evidence relevant to the current decision; choose one bounded action; record a concise prediction; resolve; observe one outcome; reflect; then advance. Every visible element must have a declared role in that sequence.
 - **Open product decision:** whether V3 should be a dedicated state-driven experience (recommended) or continue sharing the V2 cockpit with most legacy controls hidden. This must be settled in the redesign checkpoint before implementation resumes.
+
+## 2026-08-21 — UX problem definition clarified by product owner
+
+Status: agreed problem definition for redesign
+
+- The learner cannot reconstruct the **previous state**: what happened, which decision caused it, and what evidence was used.
+- The learner cannot orient to the **current state**: what the current spending decision is, which initiative it belongs to, what insight matters, or what action is expected now.
+- The learner cannot anticipate the **next state**: what will change after the action, what result will appear, and how the game advances.
+- Initiative-specific insights, spending, metrics, and governance information are not visibly associated with one another. The learner must mentally join unrelated panels.
+- The additive V3 interfaces increase frustration because they introduce new surfaces without a clear flow contract. This is a coordination and sequencing failure, not a missing-detail problem.
+- Redesign requirement: every screen state must answer, in order: **What just happened? What decision is open? What evidence/constraint matters for this decision? What action do I take? What will happen next?** Details must be progressively disclosed only after the learner has chosen the relevant initiative or decision.
