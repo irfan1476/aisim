@@ -68,19 +68,19 @@ export const projectFactoryV3Pack: V3ScenarioPack = {
     gate('G-PF-06', ['supply.scale'], 'procurement_supply_chain_lead', ['PF-E03', 'PF-E05', 'PF-E06', 'PF-E07'], ['priority_alert_action_capacity >= 80'], 'remain_in_pilot_or_pause'),
   ],
   causalRules: [
-    { id: 'CR-PF-01', evidenceIds: ['PF-E02', 'PF-E04'], metric: 'unplanned_downtime_share', effects: [{ metric: 'unplanned_downtime_share', delta: -1.6, unit: '% of scheduled production time' }, { metric: 'technician_trust', delta: 2, unit: '0–100 index' }] },
+    { id: 'CR-PF-01', initiativeId: 'maintenance', evidenceIds: ['PF-E02', 'PF-E04'], metric: 'unplanned_downtime_share', effects: [{ metric: 'unplanned_downtime_share', delta: -1.6, unit: '% of scheduled production time' }, { metric: 'technician_trust', delta: 2, unit: '0–100 index' }] },
     { id: 'CR-PF-02', evidenceIds: ['PF-E01', 'PF-E05'], metric: 'first_pass_yield', effects: [{ metric: 'first_pass_yield', delta: 1, unit: '%' }, { metric: 'escaped_defects_ppm', delta: -100, unit: 'PPM' }] },
     { id: 'CR-PF-03', evidenceIds: ['PF-E04', 'PF-E07'], metric: 'workforce_readiness', effects: [{ metric: 'workforce_readiness', delta: 5, unit: '0–100 index' }, { metric: 'technician_trust', delta: 3, unit: '0–100 index' }] },
   ],
   events: [{ id: 'EV-PF-01', trigger: 'quarter >= 4', triggerMetric: 'unplanned_downtime_share', triggerInitiative: 'maintenance', effects: [{ metric: 'schedule_adherence', delta: -3, unit: '%', sourceRuleId: 'ER-PF-01', sourceEvidenceIds: ['PF-E02', 'PF-E03', 'PF-E04'] }] }],
-  portfolioPolicy: { lifecycleStates: ['deferred', 'research', 'pilot', 'scale', 'sustain', 'pause', 'stop'], budgetPosture: 'constrained', budget: { currency: 'INR_Cr', capitalEnvelope: 5, annualRunEnvelope: 1.2 } },
+  portfolioPolicy: { lifecycleStates: ['deferred', 'research', 'pilot', 'scale', 'sustain', 'pause', 'stop'], budgetPosture: 'constrained', budget: { currency: 'INR_Cr', capitalEnvelope: 5, annualRunEnvelope: 1.2 }, capacityPools: { data_engineering: 4, plant_integration: 3, frontline_change: 3, governance_assurance: 2 } },
   learning: { evidencePolicy: 'Seven expert-calibrated synthetic artefacts; none describes a named company.', scorecardDimensions: ['operational_outcomes', 'decision_quality', 'execution_and_sequencing', 'responsible_ai_governance', 'stakeholder_workforce_health', 'resilience'], reflectionStages: ['reconstruct', 'interpret', 'reframe', 'transfer'] },
   scorecard: { dimensions: ['operational_outcomes', 'decision_quality', 'execution_and_sequencing', 'responsible_ai_governance', 'stakeholder_workforce_health', 'resilience'], composite: false },
   report: { changes: [{ metric: 'unplanned_downtime_share', ruleId: 'CR-PF-01', evidenceIds: ['PF-E02', 'PF-E04'] }, { metric: 'first_pass_yield', ruleId: 'CR-PF-02', evidenceIds: ['PF-E01', 'PF-E05'] }, { metric: 'workforce_readiness', ruleId: 'CR-PF-03', evidenceIds: ['PF-E04', 'PF-E07'] }] },
 };
 
 function initiative(id: string, valueHypothesis: string, ownerRole: string, evidenceRequired: string[], dependencies: string[], valueMetric: string, capacityRequired: Record<string, Record<string, number>>) {
-  return { id, valueHypothesis, ownerRole, evidenceRequired, dependencies, valueMetric, capacityRequired, lifecycle: { allowedTransitions: ['deferred to research', 'research to pilot', 'pilot to scale', 'scale to sustain', 'pilot to pause', 'scale to pause', 'pause to research', 'pilot to stop', 'scale to stop', 'sustain to stop'] } };
+  return { id, valueHypothesis, ownerRole, evidenceRequired, dependencies, valueMetric, capacityRequired, costInrCr: { researchCapital: 0.25, pilotCapital: 0.7, scaleCapital: 1.45, quarterlyRunCost: 0.18, changeAssuranceEffort: 0.12 }, lifecycle: { allowedTransitions: ['deferred to research', 'research to pilot', 'pilot to scale', 'scale to sustain', 'pilot to pause', 'scale to pause', 'pause to research', 'pilot to stop', 'scale to stop', 'sustain to stop'] } };
 }
 
 function gate(id: string, appliesTo: string[], ownerRole: string, requiredEvidence: string[], conditions: string[], onFailure: string) {

@@ -53,6 +53,7 @@ export default function GameDecisionView({
   onReset,
 }: Props) {
   const scenario = state.scenarioMode ? getScenario(state.scenarioId) : undefined;
+  const isV3 = Boolean(scenario?.v3);
   return (
     <>
       <header className="sticky top-0 z-10 border-b border-ink/8 bg-white/90 px-5 py-4 backdrop-blur">
@@ -312,11 +313,11 @@ export default function GameDecisionView({
           </div>
           <div className="mt-5 flex justify-end">
             <button
-              disabled={state.selected.length === 0 || total !== 100}
+              disabled={isV3 || state.selected.length === 0 || total !== 100}
               onClick={onConfirm}
               className="flex items-center gap-3 rounded-xl bg-ink px-6 py-4 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-35"
             >
-              Confirm decisions <ArrowRight size={17} />
+              {isV3 ? "Use the Initiative Plan below" : "Confirm decisions"} {!isV3 && <ArrowRight size={17} />}
             </button>
           </div>
         </section>

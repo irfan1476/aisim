@@ -47,6 +47,11 @@ export function resolveV3CausalRules(pack: V3ScenarioPack, state: V3ScenarioStat
   for (const rule of pack.causalRules || []) {
     const ruleRecord = rule as Record<string, unknown>;
     const profile = pack.initiatives?.find((item) => item.id === String(ruleRecord.initiativeId || ''));
+    const initiativeId = typeof ruleRecord.initiativeId === 'string' ? ruleRecord.initiativeId : undefined;
+    if (initiativeId && typeof ruleRecord.delayQuarters !== 'number') {
+      const lifecycle = next.initiatives[initiativeId]?.lifecycle;
+      if (!lifecycle || !['pilot', 'scale', 'sustain'].includes(lifecycle)) continue;
+    }
     const lag = typeof ruleRecord.delayQuarters === 'number' ? ruleRecord.delayQuarters : (profile?.lifecycle?.timeToSignalQuarters || 0);
     const availableQuarter = quarter + lag;
     const effects = rule.effects || [];

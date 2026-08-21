@@ -396,3 +396,13 @@ Status: agreed corrective action; P3 remains paused
 - **Acceptance contract:** the learner opens and cites evidence; selects a lifecycle action; sees cost, capacity, dependencies, owner, gate, and stop criterion; records prediction/assumption; resolves through the V3 path; observes metric/gate/stakeholder/uncertainty movement; and sees the same records replayed in the ledger and sidecar.
 - **Compatibility:** this corrective work remains additive and opt-in. Standard, V1, V2, and the legacy `projectFactory` path remain untouched.
 - **Explicit pause:** no P3 reuse, additional event-card authoring, broader scenario conversion, or unrelated sidecar expansion until the corrective slice passes learner-facing acceptance.
+
+## 2026-08-21 — Predictive-maintenance learner loop made coherent
+
+Status: implemented and verified; learner acceptance remains open for product-owner review
+
+- **Finding addressed:** the first P2 shell made evidence, initiative planning, and the sidecar visible but did not make them causally legible as one learner action. This was a product/experience gap, not a request for more generic tabs.
+- **Implemented loop:** V3 evidence can be cited; the learner must enter rationale, prediction, and key assumption; lifecycle actions carry authored cost/capacity; V3 capacity pools are declared by the pack; the legacy V2 confirm control is disabled in V3; authored operating metrics are visible in the live screen; the resolver records the decision through the V3 ledger path.
+- **Source/engine boundaries:** cited evidence and learner text are ledger metadata only. Outcomes remain resolver-authored. The predictive-maintenance causal rule is initiative-scoped and applies only when the initiative is active, preserving delayed/conditional behavior and V2 isolation.
+- **Verification:** TypeScript check, production build, 68/68 unit/regression tests, and 11/11 browser tests pass. The new browser flow proves evidence citation and prediction replay in the ledger after a V3 research decision; Standard/V2 coverage remains green.
+- **Remaining acceptance question:** does this single loop feel understandable and decision-relevant to a learner when exercised locally? Product-owner review of the live flow is now the next gate. P3 reuse, deferred event cards, and broader sidecar expansion remain paused.

@@ -47,6 +47,7 @@ export default function Game() {
   const [scenarioId, setScenarioId] = useState("projectFactory");
   const [currencyMode, setCurrencyMode] = useState<CurrencyMode>("$");
   const [debug, setDebug] = useState(false);
+  const [v3CitedEvidence, setV3CitedEvidence] = useState<string[]>([]);
   useEffect(() => {
     setDebug(
       process.env.NODE_ENV !== "production" &&
@@ -183,7 +184,7 @@ export default function Game() {
       setIsAsking(false);
     }
   };
-  const confirm = () => store.confirmDecisions();
+  const confirm = () => { if (v3Scenario?.v3) return; store.confirmDecisions(); };
   const respond = (impact: Record<string, number>, cost?: number) =>
     store.respondToCrisis(impact, cost);
   const advance = () => {
@@ -200,18 +201,24 @@ export default function Game() {
   };
   const v3Scenario = s.scenarioMode ? getScenario(s.scenarioId) : undefined;
   const v3InitiativeId = s.selected[0] || Object.keys(s.v3State?.initiatives || {})[0];
-  const confirmV3Plan = (action: string) => {
+  const confirmV3Plan = (action: string, record: { rationale: string; prediction: string; assumption: string }) => {
     if (!v3Scenario?.v3 || !v3InitiativeId) return;
     const target = action.split(/\s+to\s+|→/).pop()?.trim() as "deferred" | "research" | "pilot" | "scale" | "sustain" | "pause" | "stop" | undefined;
     if (!target) return;
-    store.confirmV3Decisions([{ initiativeId: v3InitiativeId, lifecycle: target }], {
+    const profile = v3Scenario.v3.initiatives?.find((item) => item.id === v3InitiativeId);
+    const capacity = profile?.capacityRequired?.[target] || profile?.capacityRequired?.research || {};
+    const costs = profile?.costInrCr;
+    const cost = target === 'research' ? costs?.researchCapital : target === 'pilot' ? costs?.pilotCapital : target === 'scale' ? costs?.scaleCapital : 0;
+    const gateIds = s.v3State?.initiatives[v3InitiativeId]?.gateIds || [];
+    store.confirmV3Decisions([{ initiativeId: v3InitiativeId, lifecycle: target, cost, capacity, gateIds }], {
       id: `window-${s.q}-${v3InitiativeId}`,
       quarter: s.q,
       initiativeIds: [v3InitiativeId],
-      rationale: "V3 initiative-plan action recorded from the boardroom.",
-      prediction: "Review the authored initiative hypothesis and target metric.",
-      evidenceIds: [],
-      gateIds: s.v3State?.initiatives[v3InitiativeId]?.gateIds || [],
+      rationale: record.rationale,
+      prediction: record.prediction,
+      assumption: record.assumption,
+      evidenceIds: v3CitedEvidence,
+      gateIds,
     });
   };
 
@@ -320,8 +327,10 @@ export default function Game() {
         onReset={reset}
       />
       {v3Scenario?.v3 && s.v3State && (
+        <>
+        <section aria-label="V3 operating evidence" className="mx-auto w-full max-w-[1500px] px-5 pb-5"><div className="rounded-3xl border border-gold/30 bg-gold/5 p-5"><p className="text-xs font-bold uppercase tracking-[.2em] text-gold">Operating evidence · quarter {s.v3State.currentQuarter}</p><div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">{(v3Scenario.v3.metrics || []).slice(0, 5).map((metric) => { const value = (s as any).scenarioState?.metrics?.[metric.key] ?? metric.start ?? 0; return <div key={metric.key} className="rounded-xl border border-ink/8 bg-white p-3"><p className="text-[10px] font-bold uppercase tracking-wider text-ink/45">{metric.label}</p><p className="mt-1 text-lg font-bold">{Number(value).toFixed(1)} <span className="text-xs font-normal text-ink/45">/ {metric.target ?? '—'} {metric.unit}</span></p><p className="mt-1 text-[11px] text-ink/55">Owner: {metric.ownerRole || 'unassigned'}</p></div>; })}</div></div></section>
         <section className="mx-auto grid w-full max-w-[1500px] gap-5 px-5 pb-28 lg:grid-cols-[1fr_1fr_360px]">
-          <V3EvidenceRoom pack={v3Scenario.v3} />
+          <V3EvidenceRoom pack={v3Scenario.v3} selectedIds={v3CitedEvidence} onCite={(item) => setV3CitedEvidence((current) => current.includes(item.id) ? current.filter((id) => id !== item.id) : [...current, item.id])} />
           {v3InitiativeId && <V3InitiativePlan
             pack={v3Scenario.v3}
             initiativeId={v3InitiativeId}
@@ -330,6 +339,7 @@ export default function Game() {
           />}
           <V3AnalyticsSidecar state={s as any} pack={v3Scenario.v3} />
         </section>
+        </>
       )}
       <GameResultsModal
         state={s}

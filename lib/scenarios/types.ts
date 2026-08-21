@@ -87,6 +87,7 @@ export type V3InitiativeProfile = {
   effect?: { metric: string; delta: number; unit: string; sourceRuleId?: string; sourceEvidenceIds?: string[] };
   capacityRequired?: Record<string, Record<string, number>>;
   operatingChangePlan?: Record<string, unknown>;
+  costInrCr?: { researchCapital?: number; pilotCapital?: number; scaleCapital?: number; quarterlyRunCost?: number; changeAssuranceEffort?: number };
 };
 
 export type V3Stakeholder = {
@@ -142,7 +143,7 @@ export type V3ScenarioPack = {
   gates?: V3GovernanceGate[];
   causalRules?: V3CausalRule[];
   events?: V3Event[];
-  portfolioPolicy?: { lifecycleStates?: V3LifecycleState[]; budgetPosture?: string; budget?: { currency?: string; capitalEnvelope?: number; annualRunEnvelope?: number } };
+  portfolioPolicy?: { lifecycleStates?: V3LifecycleState[]; budgetPosture?: string; budget?: { currency?: string; capitalEnvelope?: number; annualRunEnvelope?: number }; capacityPools?: Record<string, number> };
   currency?: { code?: string; unit?: string };
   report?: { changes?: Array<{ metric: string; ruleId?: string; evidenceIds?: string[] }> };
   learning?: Record<string, unknown>;

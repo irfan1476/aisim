@@ -187,6 +187,16 @@ Authoring output: [Project Factory V3 Provisional Content Pack](./project-factor
 | PF6.3 | Run a formative learner pilot. | Observe target learners in a 90-minute team session and self-paced fallback; collect evidence about comprehension, cognitive load, discussion quality, and misleading mechanics. |
 | PF6.4 | Calibrate before reuse. | Rule/content changes from pilot are versioned; only validated primitives are copied into BankNext, Care360, and FutureReady. |
 
+### Corrective P2 learner-loop slice (reopened)
+
+The technical sidecar slice is not considered learner-accepted until one decision is experienced as a connected evidence → plan → resolver → metric → ledger loop.
+
+| ID | Status | Acceptance evidence |
+|---|---|---|
+| P2-COHERENCE-01 | Implemented | Citing PF-E02, entering rationale/prediction/assumption, choosing deferred→research, carrying authored cost/capacity, and recording the immutable ledger entry are covered by `tests/e2e/v3-project-factory.test.cjs` and `tests/pf2-maintenance-loop.test.cjs`. |
+| P2-COHERENCE-02 | Implemented | V3 operating metrics are visible in the live screen; authored capacity pools are initialized; V2 confirm is disabled for V3; type-check/build/unit/E2E suites pass. |
+| P2-COHERENCE-03 | Pending product-owner review | Exercise the local V3 flow and confirm that the evidence, initiative plan, live metric context, result dialog, and Ledger tab are understandable as one decision chain. |
+
 ## Detailed implementation order after the P0 gates
 
 `PF0/PF0.2a → PF1/PF1.2a → PF1.3/PF1.4 + PF2.0–PF2.3b → PF3.1–PF3.5b → PF2.4/PF2.5 → PF2.6 + PF6.1c → PF4.0/PF4.2–PF4.2c → matching PF6.1/PF6.1a/PF6.1b tests → PF4.1/PF4.1a/PF4.2d/PF4.2e/PF4.3 → PF-SC-UI-01/PF-SC-UI-02 + PF5.3b/PF6.2/PF6.3 → PF-SC-UI-03/PF-SC-TEST-01/PF-SC-TEST-02/PF-SC-PILOT-01 → PF5.1a/PF5.3c/PF6.4 → PF4.4 only as pilot evidence warrants`

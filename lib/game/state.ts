@@ -104,7 +104,8 @@ export function createV3State(scenarioId: string, seed = 2030, budget = 5, initi
   }));
   const gates = Object.fromEntries((pack?.gates || pack?.governanceGates || []).map((gate) => [gate.id, { id: gate.id, status: 'pending' as const, history: [] }]));
   const stakeholders = Object.fromEntries((pack?.stakeholders || []).map((stakeholder) => [stakeholder.id, { id: stakeholder.id, sentiment: 0, history: [] }]));
-  const pools = Object.fromEntries(profiles.flatMap((profile) => Object.keys(profile.capacityRequired || {})).map((pool) => [pool, 0]));
+  const declaredPools = pack?.portfolioPolicy?.capacityPools || {};
+  const pools = Object.fromEntries(profiles.flatMap((profile) => Object.keys(profile.capacityRequired || {})).map((pool) => [pool, declaredPools[pool] ?? 0]));
   return {
     schemaVersion: 1,
     scenarioId,

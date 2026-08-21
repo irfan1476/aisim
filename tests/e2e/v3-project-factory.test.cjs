@@ -47,3 +47,18 @@ test('Standard mode does not mount the V3 sidecar or evidence room', async ({ pa
   await expect(page.getByRole('complementary', { name: 'V3 analytics' })).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'Inspect before you commit' })).toHaveCount(0);
 });
+
+test('V3 decision loop records cited evidence and learner prediction in the ledger', async ({ page }) => {
+  await startProjectFactoryV3(page);
+  await page.locator('article').filter({ hasText: 'Asset-data readiness assessment' }).getByRole('button', { name: 'Cite in decision' }).click();
+  await page.getByLabel('Decision rationale').fill('Start with a bounded research cycle to validate asset data before a pilot.');
+  await page.getByLabel('Decision prediction').fill('Asset-data readiness should improve after the research cycle.');
+  await page.getByLabel('Key assumption').fill('The maintenance team can provide protected review time.');
+  await page.getByRole('button', { name: 'deferred to research' }).click();
+  await expect(page.getByText('V3 decision recorded. Review the evidence and outcome before the next board window.').first()).toBeVisible();
+  await page.getByRole('button', { name: 'Continue to next quarter' }).click();
+  const sidecar = page.getByRole('complementary', { name: 'V3 analytics' });
+  await sidecar.getByRole('tab', { name: 'Ledger' }).click();
+  await expect(sidecar.getByText('Start with a bounded research cycle to validate asset data before a pilot.')).toBeVisible();
+  await expect(sidecar.getByText('PF-E02')).toBeVisible();
+});
