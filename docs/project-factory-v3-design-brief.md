@@ -61,7 +61,7 @@ At debrief, show a concise comparison rather than an alignment score:
 
 | Baseline posture | Decisions and evidence | Reflection prompt |
 |---|---|---|
-| People and workflow change | change/training capacity, technician response, adoption outcome | What evidence strengthened or changed your view of people enablement? |
+| People and workflow change | change/training capacity, technician response, initiative-specific workflow evidence | What evidence strengthened or changed your view of people enablement? |
 | Speed and assurance | lifecycle pacing, gates met/repaired, event response | When did speed help, and when did assurance protect value? |
 | Governance before scale | ownership, validation/controls, gate history | Which governance action made a business decision possible or safer? |
 | Portfolio balance | active initiatives, capacity choices, deferred work | Did focus or breadth create more value in this context? |
@@ -117,16 +117,16 @@ If introduced, the coach should be a clearly labelled **reflection coach**, not 
 
 Before implementation, the team should require a learner-pilot finding that structured reflection is useful but insufficient, a reflection-quality rubric, grounded-response and unsafe-tone evaluation cases, a transcript/retention decision, a cost/rate-limit plan, and a facilitator review. This preserves the option without making V3 dependent on an unvalidated conversational experience.
 
-### Workshop cadence — proposed interaction design
+### Workshop cadence — agreed first-pilot interaction design
 
-The 12-quarter horizon should remain because it creates lagged effects and consequence. For a 90-minute facilitated format, it should not require twelve equally deep group debates. A proposed default is four board windows, each resolving three quarters while pausing for evidence or an event when a material condition is met:
+The 12-quarter horizon remains because it creates lagged effects and consequence. For a 90-minute facilitated format, it should not require twelve equally deep group debates. The agreed default is four board windows, each resolving three quarters while pausing for evidence or an event when a material condition is met:
 
 1. **Q1–Q3 — diagnose and build foundations:** interpret evidence, commission research, select initial pilots, and record hypotheses.
 2. **Q4–Q6 — validate and decide:** review pilot evidence, meet or repair gates, pause/stop, or prepare a scale case.
 3. **Q7–Q9 — scale and lead change:** allocate finite capacity, manage rollout and stakeholder response, and respond to an operational disruption.
 4. **Q10–Q12 — sustain and reflect:** manage resilience, monitor performance, compare predictions to results, and conduct debrief.
 
-Self-paced mode can expose one quarter at a time; the workshop mode can use the grouped view. This is a proposed UX decision to be tested in the pilot.
+Self-paced mode exposes one quarter at a time; workshop mode uses the grouped view. The interaction details remain subject to pilot validation, but the four-window cadence is the agreed first-pilot contract.
 
 ## Proposed learning contract
 
@@ -141,6 +141,36 @@ The objectives below are the proposed formative rubric for the agreed learner co
 3. Set evidence-based gates for asset-data readiness, safety/workflow integration, and workforce adoption.
 4. Explain how chosen initiatives improve one KPI while affecting delivery capacity, cost, trust, or risk elsewhere.
 5. Respond to production, quality, and workforce signals with a defensible pivot rather than retrospective rationalisation.
+
+## V2-autopsy refinements and alternative review route
+
+The V2 final-report audit exposed static generic adoption, mechanically low
+risk, generic ROI, and a score narrative that could hide unresolved operational
+problems. The V3 reference pack adopts the following agreed refinements:
+
+- **Workflow adoption, not a generic campaign percentage.** Adoption is
+  recorded as initiative-specific use, review, override, correction, and
+  stakeholder evidence. Funding or people allocation alone cannot establish it.
+- **Contextual exposure, not blanket neglect penalties.** A deferred initiative
+  may be a sound capacity decision. The learner must still see the relevant
+  unresolved reliability, quality/OEM, energy/throughput, workforce, or supply
+  exposure, the accountable owner, and the trigger for review. Only declared,
+  deterministic events are resolved as events.
+- **Operational movement before monetary value.** Value is attributed only to
+  declared operational mechanisms and costs. Until CFO/operations reviewers
+  calibrate the economic-conversion assumptions, the product reports monetary
+  benefit as **not yet observable** rather than manufacturing a generic ROI.
+
+### Agreed alternative review plan
+
+The evidence and rules remain labelled expert-calibrated synthetic —
+provisional. The internal self-review is completed before implementation
+preparation. One manufacturing/operations reviewer and one learning-design
+reviewer must provide a light asynchronous review before any learner pilot.
+Full manufacturing, quality/OEM, CFO/operations, governance, and learning
+calibration follows the pilot and versions any rule, value, event, or prompt
+change before broader reuse. This parallel review route preserves momentum but
+does not make provisional content a claim about a real factory.
 
 ## Scenario model
 

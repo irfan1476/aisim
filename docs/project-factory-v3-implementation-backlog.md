@@ -53,7 +53,8 @@ Reference: [Project Factory 2030 v3 Design Brief](./project-factory-v3-design-br
 | PF3.3 | Add three Project Factory reference rules. | Test fixtures cover: delayed predictive-maintenance benefit, visual-quality false-reject trade-off, and knowledge/maintenance dependency. |
 | PF3.4 | Implement condition-triggered event resolver. | A line-failure event becomes eligible from declared asset/gate conditions; cause, seed, evidence, response, and impact are saved and displayed. |
 | PF3.5 | Implement deterministic stakeholder resolver. | Technician/maintenance, plant/COO, OEM/quality, CFO, and data-owner states change only through authored rules and are visible in the snapshot. |
-| PF3.5a | Implement exposure and deferral rules. | A pack can declare adverse trend, unaddressed condition, rationale/review trigger, stakeholder, and event-eligibility relationships. The engine does not impose a generic “unfunded for N quarters” penalty. |
+| PF3.5a | Implement exposure and deferral rules. | A pack can declare adverse trend, unaddressed condition, rationale/review trigger, stakeholder, and event-eligibility relationships. The engine does not impose a generic “unfunded for N quarters” penalty. Project Factory must surface all five declared exposures even though only reliability has an initial conditional event. |
+| PF3.5b | Implement initiative-specific workflow-adoption evidence. | Each initiative records its authored use/review/override/correction evidence. A derived state, if used, remains initiative-scoped and source-bound; funding or people allocation alone cannot change it, and no global campaign-adoption metric can overwrite scenario state. |
 
 ### WP4 — Formative feedback and facilitation
 
@@ -76,22 +77,24 @@ Authoring output: [Project Factory V3 Provisional Content Pack](./project-factor
 | ID | Task | Acceptance criteria |
 |---|---|---|
 | PF5.1 | Author and review the evidence pack. | Seven evidence artefacts have source type, confidence, visibility, learning purpose, accessible text, and manufacturing-review sign-off. |
+| PF5.1a | Calibrate economic-conversion assumptions. | Operations and CFO review records values/ranges, units, time horizon, eligible scope, downside, and evidence for `VA-PF-01` through `VA-PF-04`; before that, the product reports monetary benefit as not yet observable rather than generic ROI. |
 | PF5.2 | Author initiative delivery profiles, gates, and rules. | All six initiatives have lifecycle/cost/capacity/dependency/owner/control-boundary/stop-scale content; synthetic values are labelled as such. |
 | PF5.3 | Author events, stakeholder rules, and debrief prompts. | At least one condition-triggered event and the five stakeholder perspectives produce testable, explained effects. |
+| PF5.3a | Calibrate non-event exposure content. | Quality/OEM, energy/throughput, workforce, and supply-continuity exposure conditions have reviewer-approved signals, owners, and review consequences. New events are added only with an authored causal explanation and deterministic fixture. |
 | PF5.4 | Run content, learning-design, and accessibility review. | Review comments and resolutions are recorded; no content presents synthetic values as real company evidence. |
 
 ### WP6 — Validation and pilot
 
 | ID | Task | Acceptance criteria |
 |---|---|---|
-| PF6.1 | Extend unit and migration coverage. | Resolver, validator, lifecycle, metric authority, value attribution, gate, capacity, causal, event, stakeholder, scorecard, report-integrity, and v5→v6 tests cover success/failure boundaries. Fixtures prove that a baseline change cannot alter an outcome; a scenario metric cannot silently overwrite a core metric; a met target never produces a contrary recommendation; and units/currency remain consistent. |
+| PF6.1 | Extend unit and migration coverage. | Resolver, validator, lifecycle, metric authority, value attribution, workflow-adoption, exposure, gate, capacity, causal, event, stakeholder, scorecard, report-integrity, and v5→v6 tests cover success/failure boundaries. Fixtures prove that a baseline change cannot alter an outcome; a scenario metric cannot silently overwrite a core metric; a met target never produces a contrary recommendation; initiative workflow evidence cannot appear as a static global adoption value; and units/currency remain consistent. |
 | PF6.2 | Add browser flows. | A v3 Project Factory learner can pre-brief, make an evidence-led decision, encounter an explained event, defer with an explicit trigger, resume a save, and reach a source-grounded debrief; v1 scenario and Standard flows continue to pass. |
 | PF6.3 | Run a formative learner pilot. | Observe target learners in a 90-minute team session and self-paced fallback; collect evidence about comprehension, cognitive load, discussion quality, and misleading mechanics. |
 | PF6.4 | Calibrate before reuse. | Rule/content changes from pilot are versioned; only validated primitives are copied into BankNext, Care360, and FutureReady. |
 
 ## Suggested implementation order
 
-`PF0 → PF1/PF1.2a → PF2 → PF3.1–PF3.2a/PF3.4 → PF4.0–PF4.2b → PF5 → PF6 → PF3.5/PF3.5a/PF4.2c/PF4.3/PF4.4 as pilot evidence warrants`
+`PF0 → PF1/PF1.2a → PF2 → PF3.1–PF3.2a/PF3.4–PF3.5b → PF4.0–PF4.2b → PF5 → PF6 → PF4.2c/PF4.3/PF4.4 as pilot evidence warrants`
 
 This order gets an end-to-end, individually playable reference slice before adding facilitation mode or deeper stakeholder interactions. It reduces the risk of designing a rich authoring system whose learner loop has not been validated.
 
@@ -103,7 +106,7 @@ Implementation should begin only when:
 2. The scenario authoring template is accepted.
 3. At least one manufacturing and one learning-design reviewer are identified or a documented alternative review plan exists.
 4. The Project Factory evidence/rule values are explicitly labelled as expert-calibrated synthetic until reviewed.
-5. The product owner approves the proposed workshop-cadence experiment or selects a different time model.
+5. The agreed four-window workshop cadence and quarter-by-quarter self-paced fallback are represented in the implementation plan, with pilot measures for timing, cognitive load, and discussion quality.
 
 ## Deferred after the first pilot — AI reflection coach
 

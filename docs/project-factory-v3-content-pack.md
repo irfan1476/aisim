@@ -732,6 +732,27 @@ initiative:
 | `maintenance_technician` — Maintenance lead and technician representative | Safe, useful maintenance work, respect for expertise, protected training/review time | Unsafe or unreviewed advice; imposed alert workflow; removal of human override | High; technician trust, workforce readiness, maintenance adoption | `SR-MAINT-01`: trust rises from usable, reviewed workflow and feedback closure. `SR-MAINT-02`: nuisance alerts or unreviewed knowledge reduce trust and can limit maintenance scale. |
 | `cio_ciso_data_owner` — CIO/CISO/data owner | Data quality, access boundary, cyber/operational security, monitoring ownership | Unapproved data access; unknown data owner; no incident/escalation route | High; asset-data readiness, gate history, control evidence | `SR-DATA-01`: access expansion pauses until ownership/control evidence is complete. `SR-DATA-02`: a pilot with documented controls may proceed with constrained access even when enterprise scale is not ready. |
 
+### Exposure register and contextual deferral rules
+
+An initiative may be deferred for a reasoned, visible capacity, evidence, or
+operating-context decision. Deferral is **not** a generic penalty. The learner
+must, however, be able to see the adverse condition that remains exposed, the
+owner who would review it, and the evidence that would justify a different
+decision. These are expert-calibrated synthetic — provisional declarations.
+
+| ID | Exposure condition and review trigger | Relevant initiative / evidence | Owner and visible consequence | First reference-slice treatment |
+|---|---|---|---|---|
+| `EX-PF-01` reliability | Unplanned downtime exceeds 11% after Q4 while asset-data readiness remains below 70%, or predictive maintenance has not reached a protected workflow. | Predictive maintenance; PF-E01, PF-E02, PF-E03, PF-E04. | Maintenance and COO review reliability, change-window, and delivery exposure. | `EV-PF-01` is the single authored conditional event; its eligibility and response are deterministic. |
+| `EX-PF-02` quality/OEM | Escaped defects rise above the opening 500 PPM reference or a confirmed quality escape lacks traceability/containment; visual-quality work is deferred or its pilot remains outside its gate. | Visual quality; PF-E01, PF-E03, PF-E05, PF-E07. | Quality/OEM lead reviews containment and OEM-confidence exposure. The scorecard must show the unresolved condition rather than call other activity a success. | Ledger and stakeholder/scorecard review condition in the first slice. It is an event candidate, **not** an additional implemented event in the initial vertical slice. |
+| `EX-PF-03` energy/throughput | Energy intensity remains above the opening 70 index while production context or safe override evidence is absent, or energy work is deferred without a review trigger. | Energy optimisation; PF-E01, PF-E02, PF-E03, PF-E06, PF-E07. | Energy/operations manager and CFO review energy-price, throughput, and maintenance-window exposure. | Ledger and operational-scorecard review condition in the first slice. It is not an automatic quarterly deterioration or an implemented event. |
+| `EX-PF-04` workforce | Senior-technician departure risk and low protected training/review time persist while knowledge work is deferred, paused, or judged unusable. | Knowledge assistant and predictive maintenance dependency; PF-E02, PF-E04, PF-E07. | Maintenance representative reviews trust, review-time, and readiness exposure. | Stakeholder/scorecard review condition; a workforce-disruption event requires separate authoring and review. |
+| `EX-PF-05` supply continuity | Priority supplier risks exceed the declared procurement action capacity, or schedule/quality signals cannot be acted on. | Demand forecasting and supply-chain monitoring; PF-E01, PF-E03, PF-E05, PF-E06, PF-E07. | Procurement lead and COO review delivery, inventory, and OEM-communication exposure. | Gate, stakeholder, and scorecard review condition; a supplier disruption event is outside this first event slice. |
+
+The final report must distinguish an unresolved exposure from an observed event,
+and name the related metric, rule, owner, and evidence. It may not infer that a
+deferred initiative was necessarily a poor choice, nor may it treat funding an
+initiative as proof that the exposure is controlled.
+
 ### Governance gates
 
 Each gate is a serializable, learner-visible proposal. Thresholds are synthetic — provisional and must be implemented as declared conditions rather than narrative judgement.
@@ -1025,6 +1046,48 @@ Project Factory V3 does not use a generic, independently compounding ROI metric.
 
 Capital, recurring run cost, crisis/event cost, and exit/pause cost must be shown separately. A value result is labelled **observed**, **estimated**, or **not yet observable**; it never grows simply because an initiative remained funded.
 
+#### Economic-conversion calibration still required
+
+The current content pack establishes permitted mechanisms and reporting
+boundaries, but intentionally does **not** supply conversion ranges for
+contribution margin, rework/containment cost, metered-energy price, or
+schedule-expedite cost. Those values need CFO and operations review before a
+resolver can produce a monetary estimate. Until then, an implementation must
+report operational movement and capital/run cost, and label any monetary
+benefit **not yet observable** rather than inventing a generic ROI.
+
+| Required assumption ID | Future unit / use | Calibration boundary |
+|---|---|---|
+| `VA-PF-01` | ₹ Cr per eligible recovered production hour, net of recovery cost | Vary by line eligibility, demand, labour, and downstream bottleneck; do not apply to all downtime. |
+| `VA-PF-02` | ₹ Cr per traceable avoided scrap/rework/containment outcome | Include false-reject and customer-claim exposure rather than reporting gross quality benefit. |
+| `VA-PF-03` | ₹ Cr per metered energy-use reduction in comparable production context | Require meter coverage, production normalisation, and stated price window. |
+| `VA-PF-04` | ₹ Cr per evidenced avoided expedite/disruption within the planning horizon | Do not represent an avoided delivery risk as revenue without relevant commercial evidence. |
+
+These identifiers are authoring placeholders, not numerical assumptions or real
+factory financial data. They block monetary-value attribution calibration, not
+the rest of the provisional learning content.
+
+### Initiative-specific workflow-adoption evidence
+
+Project Factory V3 does not use one generic campaign adoption percentage.
+Instead, each initiative has a concrete human workflow whose use, override,
+review, or correction can be observed. A later resolver may derive a bounded
+initiative-level adoption state from these records, but it must not merge it
+with an unrelated scenario metric or treat allocation alone as adoption.
+
+| Initiative | Workflow evidence to record | Meaningful failure / review signal | Where it is used |
+|---|---|---|---|
+| Predictive maintenance | Technician reviews actionable alerts; records disposition/override; marks whether the signal helped the maintenance workflow. | Nuisance alerts, missing dispositions, or usefulness below 60/100. | G-PF-01, CR-PF-01, SR-MAINT-01/02, `EX-PF-01`. |
+| Visual quality | Operator records override/rework decision and traceability link for a flagged item. | Incomplete traceability, false rejects above the gate range, or uncontained quality escape. | G-PF-02, CR-PF-02, SR-QUAL-01/02, `EX-PF-02`. |
+| Demand forecasting | Planner reviews material-risk exceptions and records an action or justified no-action. | Review below 80%, unexplainable forecast bias, or no feasible action capacity. | G-PF-03, CFO/COO stakeholder evidence, `EX-PF-05`. |
+| Energy optimisation | Operator accepts, defers, or safely overrides a recommendation with throughput/maintenance context. | Missing metering/context, repeated safety/throughput conflict, or unlogged overrides. | G-PF-04, operational-value boundary, `EX-PF-03`. |
+| Knowledge assistant | Technician marks retrieved material useful/correctable and the review owner closes feedback. | Low useful/correctable rate, unreviewed content, or unresolved safety/IP concern. | G-PF-05, CR-PF-03, SR-MAINT-01/02, `EX-PF-04`. |
+| Supply-chain monitoring | Procurement reviews priority signals and records mitigation or a justified no-action. | Alert volume exceeds action capacity or no action/owner can be linked. | G-PF-06, stakeholder evidence, `EX-PF-05`. |
+
+Workflow evidence is a leading indicator, not an outcome guarantee. It must be
+shown alongside operational movement and cannot be converted directly into cash
+value or a learner trait.
+
 ### Scorecard dimensions
 
 No composite score is shown in the first pilot. Each dimension displays one of **Evidence of strength**, **Mixed evidence**, **Needs attention**, or **Not yet observable**, followed by learner-visible support.
@@ -1089,6 +1152,7 @@ These fixtures define deterministic expectations once the V3 schema and resolver
 
 - [x] Content author has completed every required template section for the first provisional pack.
 - [x] Every numerical value is marked expert-calibrated synthetic — provisional.
+- [x] Internal self-review against the observed V2 report contradictions is complete; resulting gaps and refinements are recorded in [the self-review](./project-factory-v3-content-self-review.md).
 - [ ] Automotive operations/maintenance reviewer has checked causal plausibility and safety/workflow red lines.
 - [ ] Quality/OEM reviewer has checked traceability, containment, and customer-consequence logic.
 - [ ] Learning-design reviewer has checked evidence, decisions, pacing, reflection, and debrief alignment.

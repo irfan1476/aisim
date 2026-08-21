@@ -145,3 +145,34 @@ Status: proposed V3 guardrails; no V2 code change authorised
 - **Proposed V3 response:** introduce metric-authority/unit validation, operational-value attribution, contextual deferral/exposure rules, source-grounded report integrity, and regression fixtures. Preserve the agreed V3 formative scorecard, non-causal baseline, four reflection checkpoints, and deferred AI coach; do not replace them with a new self-awareness score or universal allocation/funding thresholds.
 - **Important design qualification:** adoption should respond to authored workflow/change evidence and stakeholder rules, not merely a people-allocation percentage. Risk should be decomposed into declared exposure/control conditions and gates, not prevented from falling below an arbitrary floor. A static plan is not automatically poor; unexplained persistence despite contrary evidence is the learning concern.
 - **Artefact updates:** [V3 Design Brief](./project-factory-v3-design-brief.md), [V3 Content Pack](./project-factory-v3-content-pack.md), and [V3 Implementation Backlog](./project-factory-v3-implementation-backlog.md).
+
+## 2026-08-21 — V3 branch-base clarification
+
+Status: current-state finding; implementation-branch transition proposed; no branch or code change authorised
+
+- **Question:** whether the V3 solution is being built on the V2 codebase.
+- **Repository evidence:** the active V2 branch is `feature/scenario-generic-pipeline` at `dc34433` (`Branch1-version-2`). The current documentation-only V3 branch, `codex/project-factory-v3`, is rooted at `main` commit `d71a6ea`; `dc34433` is not an ancestor of that branch.
+- **Clarification:** V3’s intended product architecture should be additive to the V2 scenario pipeline, preserving V2 behaviour for non-V3 packs. The current branch separation was a planning-isolation choice, not an intended independent product foundation.
+- **Proposed transition at implementation approval:** retain this branch as the V3 planning/content baseline; create a new V3 implementation branch from a frozen V2 commit, then bring across the reviewed documentation-only V3 commits. This establishes V2 as the code foundation without altering V2 or performing V2/V3 code integration during planning.
+- **Current boundary:** no branch move, merge, rebase, cherry-pick, or application-code change has been performed. An uncommitted content-pack refinement from the ongoing self-review remains uncommitted pending this branch-architecture decision.
+
+## 2026-08-21 — V3 status checkpoint
+
+Status: planning and provisional-content review in progress; no implementation authorised
+
+- **Committed baseline:** `codex/project-factory-v3` currently contains only V3 planning/content documentation through `f170819`. The authored content pack, design brief, implementation backlog, decision log, and branch strategy are present and labelled provisional.
+- **Work in progress:** internal self-review against the observed V2 report. The uncommitted documentation refinement adds a contextual exposure register for reliability, quality/OEM, energy/throughput, workforce, and supply continuity. It has not been committed or treated as calibrated content.
+- **Not started:** V3 engine/schema, UI, persistence, migration, tests, deployment, V2/V3 code integration, and external SME review.
+- **Architecture position:** the intended V3 product must extend the V2 pipeline, but the present V3 planning branch is rooted at `main`. A V2-based implementation branch has not been created because the product owner has not yet approved that branch transition or implementation.
+- **Next decision:** choose whether to complete and commit the internal self-review refinements first, then arrange formal calibration; and confirm the V2-based branch transition approach before any implementation branch is created.
+
+## 2026-08-21 — V3 branch, self-review, and alternative review-plan confirmation
+
+Status: agreed; documentation-only refinement and commit in progress; engine implementation still deferred
+
+- **Branch approach:** `codex/project-factory-v3` remains the V3 planning/content record. The eventual V3 implementation branch will be created from a named frozen commit on `feature/scenario-generic-pipeline`, making V2 the product-code foundation. No branch cut, merge, rebase, or code integration is performed by this decision.
+- **Self-review refinements:** adoption is represented as initiative-specific workflow evidence rather than a generic campaign metric; generic neglect penalties are replaced with contextual exposure and review conditions; monetary benefit is withheld as **not yet observable** until CFO/operations calibration provides declared conversion assumptions.
+- **Review route:** accept the documented alternative review plan. Internal self-review completes now; one manufacturing/operations reviewer and one learning-design reviewer review asynchronously before a learner pilot; full manufacturing, quality/OEM, CFO/operations, governance, and learning calibration follows the pilot before broader reuse.
+- **Explicit non-decision:** reflection remains learner-owned debrief material only. It does not produce a self-awareness score or affect outcomes/assessment. The AI reflection coach remains deferred.
+- **Current engine boundary:** the V3 documentation baseline may now be committed. V3 schema, engine, UI, persistence, tests, deployment, and the V2-based implementation-branch cut each still require the subsequent explicit implementation authorisation.
+- **Artefacts:** [content self-review](./project-factory-v3-content-self-review.md), [content pack](./project-factory-v3-content-pack.md), [design brief](./project-factory-v3-design-brief.md), [implementation backlog](./project-factory-v3-implementation-backlog.md), and [branch strategy](./version-branch-strategy.md).
