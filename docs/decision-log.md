@@ -375,3 +375,14 @@ Status: implemented and verified; operational sidecar expansion remains P3
 - **Verification:** full suite passes **67/67**, production build passes, and existing V2 E2E passes **8/8**. The implementation worktree is clean after restoring generated reports.
 - **Known deferred schema depth:** the authored content still carries richer exposure registers, event options/trade-offs, seeded ranges, and detailed stakeholder response effects in documentation/extensions; those are scheduled for the operational sidecar/P3 calibration rather than silently approximated in the current engine.
 - **Commits:** `917d454`, `2c33a79`, `50ff6d2`, `ca39eff`, `63a9563`, `bda2bed`, `d664e72`, and `9c71fa0`.
+
+## 2026-08-21 — P2 core sidecar and browser gate completed
+
+Status: P2 complete; paused at the documented P3/product-owner boundary
+
+- **Browser coverage:** PF6.2 now covers the opt-in `project-factory-2030` launch, Evidence Room, Initiative Plan, Dashboard, Ledger, Metrics, Evidence, and Governance tabs. It also confirms Standard mode mounts none of the V3 surfaces.
+- **Launch boundary:** V3 state is eagerly initialized only for the V3 pack. The existing `projectFactory` V2 entry remains separate; no V3 state leaks into V2 saves or Standard mode.
+- **Accessibility/source improvements:** sidecar tabs have accessible tab/panel relationships, keyboard focus, source/evidence links, and stakeholder status context while remaining read-only.
+- **Verification:** 67/67 unit/regression tests, production build, and 10/10 E2E tests pass.
+- **P3 boundary reached:** remaining stakeholder/capacity/events-exposures/resources/export tabs, richer event options/exposure register/seeded ranges, pilot calibration, and reuse of primitives in BankNext/Care360/FutureReady are now the next work. These require product-owner prioritisation and/or calibration direction, so implementation pauses here.
+- **Commits:** `bddd205`, `eeda26e`, and `1c32970`.
