@@ -345,6 +345,57 @@ All fixtures assert unchanged operating metrics, single capital commitment,
 Q1-only Research capacity, no active-delivery slot, an immutable decision ledger
 entry, and a source-bound outcome artefact.
 
+## Window 2 remediation action — provisional content
+
+The `remediation-required` branch now has one bounded follow-on action. This is
+expert-calibrated synthetic planning content, not an observed manufacturing cost.
+
+~~~yaml
+remediationAction:
+  id: PF-RM-01
+  initiativeId: predictive-maintenance
+  name: "Repair M-4 asset-data ownership and technician-review readiness"
+  status: provisional
+  lifecycleBefore: research
+  lifecycleAfter: research
+  durationQuarters: 1
+  executionQuarter: 4
+  capitalInrCr: 0.15
+  capacityPerQuarter:
+    data_engineering: 1
+    governance_assurance: 1
+    frontline_change: 1
+  activeDeliverySlot: false
+  accountableOwner: "CIO/data owner with Maintenance lead"
+  operatingChange:
+    - "Confirm M-4 asset hierarchy and an accountable data owner."
+    - "Repair selected failure-code history and document its limitations."
+    - "Protect technician review time and define alert disposition/override ownership."
+    - "Confirm read-only access and the safety/IP escalation route."
+  completionEvidence:
+    - "M-4 asset hierarchy and ownership record accepted by the named owners."
+    - "Selected failure-mode history is usable for the bounded pilot question."
+    - "Technician review capacity, disposition route, and escalation owner are documented."
+    - "Read-only access and control boundaries are accepted for the pilot purpose."
+  exitOptions:
+    - id: remediation-complete
+      effect: "Pilot decision may become available in the next window; lifecycle remains research until authorised."
+    - id: remediation-incomplete
+      effect: "Remain in research with named missing evidence; learner may defer, stop, or continue a separately authored repair."
+  stopCriteria:
+    - "Ownership cannot be assigned without breaching access or accountability controls."
+    - "Selected failure history remains unusable after the declared work period."
+    - "Protected technician review cannot be scheduled without creating an unsafe or unacceptable operating burden."
+  metricBoundary: "Downtime, defects, workforce readiness, trust, and value metrics do not improve from remediation alone."
+  scaleGateEffect: "G-PF-01 is not evaluated or mutated by remediation."
+~~~
+
+The amount, one-quarter duration, and capacity are provisional fixtures so the
+learner can understand the trade-off. They must be reviewed/calibrated before a
+pilot; changing them changes the content version, not the resolver's hidden
+logic. The remediation packet must show capital, capacity, duration, owner,
+completion evidence, and the no-benefit boundary before the learner confirms it.
+
 ## Contract 4 — Pilot readiness versus Scale gate
 
 Research review, Pilot availability, lifecycle transition, and Scale gate are

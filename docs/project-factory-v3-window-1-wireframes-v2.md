@@ -336,6 +336,42 @@ Do you invest in the named remediation, switch priorities, or defer the work?
 [View Window 1 replay]                              [Enter Window 2]
 ~~~
 
+### 6B-follow-on — Window 2 remediation packet
+
+When the learner chooses `Fund the named remediation`, Window 2 must reveal the
+bounded action before any funding is committed:
+
+~~~text
+┌─ REPAIR EVIDENCE BEFORE PILOT ────────────────────────────────────────────────┐
+│ Predictive Maintenance remains in Research                                  │
+│ Action: Repair M-4 asset-data ownership and technician-review readiness      │
+│ Duration: 1 quarter (Q4) · Capital: ₹0.15 Cr · Active delivery slot: No    │
+│ Capacity: Data Engineering 1/4 · Governance Assurance 1/2 ·                 │
+│           Frontline Change 1/3                                             │
+│ Owner: CIO/data owner with Maintenance lead                                  │
+│                                                                              │
+│ WORK TO COMPLETE                                                             │
+│ • Confirm the M-4 asset hierarchy and accountable data owner                 │
+│ • Repair selected failure-code history and document limitations              │
+│ • Protect technician review time and define disposition/override ownership   │
+│ • Confirm read-only access and the safety/IP escalation route                 │
+│                                                                              │
+│ COMPLETION EVIDENCE                                                          │
+│ Named owners accept the hierarchy; selected history is usable; review        │
+│ capacity and escalation are documented; access boundaries are accepted.      │
+│                                                                              │
+│ [Amber constraint] This does not improve downtime or pass G-PF-01.           │
+│ If evidence remains incomplete, Pilot stays unavailable.                     │
+│                                                                              │
+│ [View remediation evidence]                         [Fund remediation]       │
+└──────────────────────────────────────────────────────────────────────────────┘
+~~~
+
+If the learner confirms, the resolver records the capital/capacity operation and
+keeps the lifecycle in Research. It does not evaluate G-PF-01 or create a
+downtime effect. A later outcome must report `remediation-complete` or
+`remediation-incomplete` using the declared completion evidence.
+
 ### 6C — Priority-not-supported
 
 ~~~text

@@ -527,3 +527,13 @@ Status: proposed blocker requiring content decision
 - **Implication:** The UI can present remediation as a discussion option, but the resolver must not treat it as fundable or apply an invented effect until that content exists. Otherwise the branch would repeat the ambiguity the V3 reset is intended to remove.
 - **Required next decision:** Decide whether remediation is a real Window 2 action. If yes, author a provisional synthetic remediation profile and review it before continuing the branch walkthrough; if no, remove “fund remediation” and offer only switch/defer choices.
 - **Artefact:** [V3 implementation backlog](./project-factory-v3-implementation-backlog.md), item UX-W1-07.
+
+## 2026-08-21 — Provisional remediation profile authorised
+
+Status: proposed content; calibration/review pending
+
+- **Product-owner input:** The product owner confirmed that “Fund remediation” should remain a real Window 2 option.
+- **Authored action:** `PF-RM-01` repairs M-4 asset-data ownership and technician-review readiness over one Q4 quarter, using provisional synthetic values of ₹0.15 Cr, Data Engineering 1/4, Governance Assurance 1/2, and Frontline Change 1/3.
+- **Boundary:** The action keeps the initiative in `research`, consumes no active Pilot/Scale slot, does not evaluate G-PF-01, and cannot improve downtime, defects, workforce readiness, trust, or value metrics by itself.
+- **Exit:** Completion requires named owner acceptance, usable selected-failure history, protected technician review/disposition capacity, and accepted read-only/control boundaries. The result exposes either `remediation-complete` (Pilot may become available later) or `remediation-incomplete` (remain in Research with named missing evidence).
+- **Review status:** Values and completion evidence are provisional and must be calibrated before implementation. The walkthrough can now continue through a concrete remediation packet without inventing behavior.

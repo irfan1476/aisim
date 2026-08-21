@@ -219,7 +219,7 @@ The current additive UI is explicitly not learner-accepted. Do not add more tabs
 | UX-W1-04 | In progress — one PO path completed | The product owner completed the Predictive Maintenance → pilot-ready-with-conditions path. They identified the three priorities, selected one Research packet, understood the no-operating-benefit boundary, named a meaningful Pilot condition, and understood that Window 2 contains the Pilot choice. Remaining: remediation and unsupported branches plus 3–5 representative learner/facilitator walkthroughs. |
 | UX-W1-05 | Blocked on UX-W1-04 | Resolve walkthrough feedback and explicitly approve the wireframes, behavioral contracts, branch content, and PF-I05/G-PF-05 correction. |
 | UX-W1-06 | Blocked on UX-W1-05 | Only after approval, implement Window 1 additively and opt-in, migrate V3 state safely, and re-run V2/Standard regression plus V3 browser/contract tests. |
-| UX-W1-07 | Blocked — remediation content gate | The `remediation-required` branch offers “fund the named remediation,” but no remediation work item currently declares cost, capacity, duration, owner, completion evidence, exit condition, or metric boundary. Author and review that profile before exposing Fund Remediation as a real Window 2 action; do not invent values in the UI or resolver. |
+| UX-W1-07 | Draft complete — provisional; review required | `PF-RM-01` now bounds “fund the named remediation” as one Q4 quarter, ₹0.15 Cr, Data Engineering 1/4, Governance Assurance 1/2, Frontline Change 1/3, accountable CIO/data owner + Maintenance lead, completion evidence, exit options, and a no-operating-benefit boundary. Review/calibrate the synthetic values before implementation. |
 
 #### Mandatory state-screen contract
 

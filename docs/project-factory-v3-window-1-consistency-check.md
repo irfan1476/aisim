@@ -34,7 +34,9 @@ evidence cannot prove its own outcome.
 The existing runtime does not yet implement the new window/research contracts.
 That is expected and remains deliberately paused. One content inconsistency must
 be corrected before implementation: G-PF-05 is authored as a Technician Knowledge
-**Pilot** gate but the initiative profile labels it under `scale_gate`.
+**Pilot** gate but the initiative profile labels it under `scale_gate`. The
+remediation branch now also has a bounded provisional action, `PF-RM-01`, so the
+Window 2 funding choice no longer points to an undefined operation.
 
 ## Alignment matrix
 
