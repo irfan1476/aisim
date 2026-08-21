@@ -279,3 +279,55 @@ Status: agreed execution coordination model; implementation remains P0-gated
 - **P1 coordination:** after the schema contract is fixed, contract/validator, state/decision-ledger, resolver, and test lanes can progress in parallel. UI runtime work depends on stable state/store/resolver APIs. Tests must track each slice.
 - **Compatibility hazards:** V3 must not globally change the V2 generic neglect penalty, periodic crisis logic, generic adoption metric, composite score, or fixed three-selection assumptions. Opted-in V3 paths must remain additive and source-bound.
 - **Agent findings inspected:** V3 planning/dependency audit, frozen-V2 compatibility map, and content/reviewer-readiness review. Their conclusions are consolidated in [the implementation backlog](./project-factory-v3-implementation-backlog.md).
+
+## 2026-08-21 — P0 parallel outputs completed
+
+Status: implemented documentation outputs; external review and engine authorization remain pending
+
+- **Documentation transfer:** the reviewed planning commits were transferred into `/Users/irfan/projects/AISim-v3-impl` on `codex/project-factory-v3-impl` as documentation-only changes. Transfer tip: `2e0fbc4`. The implementation worktree is clean and has no non-documentation changes from this operation.
+- **Reviewer briefs:** bounded operations/manufacturing and learning-design briefs were authored in [project-factory-v3-reviewer-briefs.md](./project-factory-v3-reviewer-briefs.md), commit `66f74a2` on the planning branch, and transferred to the implementation branch. The implementation-branch documentation tip is now `43625dd`; only documentation paths changed.
+- **Compatibility handoff:** the frozen V2 seams, migration hazards, regression fixtures, and P1 dependency order were mapped read-only. Key constraints are preservation of Standard/v1/v2 behavior, opt-in V3 state/rules, v5→v6 migration, and no global changes to legacy neglect, crisis, adoption, score, or three-selection paths.
+- **Remaining dependency:** reviewer identities/contact context and completed review dispositions. No engine/UI/persistence implementation is authorized until the light review gate passes and the product owner separately authorizes P1.
+
+## 2026-08-21 — Frozen V2 regression baseline environment check
+
+Status: blocked by local dependency installation; no source change authorized
+
+- **Worktree checked:** `/Users/irfan/projects/AISim-v3-impl`, branch `codex/project-factory-v3-impl`, HEAD `43625dd`, clean.
+- **Commands attempted:** `npm test`, `npm run test:e2e`, `npm run type-check`, and `npm run build`.
+- **Result:** none reached test/build execution because the worktree has no installed dependencies: TypeScript, Playwright, `tsc`, and Next.js commands are unavailable. No files, fixtures, or source were changed.
+- **Next external dependency:** approval to install project dependencies in the implementation worktree (and, separately, reviewer identity/contact context). Once approved, rerun the frozen V2 regression suite before P1 implementation.
+
+## 2026-08-21 — Frozen V2 baseline verification completed
+
+Status: passed baseline verification; V3 implementation remains review-gated
+
+- **Environment:** approved `npm ci` completed in `/Users/irfan/projects/AISim-v3-impl`. npm reported eight high-severity audit findings in the existing dependency tree; no automated audit fix or dependency upgrade was performed because that would change the baseline.
+- **Unit/regression:** `npm test` passed all 35 tests.
+- **Static/build:** `npm run type-check` passed; `npm run build` passed.
+- **Browser:** `npm run test:e2e` passed all 8 Playwright tests, including Standard-mode isolation, scenario-mode campaign flow, reload/save behavior, and strategy discovery.
+- **Workspace integrity:** the test-generated `balance-report.json` diff was restored; the implementation worktree remains clean at `43625dd` with documentation-only V3 additions and inherited V2 code.
+- **Interpretation:** the frozen V2 foundation is technically healthy for the next gate. This does not validate V3 behavior, because no V3 runtime has been implemented. The remaining product dependency is light operations/manufacturing and learning-design review, followed by explicit P1 engine authorization.
+
+## 2026-08-21 — P1 foundation slice implemented
+
+Status: implemented and verified; next P1 decision/runtime slices remain
+
+- **Authorized scope delivered:** `PF0.1` V2 save fixtures; `PF0.2`/`PF1.1` additive V3 schema/types; `PF1.2`/`PF1.2a` pack validator with reference, lifecycle, dependency, metric-authority, unit, currency, bounds, event, and report-source checks; `PF1.3` v5→v6 migration/defaults; and `PF1.4` deterministic V3 state factory.
+- **Implementation commits:** `aa4ad0a` (fixtures), `173b130` (schema/validator), `2a939cb` (state/migration), and `b347da8` (explicit V3 pack opt-in compatibility guard).
+- **Compatibility safeguard:** legacy Standard, v1, v2, and Project Factory saves do not receive V3 state unless the scenario pack explicitly supplies V3 metadata. V2 code paths remain unchanged.
+- **Verification:** full suite `44/44` passed; type-check passed; production build passed; prior V2 E2E baseline passed `8/8`. The implementation worktree is clean after restoring test-generated reports.
+- **Not included:** lifecycle decision UI, evidence room, ledger capture runtime, gates/causal/event/stakeholder resolvers, scorecard/debrief runtime, or V3 migration UI. These remain the next P1 slices.
+
+## 2026-08-21 — Analytics sidecar integrated into the V3 delivery plan
+
+Status: agreed architecture and backlog integration; sidecar UI implementation deferred until PF2/PF3 contracts are stable
+
+- **Decision owner:** user.
+- **Decision:** include the Project Factory V3 Analytics Sidecar as a first-class V3 workstream. It is a read-only projection over V3 state, pack metadata, and history—not a second engine or a second source of truth.
+- **Sequence:** define the projection contract and selector invariants after PF2/PF3 state APIs are fixed (`PF2.6`, `PF6.1c`); implement the core learner-facing tabs in P2; implement operational/facilitator tabs and pilot calibration in P3. This does not delay the authorized PF2/PF3 runtime lanes.
+- **Required surfaces:** Dashboard; Decision Ledger replay; Metrics & Targets; Governance & Gates; Stakeholders; Capacity & Budget; Events & Exposures; Evidence Room; and Learn/Resources. The core pilot slice prioritizes Dashboard, Ledger, Metrics, Evidence, and Gates.
+- **Architecture guardrails:** every displayed claim must point to visible evidence, ledger, authored rule, gate, event, stakeholder rule, exposure, or an explicitly labelled derived calculation. Observed/estimated/not-yet-observable labels and scenario-owned units are mandatory. Opening or navigating the sidecar cannot mutate outcomes, scorecard state, baseline answers, reflections, or resolver state. Non-V3 runs hide the sidecar.
+- **Schema reconciliation:** the supplied design examples referenced legacy `scenarioState.*` paths. The implementation will map to the actual V3 contract (`state.v3State`, scenario pack V3 metadata, and `state.history`) through pure selectors; derived analytics are not persisted.
+- **Explicit non-decisions:** no composite score, CEO grade, trait/archetype diagnosis, automated blind-spot inference, or AI reflection coach is added by the sidecar. Any facilitator/post-run analytics expansion remains subject to pilot evidence and retention/access review.
+- **Artefact:** [Project Factory V3 — Analytics Sidecar](./project-factory-v3-analytics-sidecar.md); backlog work package `WP-SC` in [Implementation Backlog](./project-factory-v3-implementation-backlog.md).

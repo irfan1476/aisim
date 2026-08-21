@@ -1,6 +1,6 @@
 # Project Factory v3: Implementation Backlog
 
-Status: prioritised planning backlog; no implementation authorised by this backlog
+Status: prioritised implementation backlog; PF2/PF3 implementation authorised, analytics-sidecar UI scheduled after the core runtime contract
 Date: 2026-08-21
 Reference: [Project Factory 2030 v3 Design Brief](./project-factory-v3-design-brief.md)
 
@@ -18,19 +18,19 @@ The ordering below separates branch control and content calibration from engine 
 
 | Priority | Work | Status and exit criterion | Why it comes here |
 |---|---|---|---|
-| **P0 — Product lineage** | `PF-PLAN-01` confirm `Branch1-version-2` / `dc34433` as the frozen V2 baseline; `PF-PLAN-02` create `codex/project-factory-v3-impl` from that exact commit; transfer documentation-only V3 planning commits as a separate step. | Baseline confirmation and branch cut are complete. Documentation transfer remains pending. The branch cut does not authorise implementation. | V3 must inherit the V2 scenario pipeline from a reproducible point, while V2 remains independently active. |
-| **P0 — Content-calibration gate** | `PF-PLAN-03` prepare bounded reviewer briefs; `PF5.1`, `PF5.2`, `PF5.3a`, and `PF5.4` obtain and resolve light operations and learning-design review. `PF5.3b` authors the two additional event cards only after operations review. | Required before engine work. Reviewer resolutions and retained provisional assumptions are recorded. | Prevents encoding uncalibrated operational triggers, causal magnitudes, or reflection load into the engine. |
-| **P1 — Core playable reference slice** | `PF0` through `PF3`, then `PF4.0`–`PF4.2c`, with `PF6.1`/`PF6.1a`/`PF6.1b` developed alongside their corresponding work. | A deterministic, saveable Project Factory V3 run can support evidence-led lifecycle decisions, an executive decision ledger, gates, capacity, causal rules, one implemented event, stakeholders, and a source-grounded formative debrief. | Proves the reusable V3 engine primitives against one reviewed pack before breadth or polish. |
-| **P2 — Learner-pilot readiness** | `PF4.1`, `PF4.1a`, `PF4.2d`, `PF4.2e`, `PF4.3`, `PF5.3b`, `PF6.2`, and `PF6.3`. | A 90-minute facilitated run and self-paced fallback are accessible, report truthfully, include two or three reviewed deterministic event cards, and produce an editable board memo. | Completes the agreed learning experience without adding an AI coach or a high-stakes score. |
-| **P3 — Reuse and later enhancements** | `PF5.1a`, `PF5.3c`, `PF6.4`, further-pack conversion, and deferred `PF4.4` advisor work. | Pilot results are versioned before V3 primitives are reused in BankNext, Care360, FutureReady, or BharatMart. | Avoids copying provisional assumptions or adding AI-mediated complexity before evidence justifies it. |
+| **P0 — Product lineage** | `PF-PLAN-01` confirm `Branch1-version-2` / `dc34433` as the frozen V2 baseline; `PF-PLAN-02` create `codex/project-factory-v3-impl` from that exact commit; transfer documentation-only V3 planning commits as a separate step. | **Baseline, branch cut, and initial documentation transfer complete.** Reviewer-brief transfer is being synchronized separately. The branch cut does not authorise implementation. | V3 must inherit the V2 scenario pipeline from a reproducible point, while V2 remains independently active. |
+| **P0 — Content-calibration gate** | `PF-PLAN-03` plus the bounded operations and learning-design review. | **Passed:** review accepted on 2026-08-21; provisional values and held event cards remain explicitly labelled/deferred. | Prevents unreviewed operational triggers, causal magnitudes, or reflection load from being silently treated as fact. |
+| **P1 — Core playable reference slice** | `PF0` through `PF3`, then `PF4.0`–`PF4.2c`, with `PF6.1`/`PF6.1a`/`PF6.1b` alongside the slices. Add `PF2.6` and `PF6.1c` for the analytics projection contract and selector invariants. | A deterministic, saveable Project Factory V3 run supports evidence-led decisions, ledger, gates, capacity, causal rules, one event, stakeholders, formative debrief, and a stable read-only analytics projection contract. | Proves the reusable V3 primitives before sidecar UI polish or new-domain breadth. The sidecar contract may be prepared in parallel but does not block PF2/PF3 runtime work. |
+| **P2 — Learner-pilot readiness** | `PF4.1`, `PF4.1a`, `PF4.2d`, `PF4.2e`, `PF4.3`, `PF5.3b`, `PF6.2`, `PF6.3`, plus `PF-SC-UI-01` and `PF-SC-UI-02`. | A 90-minute facilitated run and self-paced fallback are accessible, source-grounded, include reviewed deterministic events, produce an editable board memo, and expose the core sidecar tabs without mutating state. | Completes the agreed learning experience and makes the decision audit inspectable without adding an AI coach or high-stakes score. |
+| **P3 — Operational sidecar and reuse** | `PF-SC-UI-03`, `PF-SC-TEST-01`, `PF-SC-TEST-02`, `PF-SC-PILOT-01`, `PF5.1a`, `PF5.3c`, `PF6.4`, further-pack conversion, and deferred `PF4.4`. | Stakeholder, capacity, events/exposures, resources, export, facilitator view, and pilot evidence are validated before reuse in BankNext, Care360, FutureReady, or BharatMart. | Keeps analytics useful and evidence-led without turning it into a second engine, trait detector, or AI-mediated dependency. |
 
 ### P0 task detail
 
 | ID | Task | Acceptance criteria |
 |---|---|---|
 | PF-PLAN-01 | Confirm the V2 implementation baseline. | **Complete:** product owner confirmed tagged commit `Branch1-version-2` / `dc34433` as the intended V3 code base. Later V2 work is not included automatically. |
-| PF-PLAN-02 | Establish the V2-based V3 implementation line. | **Complete:** separate `codex/project-factory-v3-impl` worktree/branch starts exactly at the approved V2 commit. Documentation-only transfer is a separate pending operation; no V3 application implementation began; V2 worktree and branch remain untouched. |
-| PF-PLAN-03 | Run the light content review. | One operations/manufacturing reviewer and one learning-design reviewer receive a bounded brief. Each comment is accepted, rejected, or deferred with rationale. Quality-escape and technician-retirement cards remain un-authored until operations review is complete. A plan to identify reviewers later does not satisfy this gate. |
+| PF-PLAN-02 | Establish the V2-based V3 implementation line and transfer planning artefacts. | **Branch and initial transfer complete:** separate `codex/project-factory-v3-impl` worktree/branch starts exactly at the approved V2 commit; planning artefacts are present as documentation-only commits; no V3 application implementation began; V2 worktree and branch remain untouched. |
+| PF-PLAN-03 | Run the light content review. | **Briefs complete; reviewer assignment and review pending:** one operations/manufacturing reviewer and one learning-design reviewer receive the bounded brief. Each comment is accepted, rejected, or deferred with rationale. Quality-escape and technician-retirement cards remain un-authored until operations review is complete. A plan to identify reviewers later does not satisfy this gate. |
 
 ### Parallel workstreams and dependencies
 
@@ -58,6 +58,7 @@ parallel lanes after the schema contract is fixed:
 3. **Resolver lane:** `PF3.1`–`PF3.5b` — gates, delayed causal rules, value attribution, one event, stakeholders, exposure, and workflow evidence; it consumes the contract and state APIs.
 4. **Test lane:** `PF6.1`, `PF6.1a`, and `PF6.1b` follow each contract/state/resolver slice, not a final testing phase.
 5. **UI lane:** `PF2.4`, `PF2.5`, and then `PF4.0`–`PF4.2c` depend on stable store actions/selectors and resolver explanations. UI can be designed in parallel, but runtime implementation waits for those APIs.
+6. **Analytics projection lane:** `PF2.6` defines pure selectors over `state.v3State`, pack metadata, and history; `PF6.1c` proves source links, deterministic progress, no mutation, and legacy hiding. Sidecar UI starts only after PF2/PF3 contracts exist; it consumes selectors and never writes resolver state.
 
 Compatibility constraints for every lane: preserve Standard and non-V3 packs;
 do not globally alter the V2 generic neglect penalty, periodic crisis logic,
@@ -65,6 +66,16 @@ generic adoption metric, composite score, or three-selection UI assumptions.
 Opted-in V3 behavior must use separate state, rules, and report paths.
 
 ## Work packages
+
+### Current implementation status
+
+The first P1 foundation slice is implemented on
+`codex/project-factory-v3-impl` and verified against the frozen V2 baseline:
+
+- **Complete:** `PF0.1`, `PF0.2`, `PF1.1`, `PF1.2`, `PF1.2a`, `PF1.3`, and `PF1.4`.
+- **Verified:** 44/44 unit/regression tests, type-check, production build, and the existing 8 E2E tests pass.
+- **Compatibility rule:** V3 state is attached only when a scenario pack explicitly supplies V3 metadata. Legacy Standard/v1/v2 and Project Factory saves remain on the V2 state path.
+- **Next:** `PF2.0`–`PF2.5` decision/evidence/ledger slice, then `PF3` resolver slices with paired `PF6.1*` tests. `PF2.6`/`PF6.1c` define the sidecar projection contract after the state shape is fixed; no sidecar UI or resolver behavior is implied by the foundation types alone.
 
 ### WP0 — Baseline and contract
 
@@ -97,6 +108,7 @@ Opted-in V3 behavior must use separate state, rules, and report paths.
 | PF2.3a | Add operating-change-plan and contested-evidence rationale capture. | Pilot/scale decisions capture concise workflow, roles, remediation, capability/release, owner, feedback, and rollback fields. A rationale is prompted only when contested/insufficient evidence is the sole substantive basis for a material claim. Plan text itself has no direct metric effect. |
 | PF2.4 | Add pre-brief and evidence-room UI. | Learner can inspect four initial evidence artefacts and known unknowns before the first decision; artefact provenance and decision-use/claim status are visible. |
 | PF2.5 | Add initiative-plan UI. | Learner chooses lifecycle action and sees cost, capacity, prerequisites, owner, and stop/scale criterion before confirming. |
+| PF2.6 | Define the read-only analytics projection contract and selectors. | `V3AnalyticsProjection` reads only V3 state, pack metadata, and history; tab availability, source references, observed/estimated/not-yet-observable labels, direction-aware progress, and legacy hiding are explicit. No derived analytics state is persisted and no selector mutates state. |
 
 ### WP3 — Governance and causal runtime slice
 
@@ -111,6 +123,19 @@ Opted-in V3 behavior must use separate state, rules, and report paths.
 | PF3.5 | Implement deterministic stakeholder resolver. | Technician/maintenance, plant/COO, OEM/quality, CFO, and data-owner states change only through authored rules and are visible in the snapshot. |
 | PF3.5a | Implement exposure and deferral rules. | A pack can declare adverse trend, unaddressed condition, rationale/review trigger, stakeholder, and event-eligibility relationships. The engine does not impose a generic “unfunded for N quarters” penalty. Project Factory must surface all five declared exposures even though only reliability has an initial conditional event. |
 | PF3.5b | Implement initiative-specific workflow-adoption evidence. | Each initiative records its authored use/review/override/correction evidence. A derived state, if used, remains initiative-scoped and source-bound; funding or people allocation alone cannot change it, and no global campaign-adoption metric can overwrite scenario state. |
+
+### WP-SC — Analytics sidecar
+
+The complete sidecar contract is in [Project Factory V3 — Analytics Sidecar](./project-factory-v3-analytics-sidecar.md). These tasks are additive and consume the PF2/PF3 contracts; they do not introduce a parallel engine or alter V2 behavior.
+
+| ID | Priority | Task | Acceptance criteria |
+|---|---|---|---|
+| PF-SC-UI-01 | P2 | Implement the core learner-facing sidecar tabs: Dashboard, Decision Ledger, Metrics & Targets, Evidence Room, and Governance & Gates. | Tabs render from `V3AnalyticsProjection`; each metric/status/insight has a source link; ledger replay is collapsible and deep-links; opening/navigating cannot change resolver state, scorecard, or outcomes; non-V3 runs hide the sidecar. |
+| PF-SC-UI-02 | P2 | Integrate sidecar navigation with reflection/debrief and board memo. | “You said → You did → What happened → What you learned” remains the debrief spine; sidecar links to the same immutable ledger/outcome/reflection records; no automated trait or composite diagnosis is introduced. |
+| PF-SC-UI-03 | P3 | Add Stakeholders, Capacity & Budget, Events & Exposures, Learn/Resources, exports, and facilitator-oriented post-run view. | Stakeholder movement, budget/capacity limits, event/exposure status, provenance, and resources are source-grounded; exports are labelled; facilitator view is read-only and respects retention/access policy. |
+| PF-SC-TEST-01 | P3 | Add sidecar accessibility and interaction tests. | Keyboard/focus/semantic-label tests, responsive tab behavior, non-colour status cues, chart text alternatives, deep-link return paths, and export snapshots pass for every delivered tab. |
+| PF-SC-TEST-02 | P3 | Add projection integrity, privacy, and compatibility tests. | Same input gives deterministic projection; before/after sidecar state is identical; no baseline/reflection/telemetry contamination; every claim has a source or derived label; legacy fixtures return hidden/empty projection. |
+| PF-SC-PILOT-01 | P3 | Calibrate sidecar usefulness and cognitive load in the V3 pilot. | Facilitator/learner feedback records which tabs improve evidence use and debrief quality, which are distracting, and whether post-run view is needed; no trait inference or AI coach is enabled from telemetry. |
 
 ### WP4 — Formative feedback and facilitation
 
@@ -157,7 +182,7 @@ Authoring output: [Project Factory V3 Provisional Content Pack](./project-factor
 
 ## Detailed implementation order after the P0 gates
 
-`PF0/PF0.2a → PF1/PF1.2a → PF1.3/PF1.4 + PF2.0–PF2.3b → PF3.1–PF3.5b → PF2.4/PF2.5 → PF4.0/PF4.2–PF4.2c → matching PF6.1/PF6.1a/PF6.1b tests → PF4.1/PF4.1a/PF4.2d/PF4.2e/PF4.3 → PF5.3b/PF6.2/PF6.3 → PF5.1a/PF5.3c/PF6.4 → PF4.4 only as pilot evidence warrants`
+`PF0/PF0.2a → PF1/PF1.2a → PF1.3/PF1.4 + PF2.0–PF2.3b → PF3.1–PF3.5b → PF2.4/PF2.5 → PF2.6 + PF6.1c → PF4.0/PF4.2–PF4.2c → matching PF6.1/PF6.1a/PF6.1b tests → PF4.1/PF4.1a/PF4.2d/PF4.2e/PF4.3 → PF-SC-UI-01/PF-SC-UI-02 + PF5.3b/PF6.2/PF6.3 → PF-SC-UI-03/PF-SC-TEST-01/PF-SC-TEST-02/PF-SC-PILOT-01 → PF5.1a/PF5.3c/PF6.4 → PF4.4 only as pilot evidence warrants`
 
 This order gets an end-to-end, individually playable reference slice before adding workshop polish, a board memo, deeper event coverage, or advisor support. It reduces the risk of designing a rich authoring system whose learner loop has not been validated.
 

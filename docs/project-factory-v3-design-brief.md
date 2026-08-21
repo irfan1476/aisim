@@ -8,6 +8,7 @@ Related records:
 
 - [Current Scenarios: Depth-Layer Architecture and Change Approach](./current-scenarios-v3-approach.md)
 - [Scenario Learning Research and Architecture](./scenario-learning-research-and-architecture.md)
+- [Project Factory V3 — Analytics Sidecar](./project-factory-v3-analytics-sidecar.md)
 - [Project Decision Log](./decision-log.md)
 
 ## Purpose
@@ -20,10 +21,10 @@ The pack is a **reference implementation**, not the largest possible simulation.
 
 The current V3 planning/content branch remains a record of product decisions. The intended V3 product code will start from an explicitly approved, immutable V2 snapshot—not from this `main`-based planning branch.
 
-1. **Now — protect the lineage and calibrate the content.** Confirm whether tagged V2 commit `Branch1-version-2` / `dc34433` is the intended baseline; on approval, create a separate V2-based V3 implementation line without changing V2. Obtain the agreed light operations and learning-design review. The quality-escape and technician-retirement events remain exposure candidates until operations review calibrates them.
-2. **Then — implement one deterministic reference slice.** Build the reviewed Project Factory V3 lifecycle, evidence, gate, capacity, causal, stakeholder, event, and formative-reflection primitives with paired regression fixtures. Preserve Standard and non-V3 packs.
-3. **Before a learner pilot — complete the learning experience.** Add the truthful formative report, source-bound board memo, responsible-impact reflection, two or three reviewed deterministic events, and facilitated/self-paced browser flows.
-4. **After pilot evidence — calibrate and reuse.** Version changes before porting primitives to the remaining existing packs or authoring BharatMart. Keep the AI reflection coach deferred.
+1. **Now — protect the lineage and calibrate the content.** The V2 baseline, V3 implementation branch, and light content review are complete. Provisional values remain labelled and the two held event cards remain deferred until the appropriate operations review.
+2. **Current implementation — core reference slice.** Implement the approved PF2/PF3 state, decision, resolver, and paired-test lanes. Define the analytics projection contract (`PF2.6`/`PF6.1c`) once those state APIs are stable. Preserve Standard and non-V3 packs.
+3. **Before a learner pilot — complete the learning experience and core sidecar.** Add the truthful formative report, source-bound board memo, responsible-impact reflection, reviewed deterministic events, facilitated/self-paced browser flows, and the core read-only sidecar tabs. The sidecar consumes V3 selectors; it does not become a second engine.
+4. **After pilot evidence — expand and reuse.** Add the operational sidecar tabs, facilitator view, exports, and calibration only after pilot evidence. Version changes before porting primitives to the remaining existing packs or authoring BharatMart. Keep the AI reflection coach deferred.
 
 Creating an implementation branch alone does not authorise engine work, merge V3 into V2, stop V2 development, or deploy software. Later V2 changes must be consciously evaluated before being brought into V3.
 
@@ -356,6 +357,7 @@ These guardrails are implementation requirements to validate with deterministic 
 | `lib/game/state.ts` and `lib/game/persistence.ts` | Durable, migratable game state | Add v3 state defaults and migrate persistence version 5 to version 6 without altering v1 progress. |
 | `components/Game*.tsx` | Learner experience | Add pre-brief/evidence room, initiative-plan controls, concise rationale/prediction capture, scorecard, and debrief. Existing scenario decision view remains the fallback for v1 packs. |
 | `lib/llm/advisorPrompt.ts` | Grounded coaching | Supply visible evidence, ledger, gates, and unresolved assumptions. Prevent selection/scoring claims. |
+| `lib/game/v3/analyticsProjection.ts` (new) | Read-only analytics sidecar | Pure selectors project V3 state, pack metadata, and history into source-linked dashboard, ledger, metrics, gate, stakeholder, capacity, event, exposure, evidence, and resource views. No derived state is persisted and no selector mutates state. |
 | `tests/*` | Determinism and regression | Add pack validation, resolver, migration, known-seed fixtures, and browser flows. Preserve all current v1/Standard tests. |
 
 ### Proposed pure-module boundary
@@ -387,6 +389,8 @@ Do not build every planned feature at once. The first working Project Factory v3
 7. one condition-triggered line-failure event with authored explanation;
 8. a five-part visible scorecard and structured debrief;
 9. migration plus deterministic pure/E2E tests.
+
+The analytics sidecar is a later read-only surface over this slice. Its contract is specified in [Analytics Sidecar](./project-factory-v3-analytics-sidecar.md): contract/invariant work is part of P1 after PF2/PF3 state is fixed; core tabs are P2; operational tabs and pilot calibration are P3.
 
 Defer detailed multi-stakeholder negotiation, multiple variants per event, full counterfactual simulation, and sophisticated probabilistic calibration until this slice has been reviewed with learners and a manufacturing subject-matter expert.
 
