@@ -1,6 +1,6 @@
 import type { InitiativeState } from '../lib/game/initiativeState';
 import type { InitiativeGeneration } from '../lib/game/generator';
-import type { UserReflections } from '../lib/game/state';
+import type { UserReflections, V3ScenarioState } from '../lib/game/state';
 import type { CurrencyMode } from '../lib/scenarios/types';
 
 export type MetricColor = 'gold' | 'emerald' | 'blue' | 'purple' | 'red' | 'cyan';
@@ -66,6 +66,7 @@ export interface GameViewState {
   quarterlyCrisisCost: number;
   scenarioOverspend: number;
   scenarioBonus: number;
+  v3State?: V3ScenarioState;
 }
 
 export interface Metric {

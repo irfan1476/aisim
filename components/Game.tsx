@@ -22,6 +22,8 @@ import {
   readPersistedGameState,
 } from "../lib/game/persistence";
 import { buildAdvisorSystemPrompt } from "../lib/llm/advisorPrompt";
+import V3EvidenceRoom from "./V3EvidenceRoom";
+import V3InitiativePlan from "./V3InitiativePlan";
 
 function compactNumber(value: number): number {
   return Number.isFinite(value) ? Number(value.toFixed(2)) : 0;
@@ -195,6 +197,22 @@ export default function Game() {
     store.resetCampaign();
     setScreen("setup");
   };
+  const v3Scenario = s.scenarioMode ? getScenario(s.scenarioId) : undefined;
+  const v3InitiativeId = s.selected[0] || Object.keys(s.v3State?.initiatives || {})[0];
+  const confirmV3Plan = (action: string) => {
+    if (!v3Scenario?.v3 || !v3InitiativeId) return;
+    const target = action.split(/\s+to\s+|→/).pop()?.trim() as "deferred" | "research" | "pilot" | "scale" | "sustain" | "pause" | "stop" | undefined;
+    if (!target) return;
+    store.confirmV3Decisions([{ initiativeId: v3InitiativeId, lifecycle: target }], {
+      id: `window-${s.q}-${v3InitiativeId}`,
+      quarter: s.q,
+      initiativeIds: [v3InitiativeId],
+      rationale: "V3 initiative-plan action recorded from the boardroom.",
+      prediction: "Review the authored initiative hypothesis and target metric.",
+      evidenceIds: [],
+      gateIds: s.v3State?.initiatives[v3InitiativeId]?.gateIds || [],
+    });
+  };
 
   if (screen === "setup")
     return (
@@ -300,6 +318,17 @@ export default function Game() {
         onConfirm={confirm}
         onReset={reset}
       />
+      {v3Scenario?.v3 && s.v3State && (
+        <section className="mx-auto grid w-full max-w-[1500px] gap-5 px-5 pb-28 lg:grid-cols-2">
+          <V3EvidenceRoom pack={v3Scenario.v3} />
+          {v3InitiativeId && <V3InitiativePlan
+            pack={v3Scenario.v3}
+            initiativeId={v3InitiativeId}
+            currentState={s.v3State.initiatives[v3InitiativeId]?.lifecycle}
+            onConfirm={confirmV3Plan}
+          />}
+        </section>
+      )}
       <GameResultsModal
         state={s}
         onRespond={respond}
