@@ -434,3 +434,184 @@ test('Standard mode remains scenario-free when resolving a quarter', () => {
   assert.ok(result.initiativeStates.demand);
   assert.equal(result.initiativeStates.fraudDetection, undefined);
 });
+
+test('scenario save/load round-trip preserves state, history, crisis, and domain initiative progress', () => {
+  const scenario = getScenario('care360');
+  const base = initialGameState(undefined, {
+    scenarioMode: true,
+    scenarioId: scenario.id,
+    quarterlyBudget: scenario.startingState.budget,
+    scenarioStartingMetrics: scenario.startingState.startingMetrics,
+  });
+  const states = scenarioInitiativesToStates(scenario.initiatives);
+  states.radiologyAssistant.quartersFunded = 3;
+  states.radiologyAssistant.currentData = 4.7;
+  const snapshot = {
+    q: 2,
+    chosen: ['AI Radiology Assistant'],
+    selectedIds: ['radiologyAssistant'],
+    allocation: scenario.startingState.defaultAllocation,
+    metrics: { roi: 12, adoption: 49 },
+    initiativeStates: states,
+    scenarioState: {
+      metrics: { patientWaitTime: 61, patientSafety: 74 },
+      progress: { patientWaitTime: 31.25, patientSafety: 20 },
+      flags: { privacyReviewComplete: true },
+    },
+    crisis: { title: 'A privacy concern pauses an AI pilot.' },
+    crisisResponse: { risk: -8 },
+  };
+  const saved = {
+    ...base,
+    q: 2,
+    stage: 'results',
+    selected: ['radiologyAssistant'],
+    initiativeStates: states,
+    history: [snapshot],
+    scenarioState: snapshot.scenarioState,
+    scenarioProgress: snapshot.scenarioState.progress,
+    scenarioBudgetRemaining: 3.7,
+    quarterlyCrisisCost: 0.3,
+    crisis: snapshot.crisis,
+  };
+
+  const restored = normalizeGameState(JSON.parse(JSON.stringify(saved)));
+  assert.equal(restored.scenarioMode, true);
+  assert.equal(restored.scenarioId, 'care360');
+  assert.equal(restored.q, 2);
+  assert.equal(restored.stage, 'results');
+  assert.equal(restored.scenarioBudgetRemaining, 3.7);
+  assert.equal(restored.quarterlyCrisisCost, 0.3);
+  assert.equal(restored.scenarioState.metrics.patientWaitTime, 61);
+  assert.equal(restored.scenarioState.progress.patientSafety, 20);
+  assert.equal(restored.scenarioState.flags.privacyReviewComplete, true);
+  assert.equal(restored.initiativeStates.radiologyAssistant.quartersFunded, 3);
+  assert.equal(restored.initiativeStates.radiologyAssistant.currentData, 4.7);
+  assert.equal(restored.history[0].scenarioState.metrics.patientWaitTime, 61);
+  assert.equal(restored.crisis.title, 'A privacy concern pauses an AI pilot.');
+});
+
+test('v4 scenario saves migrate into v5 scenario state without losing domain identity', () => {
+  const scenario = getScenario('bankNext');
+  const legacyV4 = {
+    q: 5,
+    stage: 'decide',
+    scenarioMode: true,
+    scenarioId: 'bankNext',
+    quarterlyBudget: 5,
+    scenarioStartingMetrics: scenario.startingState.startingMetrics,
+    scenarioProgress: { fraudPressure: 42, complianceReadiness: 18 },
+    scenarioOverspend: 0.4,
+    quarterlyCrisisCost: 0.8,
+    scenarioBonus: 1,
+  };
+
+  const migrated = normalizeGameState(legacyV4);
+  assert.equal(migrated.scenarioMode, true);
+  assert.equal(migrated.scenarioId, 'bankNext');
+  assert.equal(migrated.scenarioState.metrics.fraudPressure, 80);
+  assert.equal(migrated.scenarioState.progress.fraudPressure, 42);
+  assert.equal(migrated.scenarioState.progress.complianceReadiness, 18);
+  assert.equal(migrated.scenarioOverspend, 0.4);
+  assert.equal(migrated.quarterlyCrisisCost, 0.8);
+  assert.equal(migrated.scenarioBonus, 1);
+  assert.deepEqual(Object.keys(migrated.initiativeStates).sort(), scenario.initiatives.map((item) => item.id).sort());
+  assert.equal(migrated.scenarioBudgetRemaining, 5);
+});
+
+test('legacy Standard saves remain Standard and receive no scenario initiatives or effects', () => {
+  const migrated = normalizeGameState({
+    q: 4,
+    stage: 'results',
+    baseline: [4, 3, 3, 4, 3],
+    selected: ['demand'],
+    spent: 2.5,
+    history: [],
+  });
+
+  assert.equal(migrated.scenarioMode, false);
+  assert.equal(migrated.scenarioId, undefined);
+  assert.equal(migrated.quarterlyBudget, 10);
+  assert.equal(migrated.scenarioBudgetRemaining, 10);
+  assert.equal(migrated.scenarioState.metrics.fraudPressure, undefined);
+  assert.equal(migrated.initiativeStates.demand.name, 'Demand Forecasting');
+  assert.equal(migrated.initiativeStates.fraudDetection, undefined);
+});
+
+test('repeated scenario funding compounds effects while respecting native bounds', () => {
+  const scenario = getScenario('bankNext');
+  let state = {
+    ...initialGameState(undefined, {
+      scenarioMode: true,
+      scenarioId: scenario.id,
+      scenarioStartingMetrics: scenario.startingState.startingMetrics,
+    }),
+    initiativeStates: scenarioInitiativesToStates(scenario.initiatives),
+    scenarioState: {
+      metrics: { ...scenario.startingState.startingMetrics },
+      progress: {},
+      flags: {},
+    },
+  };
+  let previousPressure = state.scenarioState.metrics.fraudPressure;
+  for (let quarter = 1; quarter <= 12; quarter += 1) {
+    const result = resolveQuarter(state, {
+      selected: ['fraudDetection'],
+      alloc: scenario.startingState.defaultAllocation,
+    });
+    const currentPressure = result.scenarioState.metrics.fraudPressure;
+    assert.ok(currentPressure <= previousPressure);
+    assert.ok(currentPressure >= 30 && currentPressure <= 80);
+    assert.ok(result.scenarioState.progress.fraudPressure >= 0 && result.scenarioState.progress.fraudPressure <= 100);
+    previousPressure = currentPressure;
+    state = {
+      ...state,
+      initiativeStates: result.initiativeStates,
+      scenarioState: result.scenarioState,
+      q: quarter + 1,
+    };
+  }
+  assert.equal(state.initiativeStates.fraudDetection.quartersFunded, 12);
+  assert.equal(state.initiativeStates.fraudDetection.quartersSinceLastFund, 0);
+  assert.ok(state.scenarioState.metrics.fraudPressure < 80);
+});
+
+test('scenario quarter flow persists progress and resets only quarter-local crisis cost', () => {
+  const scenario = getScenario('futureReady');
+  const base = initialGameState(undefined, {
+    scenarioMode: true,
+    scenarioId: scenario.id,
+    quarterlyBudget: scenario.startingState.budget,
+    scenarioStartingMetrics: scenario.startingState.startingMetrics,
+  });
+  useGameStore.getState().loadGame({
+    ...base,
+    scenarioMode: true,
+    scenarioId: scenario.id,
+    initiativeStates: scenarioInitiativesToStates(scenario.initiatives),
+    selected: ['successPredictor', 'facultyCopilot', 'chatbot'],
+    alloc: scenario.startingState.defaultAllocation,
+    scenarioState: { metrics: { ...scenario.startingState.startingMetrics }, progress: {}, flags: {} },
+    scenarioBudgetRemaining: 5,
+    quarterlyCrisisCost: 0.5,
+  });
+
+  useGameStore.getState().confirmDecisions();
+  const afterQ1 = useGameStore.getState();
+  assert.equal(afterQ1.stage, 'results');
+  assert.equal(afterQ1.history.length, 1);
+  assert.ok(afterQ1.scenarioState.progress.studentPersistence > 0);
+
+  useGameStore.getState().advanceQuarter();
+  const nextQuarter = useGameStore.getState();
+  assert.equal(nextQuarter.q, 2);
+  assert.equal(nextQuarter.stage, 'decide');
+  assert.equal(nextQuarter.quarterlyCrisisCost, 0);
+  assert.equal(nextQuarter.scenarioBudgetRemaining, 5);
+  assert.deepEqual(nextQuarter.selected, []);
+
+  useGameStore.getState().confirmDecisions();
+  const afterQ2 = useGameStore.getState();
+  assert.equal(afterQ2.history.length, 2);
+  assert.ok(afterQ2.scenarioState.metrics.studentPersistence >= afterQ1.scenarioState.metrics.studentPersistence);
+});
