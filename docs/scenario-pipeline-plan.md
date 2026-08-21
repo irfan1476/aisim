@@ -1,6 +1,6 @@
 # Generic Scenario Pipeline — Implementation Plan
 
-Status date: 2026-08-20  
+Status date: 2026-08-20
 Working branch: `feature/scenario-generic-pipeline`
 
 This document is the source of truth for the domain-agnostic scenario work. It separates decisions already agreed from work that remains. Standard mode must remain behaviourally compatible throughout.
