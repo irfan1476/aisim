@@ -427,3 +427,14 @@ Status: agreed problem definition for redesign
 - Initiative-specific insights, spending, metrics, and governance information are not visibly associated with one another. The learner must mentally join unrelated panels.
 - The additive V3 interfaces increase frustration because they introduce new surfaces without a clear flow contract. This is a coordination and sequencing failure, not a missing-detail problem.
 - Redesign requirement: every screen state must answer, in order: **What just happened? What decision is open? What evidence/constraint matters for this decision? What action do I take? What will happen next?** Details must be progressively disclosed only after the learner has chosen the relevant initiative or decision.
+
+## 2026-08-21 — State-driven V3 learner journey proposed
+
+Status: proposed; awaiting product-owner review
+
+- **Inputs:** product-owner feedback on excessive simultaneous context and missing previous/current/next-state orientation; the agreed four-window cadence; the V3 engine/content boundary; and the supplied synthesis of progressive disclosure, cognitive-load theory, OODA, meaningful choice, state visibility, and immediate feedback.
+- **Recommendation:** create a dedicated V3 learner shell and retain one stable workspace whose central task moves through Orient → Compare → Commit → Outcome → Reflect → Next Window. This adapts the supplied five-screen storyboard to avoid introducing another collection of disconnected interfaces.
+- **Information architecture:** co-locate initiative, evidence, spend, capacity, gate, trade-off, and primary metric in a compact decision packet. Remove the analytics sidecar and full evidence catalogue from active play; reuse their pure selectors in contextual outcomes and final debrief.
+- **Validation strategy:** storyboard and test Window 1 before production code. A learner must independently identify the decision, relevant options, consequence/cost, primary action, and resulting change.
+- **Compatibility:** existing V3 engine contracts remain potentially reusable; the current V3 UI remains a non-accepted technical prototype. No V2 integration, P3 reuse, event expansion, or further production UI is authorised by this proposal.
+- **Artefact:** [Project Factory V3 — Learner-Journey Redesign Proposal](./project-factory-v3-learner-journey-redesign.md).
