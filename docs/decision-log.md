@@ -176,3 +176,14 @@ Status: agreed; documentation-only refinement and commit in progress; engine imp
 - **Explicit non-decision:** reflection remains learner-owned debrief material only. It does not produce a self-awareness score or affect outcomes/assessment. The AI reflection coach remains deferred.
 - **Current engine boundary:** the V3 documentation baseline may now be committed. V3 schema, engine, UI, persistence, tests, deployment, and the V2-based implementation-branch cut each still require the subsequent explicit implementation authorisation.
 - **Artefacts:** [content self-review](./project-factory-v3-content-self-review.md), [content pack](./project-factory-v3-content-pack.md), [design brief](./project-factory-v3-design-brief.md), [implementation backlog](./project-factory-v3-implementation-backlog.md), and [branch strategy](./version-branch-strategy.md).
+
+## 2026-08-21 — V3 first-checkpoint traceability review
+
+Status: completed review; proposed authoring-contract refinements; no engine or V2 code change authorised
+
+- **Objective:** trace the original realism checklist, scenario template, domain roadmap, and stated learning/responsible-AI sources into the current V3 design.
+- **Finding:** Project Factory V3 has substantially progressed the core dynamics: dependencies, lifecycle/capacity/budget, delayed/conditional effects, stakeholder rules, gates, non-AI workflow evidence, events, decision ledger, and structured debrief. Most are authored content and architecture contracts; none is yet running V3 engine behaviour.
+- **Standards stance:** the design is informed by INACSL simulation principles, the 2024 scenario-design review, NIST AI RMF, and OECD AI Principles. It is not an INACSL endorsement, NIST conformance assessment, legal review, or OECD certification claim.
+- **Unclosed gaps:** the reusable template does not yet require an explicit plausible-but-wrong-for-now option, a consolidated operating-change plan, 2–3 event coverage for a learner-ready pack, a source-bound final board memo, a library-level budget-posture rule, or mandatory equity/distributional, residual-risk, sustainability, and incident-learning fields.
+- **Roadmap confirmation:** BharatMart Omnichannel Reset, ShieldSure Claims Transformation, GridPulse Summer Reliability, AgriLink Procurement Network, and CityFlow Urban Services remain the agreed next-five content roadmap. They are neither authored nor approved for implementation before Project Factory validates the V3 primitives.
+- **Artefact:** [V3 first-checkpoint traceability review](./v3-first-checkpoint-traceability-review.md).
