@@ -187,3 +187,11 @@ Status: completed review; proposed authoring-contract refinements; no engine or 
 - **Unclosed gaps:** the reusable template does not yet require an explicit plausible-but-wrong-for-now option, a consolidated operating-change plan, 2–3 event coverage for a learner-ready pack, a source-bound final board memo, a library-level budget-posture rule, or mandatory equity/distributional, residual-risk, sustainability, and incident-learning fields.
 - **Roadmap confirmation:** BharatMart Omnichannel Reset, ShieldSure Claims Transformation, GridPulse Summer Reliability, AgriLink Procurement Network, and CityFlow Urban Services remain the agreed next-five content roadmap. They are neither authored nor approved for implementation before Project Factory validates the V3 primitives.
 - **Artefact:** [V3 first-checkpoint traceability review](./v3-first-checkpoint-traceability-review.md).
+
+## 2026-08-21 — Next V3 planning checkpoint recommended
+
+Status: proposed next step; no authoring-contract or engine change authorised yet
+
+- **Recommendation:** refine the reusable V3 authoring contract before further Project Factory expansion or implementation. The checkpoint review identified five linked gaps: wrong-for-now evidence, an operating-change plan, complete event coverage, a source-bound final board memo, and pack-level risk/equity/accessibility/sustainability fields.
+- **Proposed sequence:** update and version the authoring template; run Project Factory through the revised template; obtain the agreed light operations and learning-design review; then name the frozen V2 commit and create the V2-based V3 implementation branch for the agreed thin vertical slice.
+- **Boundary:** no new domain pack, V2 integration, engine, UI, persistence, or deployment work starts in this checkpoint.
