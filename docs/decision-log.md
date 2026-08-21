@@ -459,3 +459,13 @@ Status: recommended revisions; awaiting product-owner approval
 - **Rejected:** a recommended initiative, immediate Energy pilot, invented Q0 changes or pressure scores, required free-text prediction/assumption, full Evidence Room access in Orient, research-stage downtime/trust/readiness benefits, and research consuming an active pilot/scale slot. These conflict with the content pack or reintroduce cognitive/causal ambiguity.
 - **Guardrail:** wireframes may represent only authored content and state transitions. Numeric outcome movements require a reviewed rule and deterministic fixture; presentation design cannot invent resolver behavior.
 - **Artefact:** [Project Factory V3 — Window 1 Review Synthesis](./project-factory-v3-window-1-review-synthesis.md).
+
+## 2026-08-21 — Window 1 synthesis approved for visual wireframing
+
+Status: agreed; visual design authorised, production implementation not authorised
+
+- **Approved:** dedicated stable V3 shell; six-state loop; one primary research authorisation; Predictive Maintenance, Visual Quality, and Technician Knowledge opening packets; co-located evidence/cost/capacity/gate/trade-off; skippable reflection; sidecar removal; and `changed / did not change / why / uncertainty` outcomes.
+- **Approved refinements:** energy is monitored context; Energy, Demand, and Supply are visible as a collapsed later-window portfolio; Commit uses one structured prediction plus an optional note; research uses declared capacity but no active pilot/scale slot; and research cannot create operating benefit.
+- **Rejected alternatives remain rejected:** recommended-answer labels, immediate Energy pilot, invented Q0 movements or pressure scores, mandatory free text, full Evidence Room in the primary path, and unsupported research-stage metric movement.
+- **Next authorised deliverable:** visual wireframes for Orient, Compare, Commit, Outcome, Reflect, and Next Window using the stable shell and agreed semantic colours.
+- **Validation gate:** production implementation remains blocked until the wireframes are reviewed and tested with representative learners. No P3 reuse, additional events, active-play sidecar, AI reflection coach, or scoring changes are authorised.

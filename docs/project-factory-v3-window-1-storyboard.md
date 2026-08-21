@@ -1,6 +1,9 @@
 # Project Factory V3 — Window 1 Low-Fidelity Storyboard
 
-Status: **proposed for walkthrough and revision; no production implementation authorised**
+Status: **approved for visual wireframing with the accepted review synthesis; no production implementation authorised**
+
+The controlling refinements are recorded in
+[Project Factory V3 — Window 1 Review Synthesis](./project-factory-v3-window-1-review-synthesis.md).
 
 ## Purpose
 

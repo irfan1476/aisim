@@ -1,6 +1,6 @@
 # Project Factory V3 — Window 1 Review Synthesis
 
-Status: **recommended revisions for product-owner approval**
+Status: **approved for visual wireframing; no production implementation authorised**
 
 ## Sources considered
 
