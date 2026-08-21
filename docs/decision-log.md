@@ -244,3 +244,12 @@ Status: agreed V3 first-slice requirement; planning/content only
 - **Resolution and reflection separation:** the deterministic resolver writes the outcome snapshot—metrics, gates, events, stakeholders, rule/evidence references, and uncertainty. The learner may then record a concise, skippable reflection and next adjustment. Neither confidence, timestamp, evidence-opening telemetry, nor learner text may affect outcomes or scorecard state.
 - **Safeguards:** baseline attitudes remain reflection-only and are not an initial scenario hypothesis. The first pilot does not produce automatic blind-spot, trait, or prediction-accuracy diagnoses; the debrief presents visible entries for learner/facilitator interpretation. Any advisor/pattern-analysis use stays deferred until pilot evidence and a bounded rubric justify it.
 - **Artefact updates:** [content pack](./project-factory-v3-content-pack.md), [design brief](./project-factory-v3-design-brief.md), [implementation backlog](./project-factory-v3-implementation-backlog.md), and [authoring template](./scenario-v3-content-authoring-template.md).
+
+## 2026-08-21 — P0 readiness clarification
+
+Status: current-state clarification; product-owner decisions remain pending
+
+- **Planning versus readiness:** the V3 planning baseline is coherent and committed, but the Project Factory content remains provisional and is not yet learner-ready. It still lacks light operations and learning-design review, two additional reviewed event cards, technical validation, and a learner pilot.
+- **Review gate:** the documented alternative review route stages full multi-specialist calibration until after the pilot; it does **not** waive the agreed light operations/manufacturing and learning-design review required by `PF-PLAN-03` before engine implementation. A future intention to identify reviewers is not a completed review.
+- **Branch gate:** `Branch1-version-2` / `dc34433` remains a tagged, reproducible candidate V2 baseline. No product-owner approval to freeze it and no `codex/project-factory-v3-impl` branch creation has been received or performed.
+- **Current boundary:** P1 engine work remains unauthorised. The next executable P0 actions require an explicit V2-baseline confirmation and assigned qualified reviewers (or an explicitly approved substitute review mechanism with equivalent documented evidence).

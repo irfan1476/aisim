@@ -30,7 +30,7 @@ The ordering below separates branch control and content calibration from engine 
 |---|---|---|
 | PF-PLAN-01 | Confirm the V2 implementation baseline. | Product owner explicitly confirms whether tagged commit `Branch1-version-2` / `dc34433` is the intended V3 code base. The record states that later V2 work is not included automatically. |
 | PF-PLAN-02 | Establish the V2-based V3 implementation line. | A separate `codex/project-factory-v3-impl` worktree/branch starts exactly at the approved V2 commit. Only reviewed documentation-only V3 commits are transferred; no V3 application implementation begins; V2 worktree and branch remain untouched. |
-| PF-PLAN-03 | Run the light content review. | One operations/manufacturing reviewer and one learning-design reviewer receive a bounded brief. Each comment is accepted, rejected, or deferred with rationale. Quality-escape and technician-retirement cards remain un-authored until operations review is complete. |
+| PF-PLAN-03 | Run the light content review. | One operations/manufacturing reviewer and one learning-design reviewer receive a bounded brief. Each comment is accepted, rejected, or deferred with rationale. Quality-escape and technician-retirement cards remain un-authored until operations review is complete. A plan to identify reviewers later does not satisfy this gate. |
 
 ## Work packages
 
