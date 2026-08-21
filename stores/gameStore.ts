@@ -2,7 +2,7 @@
 
 import { create } from 'zustand';
 import { createJSONStorage, persist, type StateStorage } from 'zustand/middleware';
-import { initialGameState, type GameState } from '../lib/game/state';
+import { createV3State, initialGameState, type GameState } from '../lib/game/state';
 import { causalChain } from '../lib/game/metrics';
 import { generateCrisis } from '../lib/game/crises';
 import { getScenario } from '../lib/scenarios/registry';
@@ -124,6 +124,7 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
       selected: [],
       stage: 'decide',
       initiativeStates: scenario.initiatives ? scenarioInitiativesToStates(scenario.initiatives) : state.initiativeStates,
+      v3State: scenario.v3 ? createV3State(scenario.id, state.initiativeGeneration.seed, scenario.startingState.budget, (scenario.initiatives || []).map((item) => item.id), scenario.v3) : undefined,
       ...nativeMetrics,
     };
   }),

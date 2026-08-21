@@ -369,7 +369,7 @@ export default function Home() {
                   Choose your challenge
                 </p>
                 <h3 className="mt-3 text-2xl font-bold tracking-[-.03em]">
-                  Four domains. One reflective leadership loop.
+                  Five domains. One reflective leadership loop.
                 </h3>
               </div>
               <p className="max-w-md text-sm leading-6 text-[#656d76]">
