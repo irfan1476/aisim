@@ -79,10 +79,6 @@ function normalizeV3State(value: unknown, fallback: V3ScenarioState): V3Scenario
   };
 }
 
-function isV3Scenario(scenarioId: string | undefined): boolean {
-  return scenarioId === 'projectFactory' || scenarioId === 'project-factory-2030';
-}
-
 function normalizeGeneration(value: unknown, baseline: number[]): InitiativeGeneration {
   const source = isRecord(value) ? value : {};
   const archetypes: ScenarioArchetype[] = ['balanced', 'data-driven', 'people-first', 'tech-first', 'risk-tolerant', 'risk-averse'];
@@ -232,9 +228,9 @@ export function normalizeGameState(value: unknown): GameState {
     progress: isRecord(savedScenarioState.progress) ? Object.fromEntries(Object.entries(savedScenarioState.progress).filter(([, item]) => typeof item === 'number' && Number.isFinite(item))) as Record<string, number> : { ...(next.scenarioProgress || {}) },
     flags: isRecord(savedScenarioState.flags) ? Object.fromEntries(Object.entries(savedScenarioState.flags).filter(([, item]) => typeof item === 'boolean')) as Record<string, boolean> : {},
   };
-  // V3 state is opt-in and additive. Legacy Standard/v1/v2 saves never gain
-  // V3 mechanics; an old Project Factory save receives deterministic defaults.
-  const v3Defaults = isV3Scenario(next.scenarioId)
+  // V3 state is opt-in and additive. Legacy Standard/v1/v2 saves, including
+  // legacy Project Factory saves, never gain V3 state without pack metadata.
+  const v3Defaults = scenarioDefinition?.v3
     ? createV3State(next.scenarioId as string, next.initiativeGeneration.seed, next.quarterlyBudget, Object.keys(next.initiativeStates), scenarioDefinition?.v3)
     : undefined;
   next.v3State = v3Defaults ? normalizeV3State(source.v3State, v3Defaults) : undefined;

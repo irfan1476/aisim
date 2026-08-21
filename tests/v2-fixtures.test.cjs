@@ -47,6 +47,7 @@ for (const [filename, scenarioMode, scenarioId] of fixtures) {
     assert.equal(normalized.q, 2);
     assert.equal(normalized.scenarioMode, scenarioMode);
     assert.equal(normalized.scenarioId, scenarioId);
+    assert.equal(normalized.v3State, undefined, `${filename} must not opt into V3 state without pack metadata`);
     assert.equal(normalized.history.length, 1);
     assert.equal(normalized.history[0].q, 1);
     assert.deepEqual(normalizeGameState(payload), normalized, 'normalization must be idempotent');
