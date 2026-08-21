@@ -78,7 +78,8 @@ The first P1 foundation slice is implemented on
 - **Complete (pure runtime contracts):** `PF2.0`–`PF2.3b`, `PF3.1`–`PF3.5b`, and initial `PF6.1`/`PF6.1a`/`PF6.1b` coverage are implemented in additive modules (`v3Decisions.ts`, `v3Resolver.ts`) with deterministic focused tests. The resolver was hardened so causal evaluation is source-pure and events require authored trigger conditions.
 - **Integration seam added:** `lib/game/v3Runtime.ts` now composes the pure contracts behind an additive `resolveV3Decision` façade. It is not invoked by legacy `resolveQuarter` or the V2 store path until a V3 pack/UI explicitly opts in.
 - **Complete in this slice:** the façade is available through opt-in `confirmV3Decisions`; PF2.4/PF2.5 evidence-room and initiative-plan panels are mounted only when a pack supplies V3 metadata. Legacy scenario screens remain unchanged.
-- **Next:** implement `PF2.6`/`PF6.1c` sidecar projection selectors, then the P2 core sidecar tabs. The sidecar remains read-only and is not part of the legacy quarter path.
+- **Complete in this slice:** the provisional Project Factory V3 pack is registered as `project-factory-2030`; PF2.6 selectors, PF6.1c fixtures, and the core P2 sidecar tabs are implemented. The sidecar remains read-only and is not part of the legacy quarter path.
+- **Next:** add the remaining operational sidecar tabs (stakeholders, capacity, events/exposures, resources, exports), then pilot-calibrate the pack’s deferred event/exposure and richer causal-rule fields.
 
 ### WP0 — Baseline and contract
 

@@ -363,3 +363,15 @@ Status: implemented and verified; sidecar selectors/UI remain deferred to P2/P3
 - **Tests:** orchestration/UI contract coverage was added; the full unit/regression suite passes 57/57, production build passes, and existing E2E passes 8/8.
 - **Compatibility:** no V2 scenario, Standard mode, fixed three-selection flow, legacy score, or legacy quarter resolver was changed. V3 UI remains opt-in and the sidecar remains a separate P2/P3 read-only projection.
 - **Commits:** `0c66fb7`, `cb05857`, and `71235b7` on `codex/project-factory-v3-impl`.
+
+## 2026-08-21 — Project Factory V3 runtime pack and core sidecar delivered
+
+Status: implemented and verified; operational sidecar expansion remains P3
+
+- **Runtime content:** converted the reviewed provisional content pack into [projectFactoryV3.ts](../lib/scenarios/projectFactoryV3.ts), registered under canonical id `project-factory-2030`, and kept the legacy `projectFactory` definition unchanged. The pack contains authoritative/reported metrics, seven evidence artefacts, six initiatives, five stakeholders, six gates, three causal rules, one event, portfolio policy, scorecard/reflection metadata, and source-bound reports.
+- **Validation correction:** fixed lifecycle-transition parsing so `stop` is not split by the word `to`; aligned provisional effect units and removed an authored dependency cycle so the runtime pack passes the validator.
+- **PF2.6:** implemented deterministic read-only analytics projection selectors with direction-aware progress, source-rule/evidence links, ledger/gate/stakeholder/capacity/event/exposure/evidence views, and legacy hidden behavior.
+- **P2 core sidecar:** implemented and mounted Dashboard, Ledger, Metrics, Evidence, and Governance tabs through [V3AnalyticsSidecar.tsx](../components/V3AnalyticsSidecar.tsx). It mounts only when V3 metadata and V3 state are present and has no mutating actions.
+- **Verification:** full suite passes **67/67**, production build passes, and existing V2 E2E passes **8/8**. The implementation worktree is clean after restoring generated reports.
+- **Known deferred schema depth:** the authored content still carries richer exposure registers, event options/trade-offs, seeded ranges, and detailed stakeholder response effects in documentation/extensions; those are scheduled for the operational sidecar/P3 calibration rather than silently approximated in the current engine.
+- **Commits:** `917d454`, `2c33a79`, `50ff6d2`, `ca39eff`, `63a9563`, `bda2bed`, `d664e72`, and `9c71fa0`.
