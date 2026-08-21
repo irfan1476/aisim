@@ -10,7 +10,7 @@ Date: 2026-08-21
 | Stable baseline | `main` | `d71a6ea` | Existing stable line | Treated as the base for v3 separation, based on product-owner direction. |
 | Active v2 scenario line | `feature/scenario-generic-pipeline` | `dc34433` | Checked out in the current worktree; actively being developed | Contains the generic scenario pipeline and its committed Project Factory, BankNext, Care360, and FutureReady packs. |
 | Historical precursor | `feat/domain-agnostic-scenario-mode` | `fdf709f` | Not active | Earlier domain-agnostic scenario work. |
-| v3 planning line | `codex/project-factory-v3` | `d71a6ea` | Dedicated worktree at `.worktrees/project-factory-v3`; planning artefacts prepared for initial commit | Intentionally starts from `main`, with no v2 code integration yet. |
+| v3 planning line | `codex/project-factory-v3` | `d71a6ea` base; planning/content commits `ea1fa29`, `aa2622e` | Dedicated worktree at `.worktrees/project-factory-v3`; V3 planning baseline and provisional content pack committed | Intentionally starts from `main`, with no v2 code integration yet. |
 
 Git commits do not themselves use the labels “v1,” “v2,” or “v3.” The product labels above are the agreed working vocabulary, not inferred release tags.
 
@@ -21,7 +21,8 @@ Git commits do not themselves use the labels “v1,” “v2,” or “v3.” Th
 - Created `codex/project-factory-v3` from `main` at `d71a6ea`.
 - Kept `feature/scenario-generic-pipeline` checked out and unchanged as the active v2 line.
 - Created a dedicated V3 worktree at `/Users/irfan/projects/AISim/.worktrees/project-factory-v3`.
-- Prepared self-contained V3-named planning artefacts for an initial documentation-only commit.
+- Committed the self-contained V3 planning baseline in `ea1fa29`.
+- Committed the provisional Project Factory V3 content pack in `aa2622e`.
 
 ### Explicitly not done
 
@@ -34,7 +35,7 @@ Git commits do not themselves use the labels “v1,” “v2,” or “v3.” Th
 
 The shared worktree at `/Users/irfan/projects/AISim` remains attached to `feature/scenario-generic-pipeline`. Its uncommitted source planning documents and unrelated local/generated artefacts were preserved and were not reset, deleted, or committed to V2.
 
-The separate V3 worktree contains V3-named copies of the approved planning artefacts. They are intentionally committed before V3 content authoring begins, so the content pack has a clear, independent design baseline. No V2 application code has been copied into the V3 worktree.
+The separate V3 worktree contains V3-named copies of the approved planning artefacts and the provisional Project Factory V3 content pack. The planning baseline was committed before content authoring, so the pack has a clear, independent design baseline. No V2 application code has been copied into the V3 worktree.
 
 ## Why v3 starts from `main`
 

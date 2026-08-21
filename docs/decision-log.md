@@ -125,7 +125,7 @@ Status: implemented for workspace and planning-artefact staging; content authori
 
 ## 2026-08-21 — Project Factory V3 provisional content pack authored
 
-Status: authored planning content; pending review and commit
+Status: committed planning content; pending review and calibration
 
 - **Objective:** produce the first complete, implementation-independent reference content pack after the V3 planning baseline was committed.
 - **Artefact:** [Project Factory V3 Content Pack](./project-factory-v3-content-pack.md), authored from the [Scenario V3 Content-Authoring Template](./scenario-v3-content-authoring-template.md).
@@ -133,3 +133,4 @@ Status: authored planning content; pending review and commit
 - **Content status:** every rule parameter and numerical value is labelled expert-calibrated synthetic — provisional. No claim is made about a real named manufacturer. The pack contains no executable engine, UI, persistence, migration, deployment, or V2 integration change.
 - **Reflection decision applied:** the four Reconstruct, Interpret, Reframe, and Transfer checkpoints are present. Baseline answers are reflection-only; no `selfAwareness` or belief/action alignment score is carried into V3 content. The AI reflection coach remains deferred until post-pilot validation.
 - **Validation still required:** manufacturing operations/maintenance, quality/OEM, learning-design, and responsible-AI/governance review; schema/pack-validator design; deterministic resolver tests; accessibility review; and learner pilot calibration.
+- **Commit record:** committed on `codex/project-factory-v3` in `aa2622e` after the planning baseline commit `ea1fa29`. Both commits are documentation-only; V2 code remains untouched.
