@@ -1,0 +1,19 @@
+import { ArrowRight, CircleAlert, Gauge, Users } from 'lucide-react';
+import type { V3InitiativeProfile, V3ScenarioPack, V3LifecycleState } from '../lib/scenarios/types';
+
+type Props = { pack: V3ScenarioPack; initiativeId: string; currentState?: V3LifecycleState; onConfirm?: (action: string) => void };
+const labels: Record<V3LifecycleState, string> = { deferred: 'Deferred', research: 'Research', pilot: 'Pilot', scale: 'Scale', sustain: 'Sustain', pause: 'Pause', stop: 'Stop' };
+
+/** Opt-in V3 plan panel: exposes authored lifecycle, capacity, evidence, and stop criteria. */
+export default function V3InitiativePlan({ pack, initiativeId, currentState = 'deferred', onConfirm }: Props) {
+  const profile = pack.initiatives?.find((item) => item.id === initiativeId) as V3InitiativeProfile | undefined;
+  if (!profile) return <section className="rounded-3xl border border-ink/8 bg-white p-5"><p className="text-sm text-ink/55">Initiative plan unavailable.</p></section>;
+  const transitions = profile.lifecycle?.allowedTransitions || [];
+  return <section aria-labelledby="v3-plan-title" className="rounded-3xl border border-ink/8 bg-white p-5"><div className="flex items-start justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-[.2em] text-gold">Initiative plan</p><h2 id="v3-plan-title" className="mt-2 text-xl font-bold">{profile.id}</h2><p className="mt-1 text-sm leading-6 text-ink/55">Choose a lifecycle action with its prerequisites and operating boundary visible.</p></div><Gauge size={20} className="text-gold" aria-hidden="true" /></div>
+    {profile.valueHypothesis && <div className="mt-4 rounded-xl bg-emerald/5 p-4"><p className="text-[10px] font-bold uppercase tracking-wider text-emerald">Value hypothesis</p><p className="mt-1 text-sm leading-6">{profile.valueHypothesis}</p></div>}
+    <div className="mt-4 grid gap-3 sm:grid-cols-2"><div className="rounded-xl border border-ink/8 p-3"><p className="text-xs font-bold text-ink/55">Current lifecycle</p><p className="mt-1 font-bold">{labels[currentState]}</p></div><div className="rounded-xl border border-ink/8 p-3"><p className="flex items-center gap-1 text-xs font-bold text-ink/55"><Users size={13} />Owner</p><p className="mt-1 font-bold">{profile.ownerRole || 'Not specified'}</p></div></div>
+    {profile.evidenceRequired?.length ? <div className="mt-4"><p className="text-xs font-bold text-ink/55">Required evidence</p><div className="mt-2 flex flex-wrap gap-2">{profile.evidenceRequired.map((id) => <span key={id} className="rounded-full bg-gold/15 px-2 py-1 text-[11px]">{id}</span>)}</div></div> : null}
+    {profile.whyNotNow?.explanation && <p className="mt-4 flex gap-2 text-xs leading-5 text-ink/60"><CircleAlert size={14} className="mt-0.5 shrink-0 text-gold" aria-hidden="true" />{profile.whyNotNow.explanation}</p>}
+    <div className="mt-5 flex flex-wrap gap-2">{transitions.map((action) => <button key={action} type="button" onClick={() => onConfirm?.(action)} className="inline-flex items-center gap-2 rounded-lg border border-ink/10 px-3 py-2 text-xs font-bold hover:border-emerald hover:bg-emerald/5">{action.replace(/_/g, ' ')} <ArrowRight size={13} /></button>)}</div>
+  </section>;
+}
