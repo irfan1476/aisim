@@ -259,6 +259,21 @@ The learner should receive dimensions and evidence, not a hidden master score. T
 
 An outcome score may be lower than the quality of a sound decision after an adverse seeded event. The debrief must make that distinction explicit.
 
+### Result-integrity guardrails — proposed after the V2 final-report audit
+
+The observed V2 final report combined generic campaign metrics with scenario metrics that had separate state and causal paths. It could therefore give a favourable generic grade while a domain metric was static, worsening, or unaddressed. V3 must not reproduce this split-brain reporting model.
+
+1. **One authoritative owner per metric.** Every reported metric is declared as core, scenario-native, evidence-only, stakeholder, capacity, or economic. A metric cannot be silently held in both generic and scenario state; the pack validator rejects collisions and the resolver returns the recorded owner/rule for every changed value.
+2. **Operational value is traceable, not a separate compounding ROI bar.** Value is derived from declared operational deltas, capital/run/event cost, timing, and a labelled assumption range. If the evidence cannot support attribution, the report says *not yet observable* rather than showing generic ROI growth.
+3. **No composite, CEO grade, capability-tenure reward, or token scenario bonus in V3.** The formative scorecard retains separate dimensions and evidence. Repeatedly funding an initiative is not success by itself; a pause or stop can be evidence of good execution.
+4. **Adoption and control are operating conditions, not inert dashboard values.** Their movement must be attributable to declared workflow, training/change capacity, adoption evidence, gate, stakeholder, and event rules. A universal allocation threshold is insufficient and invites gaming.
+5. **Risk is separated by source and decision boundary.** Quality/OEM, operational reliability, data/governance, workforce/change, and financial exposure are visible conditions. Gates limit unsafe scale; they are not a generic risk-reduction multiplier with an arbitrary low floor.
+6. **Deferral is visible and consequential, not automatically wrong.** A learner may focus or defer a domain, but must record the rationale, review trigger, and consequence. Persistent adverse trends can make an authored event or stakeholder response eligible; no universal “unfunded for three quarters” penalty substitutes for context.
+7. **Report claims must be evidence-bound and state-aware.** The final debrief distinguishes observation, plausible causal explanation, and unresolved uncertainty. It must not label the most-funded initiative “what worked,” prescribe an already-satisfied target, or infer a leadership trait from a formula.
+8. **Scenario context governs units and time horizon.** Pack currency, capital envelope, run cost, campaign spend, and quarterly spend must have consistent units. A scenario should not present an India-first ₹/Cr context while silently applying a generic $/M setting.
+
+These guardrails are implementation requirements to validate with deterministic fixtures before V3 learner testing. They extend the agreed formative-scorecard and reflection contracts; they do not reopen the decision to keep baseline answers non-causal or to defer the AI reflection coach.
+
 ## Technical architecture: exact integration points
 
 | Existing seam | V3 responsibility | Proposed implementation boundary |

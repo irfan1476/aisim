@@ -1011,6 +1011,20 @@ event:
 
 ## 9. Formative scorecard, reflection, and fixtures
 
+### Operational-value attribution model
+
+Project Factory V3 does not use a generic, independently compounding ROI metric. When it displays an estimated operating-value range, the report must state the operational source, time horizon, cost basis, evidence status, and uncertainty. All mappings below are expert-calibrated synthetic — provisional.
+
+| Operating signal | Permitted value mechanism | Required evidence / limitation | Report boundary |
+|---|---|---|---|
+| Lower unplanned downtime | Eligible production time recovered, adjusted by declared contribution-margin and recovery-cost assumptions. | Line eligibility, maintenance workflow evidence, planned/unplanned distinction. | Do not claim recovered output when demand, labour, or a bottleneck prevents conversion. |
+| Lower escaped defects / higher first-pass yield | Avoided scrap, rework, containment, and selected expedited-quality costs. | Traceability, rework cost range, containment history, false-reject effect. | Do not net quality savings against an undisclosed false-reject or customer-claim exposure. |
+| Lower energy intensity | Metered energy-use reduction multiplied by a stated price range and production context. | Meter coverage, production-load context, product-mix caveat. | Do not call an index movement a saving when the production mix changed without evidence. |
+| Higher schedule adherence | Avoided expedite, disruption, or inventory-buffer cost within stated assumptions. | Supplier/plan exception, procurement action, inventory and delivery evidence. | Do not claim avoided lost revenue unless an eligible missed-delivery exposure is evidenced. |
+| Workforce readiness / technician trust | Leading indicator only; it may enable later reliability or quality value through an authored dependency rule. | Training/review participation, workflow usefulness, feedback closure. | Do not convert trust or knowledge use directly into cash value. |
+
+Capital, recurring run cost, crisis/event cost, and exit/pause cost must be shown separately. A value result is labelled **observed**, **estimated**, or **not yet observable**; it never grows simply because an initiative remained funded.
+
 ### Scorecard dimensions
 
 No composite score is shown in the first pilot. Each dimension displays one of **Evidence of strength**, **Mixed evidence**, **Needs attention**, or **Not yet observable**, followed by learner-visible support.

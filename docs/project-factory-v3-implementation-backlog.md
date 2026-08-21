@@ -28,6 +28,7 @@ Reference: [Project Factory 2030 v3 Design Brief](./project-factory-v3-design-br
 |---|---|---|
 | PF1.1 | Add optional v3 fields to scenario types and version metadata. | Type check passes; existing four packs compile without v3 fields; v3 validation rejects malformed references. |
 | PF1.2 | Add pack validator. | Validator detects unknown metric/initiative/stakeholder IDs, invalid lifecycle transitions, dependency cycles, invalid event triggers, and effects outside declared metric boundaries. |
+| PF1.2a | Add metric-authority and unit validation. | Each reported metric has one declared owner and unit/time basis; validator rejects generic/scenario collisions, undeclared value/effect references, incompatible currency/unit use, and reports that cannot identify the rule/evidence source of a change. |
 | PF1.3 | Add v3 scenario state defaults and versioned persistence migration. | Version increments from v5 to v6; v5 Standard and v1 scenario saves load safely with v3 defaults; snapshots retain prior history. |
 | PF1.4 | Build a pure v3 state factory. | A Project Factory v3 run starts with ledger, lifecycle, budget/capacity, gates, event log, stakeholder state, and scorecard state in predictable default condition. |
 
@@ -48,16 +49,19 @@ Reference: [Project Factory 2030 v3 Design Brief](./project-factory-v3-design-br
 |---|---|---|
 | PF3.1 | Implement generic gate resolver. | A pack can declare evidence/owner/metric conditions; engine returns allowed, limited, or blocked action plus an explanation. |
 | PF3.2 | Implement delayed causal-rule resolver. | Supports a condition, effect delay, range selected from seed, trade-off, and causal explanation; does not alter a v1 resolution. |
+| PF3.2a | Implement the operational-value attribution resolver. | Value is derived only from declared operational deltas, cost types, timing, and labelled assumption ranges; it can return observed, estimated, or not-yet-observable and cannot compound independently of scenario evidence. |
 | PF3.3 | Add three Project Factory reference rules. | Test fixtures cover: delayed predictive-maintenance benefit, visual-quality false-reject trade-off, and knowledge/maintenance dependency. |
 | PF3.4 | Implement condition-triggered event resolver. | A line-failure event becomes eligible from declared asset/gate conditions; cause, seed, evidence, response, and impact are saved and displayed. |
 | PF3.5 | Implement deterministic stakeholder resolver. | Technician/maintenance, plant/COO, OEM/quality, CFO, and data-owner states change only through authored rules and are visible in the snapshot. |
+| PF3.5a | Implement exposure and deferral rules. | A pack can declare adverse trend, unaddressed condition, rationale/review trigger, stakeholder, and event-eligibility relationships. The engine does not impose a generic “unfunded for N quarters” penalty. |
 
 ### WP4 — Formative feedback and facilitation
 
 | ID | Task | Acceptance criteria |
 |---|---|---|
-| PF4.0 | Replace the legacy reflection-alignment pattern for an opted-in V3 pack. | Baseline answers are displayed as a reflective starting point only; no belief/action alignment, `self-awareness` number, or baseline-derived archetype contributes to a V3 score or outcome. Legacy v1/v3 reflection remains unchanged. |
-| PF4.1 | Implement evidence-led scorecard. | Results show separate operational, decision-quality, execution, governance, stakeholder, and resilience dimensions with supporting evidence; no high-stakes composite grade is required. |
+| PF4.0 | Replace the legacy reflection-alignment pattern for an opted-in V3 pack. | Baseline answers are displayed as a reflective starting point only; no belief/action alignment, `self-awareness` number, or baseline-derived archetype contributes to a V3 score or outcome. Legacy v1/v2 reflection behaviour remains unchanged. |
+| PF4.1 | Implement evidence-led scorecard. | Results show separate operational, decision-quality, execution, governance, stakeholder, and resilience dimensions with supporting evidence; no composite score, CEO grade, scenario bonus, or initiative-tenure reward is shown. |
+| PF4.1a | Implement final-report integrity rules. | Every outcome/recommendation names its metric/rule/evidence source and respects current state. The report distinguishes observation, attributed value, and uncertainty; it cannot call most-used work “what worked,” recommend an already-met threshold, or infer a leadership trait as a fact. |
 | PF4.2 | Implement prediction-versus-actual and decision replay. | Debrief identifies the learner’s predicted result, actual result, relevant evidence/gates/events, and a reflective question. |
 | PF4.2a | Add the baseline-to-debrief comparison. | Each baseline dimension displays its initial response, relevant decisions/evidence, and a neutral reflection prompt; it never creates a score bonus or penalty. |
 | PF4.2b | Add one guided reflection checkpoint per board window. | The learner can record observation, interpretation, and next adjustment after a material result, gate, or event; prompts use visible evidence, are skippable/concise, and have no effect on resolver state or assessment. |
@@ -80,14 +84,14 @@ Authoring output: [Project Factory V3 Provisional Content Pack](./project-factor
 
 | ID | Task | Acceptance criteria |
 |---|---|---|
-| PF6.1 | Extend unit and migration coverage. | Resolver, validator, lifecycle, gate, capacity, causal, event, stakeholder, scorecard, and v5→v6 tests cover success/failure boundaries. |
-| PF6.2 | Add browser flows. | A v3 Project Factory learner can pre-brief, make an evidence-led decision, encounter an explained event, resume a save, and reach debrief; v1 scenario and Standard flows continue to pass. |
+| PF6.1 | Extend unit and migration coverage. | Resolver, validator, lifecycle, metric authority, value attribution, gate, capacity, causal, event, stakeholder, scorecard, report-integrity, and v5→v6 tests cover success/failure boundaries. Fixtures prove that a baseline change cannot alter an outcome; a scenario metric cannot silently overwrite a core metric; a met target never produces a contrary recommendation; and units/currency remain consistent. |
+| PF6.2 | Add browser flows. | A v3 Project Factory learner can pre-brief, make an evidence-led decision, encounter an explained event, defer with an explicit trigger, resume a save, and reach a source-grounded debrief; v1 scenario and Standard flows continue to pass. |
 | PF6.3 | Run a formative learner pilot. | Observe target learners in a 90-minute team session and self-paced fallback; collect evidence about comprehension, cognitive load, discussion quality, and misleading mechanics. |
 | PF6.4 | Calibrate before reuse. | Rule/content changes from pilot are versioned; only validated primitives are copied into BankNext, Care360, and FutureReady. |
 
 ## Suggested implementation order
 
-`PF0 → PF1 → PF2 → PF3.1–PF3.4 → PF4.0–PF4.2b → PF5 → PF6 → PF3.5/PF4.2c/PF4.3/PF4.4 as pilot evidence warrants`
+`PF0 → PF1/PF1.2a → PF2 → PF3.1–PF3.2a/PF3.4 → PF4.0–PF4.2b → PF5 → PF6 → PF3.5/PF3.5a/PF4.2c/PF4.3/PF4.4 as pilot evidence warrants`
 
 This order gets an end-to-end, individually playable reference slice before adding facilitation mode or deeper stakeholder interactions. It reduces the risk of designing a rich authoring system whose learner loop has not been validated.
 
