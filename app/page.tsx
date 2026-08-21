@@ -25,6 +25,7 @@ import {
   hasCampaignProgress,
   readPersistedGameState,
 } from "../lib/game/persistence";
+import { scenarioList } from "../lib/scenarios/registry";
 
 const features = [
   [
@@ -254,8 +255,11 @@ export default function Home() {
             onClick={() => setStarted(true)}
             className="mt-9 flex items-center gap-4 rounded-md bg-[#08872b] px-6 py-4 text-sm font-bold text-white shadow-lg shadow-[#08872b]/20 transition hover:-translate-y-0.5 hover:bg-[#077324]"
           >
-            Start your transformation <ArrowRight size={17} />
+            Choose your simulation <ArrowRight size={17} />
           </button>
+          <a href="#simulation" className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-[#1f2328] underline decoration-[#08872b]/40 underline-offset-4">
+            See how the learning loop works <ArrowRight size={15} />
+          </a>
           <p className="mt-4 text-xs font-semibold uppercase tracking-widest text-[#656d76]">
             No account required · 12 quarters · 20–30 minutes
           </p>
@@ -269,7 +273,7 @@ export default function Home() {
                   Live board view
                 </p>
                 <p className="mt-1 text-xl font-semibold">
-                  Project Factory 2030
+                  Choose your operating environment
                 </p>
               </div>
               <span className="rounded-md bg-[#3fb950]/15 px-3 py-1 text-xs font-bold text-[#3fb950]">
@@ -278,20 +282,18 @@ export default function Home() {
             </div>
             <div className="mt-7 grid grid-cols-2 gap-3">
               {[
-                ["ROI", "42.8%", "+8.4%"],
-                ["Adoption", "67%", "+12%"],
-                ["Risk exposure", "24%", "−6%"],
-                ["Data readiness", "76%", "+9%"],
+                ["Standard mode", "Open play", "Project Factory"],
+                ["BankNext", "Banking", "Fraud + trust"],
+                ["Care360", "Healthcare", "Access + safety"],
+                ["FutureReady", "Education", "Engagement + skills"],
               ].map(([a, b, c]) => (
                 <div
                   key={a}
                   className="rounded-lg border border-white/10 bg-[#161b22] p-4"
                 >
                   <p className="text-xs text-white/45">{a}</p>
-                  <p className="mt-2 text-2xl font-semibold">{b}</p>
-                  <p className="mt-1 text-xs font-bold text-[#3fb950]">
-                    {c} this quarter
-                  </p>
+                  <p className="mt-2 text-lg font-semibold">{b}</p>
+                  <p className="mt-1 text-xs font-bold text-[#3fb950]">{c}</p>
                 </div>
               ))}
             </div>
@@ -331,13 +333,123 @@ export default function Home() {
               The simulation
             </p>
             <h2 className="mt-4 text-4xl font-bold tracking-[-.04em] md:text-6xl">
-              You are the Chief AI Officer of a ₹2,500 Cr manufacturer.
+              One decision engine. Multiple worlds to lead.
             </h2>
             <p className="mt-6 text-lg leading-8 text-[#656d76]">
-              Five plants. 7,000 employees. 24×7 production. Your mandate is to
-              deliver AI value without losing the people or trust that make the
-              business work.
+              Start in Standard mode for the original open-ended practice lab,
+              or choose a domain-specific scenario. The rules stay consistent;
+              the organisation, pressures, initiatives, metrics, budget, and
+              crises change with the world you are asked to lead.
             </p>
+          </div>
+          <div className="mt-10 grid gap-4 md:grid-cols-2">
+            <article className="rounded-2xl border border-[#d0d7de] bg-white p-6 shadow-sm">
+              <p className="text-xs font-bold uppercase tracking-[.2em] text-[#656d76]">Standard mode</p>
+              <h3 className="mt-3 text-2xl font-bold">Build your own thesis.</h3>
+              <p className="mt-2 text-sm leading-6 text-[#656d76]">
+                The original Project Factory practice lab stays open-ended. Your
+                baseline answers and decisions shape the operating pattern that
+                is revealed at the end.
+              </p>
+            </article>
+            <article className="rounded-2xl border border-[#54aeff]/40 bg-[#ddf4ff] p-6 shadow-sm">
+              <p className="text-xs font-bold uppercase tracking-[.2em] text-[#0969da]">Scenario mode</p>
+              <h3 className="mt-3 text-2xl font-bold">Lead inside a real pressure system.</h3>
+              <p className="mt-2 text-sm leading-6 text-[#57606a]">
+                Choose a domain with its own organisation, constraints, metrics,
+                initiatives, crises, targets, and budget framing. Progress is
+                measured against that world without replacing the core game loop.
+              </p>
+            </article>
+          </div>
+          <div className="mt-12 rounded-3xl border border-[#d0d7de] bg-[#f6f8fa] p-6 md:p-8">
+            <div className="flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[.25em] text-[#0969da]">
+                  Choose your challenge
+                </p>
+                <h3 className="mt-3 text-2xl font-bold tracking-[-.03em]">
+                  Four domains. One reflective leadership loop.
+                </h3>
+              </div>
+              <p className="max-w-md text-sm leading-6 text-[#656d76]">
+                Scenario mode is optional. Pick a world, fund up to three bets,
+                and learn how your choices perform against its real pressures.
+              </p>
+            </div>
+            <div className="mt-7 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              {scenarioList.map((scenario) => (
+                <article
+                  key={scenario.id}
+                  className="rounded-2xl border border-[#d0d7de] bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:border-[#54aeff] hover:shadow-lg"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-2xl" aria-hidden="true">{scenario.icon}</span>
+                    <span className="rounded-full bg-[#ddf4ff] px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-[#0969da]">
+                      {scenario.industry}
+                    </span>
+                  </div>
+                  <h4 className="mt-5 text-lg font-bold">{scenario.name}</h4>
+                  <p className="mt-2 text-sm leading-6 text-[#656d76]">
+                    {scenario.description}
+                  </p>
+                  <div className="mt-5 border-t border-[#d0d7de] pt-4">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#656d76]">
+                      You will balance
+                    </p>
+                    <p className="mt-2 text-xs font-semibold leading-5 text-[#1f2328]">
+                      {scenario.challenges.slice(0, 3).map((challenge) => challenge.label).join(" · ")}
+                    </p>
+                    <div className="mt-4 flex flex-wrap gap-2 text-[10px] font-bold uppercase tracking-wider text-[#656d76]">
+                      <span className="rounded-full bg-[#f6f8fa] px-2 py-1">{scenario.difficulty}</span>
+                      <span className="rounded-full bg-[#f6f8fa] px-2 py-1">{scenario.currency.defaultSymbol}{scenario.startingState.budget} {scenario.currency.defaultLabel} / quarter</span>
+                      <span className="rounded-full bg-[#f6f8fa] px-2 py-1">6 initiatives</span>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+            <p className="mt-6 text-xs leading-5 text-[#656d76]">
+              The scenario selector appears before the baseline assessment. Your
+              answers still shape the starting conditions, while the chosen
+              domain supplies the challenge context.
+            </p>
+            <div className="mt-7 flex flex-wrap items-center gap-2 border-t border-[#d0d7de] pt-5 text-xs font-bold text-[#1f2328]">
+              {[
+                "Choose a mode",
+                "Answer five questions",
+                "Fund up to three bets",
+                "Allocate 100%",
+                "Respond to crises",
+                "Review the verdict",
+              ].map((label, index) => (
+                <span key={label} className="flex items-center gap-2">
+                  <span className="rounded-full bg-[#1f2328] px-2 py-1 text-white">{index + 1}</span>
+                  {label}
+                  {index < 5 && <ArrowRight size={14} className="text-[#0969da]" />}
+                </span>
+              ))}
+            </div>
+          </div>
+          <div className="mt-10 grid gap-4 md:grid-cols-2">
+            <div className="rounded-2xl border border-[#d0d7de] bg-white p-6">
+              <p className="text-xs font-bold uppercase tracking-[.2em] text-[#656d76]">Always included</p>
+              <ul className="mt-4 grid gap-2 text-sm leading-6 text-[#57606a]">
+                <li>• Five baseline questions and twelve connected quarters</li>
+                <li>• Up to three initiatives and six-part budget allocation</li>
+                <li>• Initiative evolution, risk dynamics, crises, and trade-offs</li>
+                <li>• Analysis sidebar, causal chain, recommendations, and final verdict</li>
+              </ul>
+            </div>
+            <div className="rounded-2xl border border-[#54aeff]/40 bg-[#ddf4ff] p-6">
+              <p className="text-xs font-bold uppercase tracking-[.2em] text-[#0969da]">Scenario mode adds</p>
+              <ul className="mt-4 grid gap-2 text-sm leading-6 text-[#57606a]">
+                <li>• A domain-specific organisation and initiative catalogue</li>
+                <li>• Native metrics, targets, constraints, and budget framing</li>
+                <li>• Domain crises and industry-grounded advisor context</li>
+                <li>• A separate scenario performance diagnosis and bonus</li>
+              </ul>
+            </div>
           </div>
           <div className="mt-12 grid gap-4 md:grid-cols-2">
             {features.map(([Icon, title, copy]) => (
@@ -478,10 +590,11 @@ export default function Home() {
               Your strategy emerges through play.
             </h2>
             <p className="mt-5 text-lg leading-8 text-[#656d76]">
-              There is no strategy mode to select. Your baseline shapes the
-              starting conditions; every quarter then changes initiative
-              capability, risk, cost, and momentum. The campaign remembers what
-              you funded, neglected, and discovered.
+              You choose the operating world, but not the strategic identity you
+              will be given. Your baseline shapes the starting conditions;
+              every quarter then changes initiative capability, risk, cost, and
+              momentum. The campaign remembers what you funded, neglected, and
+              discovered.
             </p>
           </div>
           <div className="mt-12 grid gap-4 lg:grid-cols-4">

@@ -19,9 +19,9 @@ const steps = [
   {
     label: "Brief",
     title: "Create your campaign context",
-    copy: "Review Project Factory 2030 and answer five baseline questions. There is no archetype or strategy mode to select: your answers quietly shape organisation, data, and team maturity.",
+    copy: "Choose Standard mode for open play or select a domain scenario—manufacturing, banking, healthcare, or higher education—then answer five baseline questions. Your answers quietly shape organisation, data, and team maturity.",
     action:
-      "Answer honestly, then enter the boardroom. A new campaign receives reproducible but varied initiative conditions.",
+      "Answer honestly, then enter the boardroom. A new campaign receives reproducible but varied initiative conditions within the world you selected.",
     watch:
       "Initiative ROI, cost, readiness, human effort, and risk can differ from an earlier campaign.",
     Icon: ClipboardList,
