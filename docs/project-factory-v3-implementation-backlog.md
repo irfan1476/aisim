@@ -1,6 +1,6 @@
 # Project Factory v3: Implementation Backlog
 
-Status: proposed; no implementation authorised by this backlog
+Status: prioritised planning backlog; no implementation authorised by this backlog
 Date: 2026-08-21
 Reference: [Project Factory 2030 v3 Design Brief](./project-factory-v3-design-brief.md)
 
@@ -11,6 +11,26 @@ Reference: [Project Factory 2030 v3 Design Brief](./project-factory-v3-design-br
 - Keep all state serializable and all outcome rules deterministic for a recorded seed.
 - Keep business rules in pure modules, not React components, Zustand actions, or the LLM.
 - Treat synthetic content calibration and learner debrief as deliverables, not afterthoughts.
+
+## Priority, decision gates, and next sequence
+
+The ordering below separates branch control and content calibration from engine work. A V3 implementation branch may be created after its explicit approval, but **no engine/UI/persistence implementation begins until the content-review gate is passed**.
+
+| Priority | Work | Status and exit criterion | Why it comes here |
+|---|---|---|---|
+| **P0 — Product lineage** | `PF-PLAN-01` confirm `Branch1-version-2` / `dc34433` as the frozen V2 baseline; `PF-PLAN-02` create `codex/project-factory-v3-impl` from that exact commit and transfer documentation-only V3 planning commits. | Pending product-owner approval. The branch cut does not authorise implementation. | V3 must inherit the V2 scenario pipeline from a reproducible point, while V2 remains independently active. |
+| **P0 — Content-calibration gate** | `PF-PLAN-03` prepare bounded reviewer briefs; `PF5.1`, `PF5.2`, `PF5.3a`, and `PF5.4` obtain and resolve light operations and learning-design review. `PF5.3b` authors the two additional event cards only after operations review. | Required before engine work. Reviewer resolutions and retained provisional assumptions are recorded. | Prevents encoding uncalibrated operational triggers, causal magnitudes, or reflection load into the engine. |
+| **P1 — Core playable reference slice** | `PF0` through `PF3`, then `PF4.0`–`PF4.2c`, with `PF6.1`/`PF6.1a` developed alongside their corresponding work. | A deterministic, saveable Project Factory V3 run can support evidence-led lifecycle decisions, gates, capacity, causal rules, one implemented event, stakeholders, and a source-grounded formative debrief. | Proves the reusable V3 engine primitives against one reviewed pack before breadth or polish. |
+| **P2 — Learner-pilot readiness** | `PF4.1`, `PF4.1a`, `PF4.2d`, `PF4.2e`, `PF4.3`, `PF5.3b`, `PF6.2`, and `PF6.3`. | A 90-minute facilitated run and self-paced fallback are accessible, report truthfully, include two or three reviewed deterministic event cards, and produce an editable board memo. | Completes the agreed learning experience without adding an AI coach or a high-stakes score. |
+| **P3 — Reuse and later enhancements** | `PF5.1a`, `PF5.3c`, `PF6.4`, further-pack conversion, and deferred `PF4.4` advisor work. | Pilot results are versioned before V3 primitives are reused in BankNext, Care360, FutureReady, or BharatMart. | Avoids copying provisional assumptions or adding AI-mediated complexity before evidence justifies it. |
+
+### P0 task detail
+
+| ID | Task | Acceptance criteria |
+|---|---|---|
+| PF-PLAN-01 | Confirm the V2 implementation baseline. | Product owner explicitly confirms whether tagged commit `Branch1-version-2` / `dc34433` is the intended V3 code base. The record states that later V2 work is not included automatically. |
+| PF-PLAN-02 | Establish the V2-based V3 implementation line. | A separate `codex/project-factory-v3-impl` worktree/branch starts exactly at the approved V2 commit. Only reviewed documentation-only V3 commits are transferred; no V3 application implementation begins; V2 worktree and branch remain untouched. |
+| PF-PLAN-03 | Run the light content review. | One operations/manufacturing reviewer and one learning-design reviewer receive a bounded brief. Each comment is accepted, rejected, or deferred with rationale. Quality-escape and technician-retirement cards remain un-authored until operations review is complete. |
 
 ## Work packages
 
@@ -101,11 +121,11 @@ Authoring output: [Project Factory V3 Provisional Content Pack](./project-factor
 | PF6.3 | Run a formative learner pilot. | Observe target learners in a 90-minute team session and self-paced fallback; collect evidence about comprehension, cognitive load, discussion quality, and misleading mechanics. |
 | PF6.4 | Calibrate before reuse. | Rule/content changes from pilot are versioned; only validated primitives are copied into BankNext, Care360, and FutureReady. |
 
-## Suggested implementation order
+## Detailed implementation order after the P0 gates
 
-`PF0/PF0.2a → PF1/PF1.2a → PF2/PF2.3a → PF3.1–PF3.5b → PF4.0–PF4.2e → PF5 → PF6 → PF4.3/PF4.4 as pilot evidence warrants`
+`PF0/PF0.2a → PF1/PF1.2a → PF2/PF2.3a → PF3.1–PF3.5b → PF4.0/PF4.2–PF4.2c → matching PF6.1/PF6.1a tests → PF4.1/PF4.1a/PF4.2d/PF4.2e/PF4.3 → PF5.3b/PF6.2/PF6.3 → PF5.1a/PF5.3c/PF6.4 → PF4.4 only as pilot evidence warrants`
 
-This order gets an end-to-end, individually playable reference slice before adding facilitation mode or deeper stakeholder interactions. It reduces the risk of designing a rich authoring system whose learner loop has not been validated.
+This order gets an end-to-end, individually playable reference slice before adding workshop polish, a board memo, deeper event coverage, or advisor support. It reduces the risk of designing a rich authoring system whose learner loop has not been validated.
 
 ## Definition of readiness for implementation
 
@@ -113,9 +133,11 @@ Implementation should begin only when:
 
 1. The agreed product decisions in the design brief remain correct.
 2. The scenario authoring template is accepted.
-3. At least one manufacturing and one learning-design reviewer are identified or a documented alternative review plan exists.
+3. The agreed light manufacturing/operations and learning-design reviews are completed and their resolutions are recorded; any broader calibration remains clearly labelled for the post-pilot phase.
 4. The Project Factory evidence/rule values are explicitly labelled as expert-calibrated synthetic until reviewed.
 5. The agreed four-window workshop cadence and quarter-by-quarter self-paced fallback are represented in the implementation plan, with pilot measures for timing, cognitive load, and discussion quality.
+6. `PF-PLAN-01` has been explicitly approved and `PF-PLAN-02` has created the V2-based implementation line.
+7. `PF-PLAN-03` has recorded light review resolutions and any resulting content updates, including the decision to retain, revise, or defer additional event cards.
 
 ## Deferred after the first pilot — AI reflection coach
 

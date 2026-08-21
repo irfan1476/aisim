@@ -224,3 +224,13 @@ Status: current-state finding; implementation cut remains pending product-owner 
 - **It does not:** stop V2 development, merge V3 into V2, deploy anything, overwrite the V2 worktree, or author V3 engine/UI code. Subsequent V2 commits would simply not appear in the V3 implementation branch unless deliberately brought across later.
 - **Why confirmation is required:** this is a product-lineage choice, not a technical necessity. Once V3 begins implementation from a baseline, later V2 fixes/features must be evaluated and selectively integrated, so the product owner must confirm that `dc34433` represents the intended V2 behaviour to inherit.
 - **Risk to manage:** the active V2 worktree contains uncommitted planning and local files. Those files are not captured by a branch cut from `dc34433`; this is desirable unless the product owner considers any of them part of the V2 baseline. A named commit/tag makes that boundary reviewable and reproducible.
+
+## 2026-08-21 — V3 prioritized next-step plan
+
+Status: agreed planning sequence; execution remains pending explicit authorisation
+
+- **Priority 0 — lineage and calibration:** first obtain product-owner confirmation of `Branch1-version-2` / `dc34433` as the V2 implementation baseline; then create the separate V2-based V3 implementation branch and transfer documentation-only V3 planning commits. In parallel, prepare and complete the agreed light operations and learning-design review. The two additional Project Factory event cards remain deferred until operations review.
+- **Priority 1 — core reference slice:** only after P0 gates, implement and test opt-in V3 schema, validation, migration, evidence/lifecycle/capacity/ledger decisions, gates, deterministic causal rules, one event, stakeholders, and evidence-led reflection/debrief. Standard and non-V3 behaviour remain unchanged.
+- **Priority 2 — learner-pilot readiness:** add truthful report integrity, board memo, responsible-impact reflection, workshop/self-paced flows, and two or three reviewed deterministic events; then conduct the formative pilot.
+- **Priority 3 — reuse:** calibrate from pilot evidence before porting primitives to the other existing scenarios or BharatMart; continue to defer the AI reflection coach.
+- **Authorisation boundary:** this plan does not itself freeze V2, create a branch, start engine work, or merge/deploy anything.

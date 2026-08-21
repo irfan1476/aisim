@@ -16,6 +16,17 @@ Project Factory v3 must demonstrate that a learner can make a justified, sequenc
 
 The pack is a **reference implementation**, not the largest possible simulation. Its purpose is to prove reusable primitives that BankNext, Care360, FutureReady, and later BharatMart can use without engine branches by scenario name.
 
+## Delivery sequence and current priority
+
+The current V3 planning/content branch remains a record of product decisions. The intended V3 product code will start from an explicitly approved, immutable V2 snapshot—not from this `main`-based planning branch.
+
+1. **Now — protect the lineage and calibrate the content.** Confirm whether tagged V2 commit `Branch1-version-2` / `dc34433` is the intended baseline; on approval, create a separate V2-based V3 implementation line without changing V2. Obtain the agreed light operations and learning-design review. The quality-escape and technician-retirement events remain exposure candidates until operations review calibrates them.
+2. **Then — implement one deterministic reference slice.** Build the reviewed Project Factory V3 lifecycle, evidence, gate, capacity, causal, stakeholder, event, and formative-reflection primitives with paired regression fixtures. Preserve Standard and non-V3 packs.
+3. **Before a learner pilot — complete the learning experience.** Add the truthful formative report, source-bound board memo, responsible-impact reflection, two or three reviewed deterministic events, and facilitated/self-paced browser flows.
+4. **After pilot evidence — calibrate and reuse.** Version changes before porting primitives to the remaining existing packs or authoring BharatMart. Keep the AI reflection coach deferred.
+
+Creating an implementation branch alone does not authorise engine work, merge V3 into V2, stop V2 development, or deploy software. Later V2 changes must be consciously evaluated before being brought into V3.
+
 ## Agreed product and learning decisions
 
 | Topic | Agreed direction | Design consequence |
