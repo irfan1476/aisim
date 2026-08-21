@@ -1,23 +1,47 @@
-name: Deploy to Vercel
+name: Validate and deploy
 on:
   push:
+    branches:
+      - main
+      - feature/scenario-generic-pipeline
+  pull_request:
     branches: [main]
 jobs:
-  deploy:
+  validate:
     runs-on: ubuntu-24.04
-    env:
-      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: {node-version: 24, cache: npm}
       - run: npm ci
+      - run: npm test
+      - run: npm run type-check
       - run: npm run build
+
+  deploy:
+    needs: validate
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feature/scenario-generic-pipeline')
+    runs-on: ubuntu-24.04
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ github.ref == 'refs/heads/feature/scenario-generic-pipeline' && secrets.VERCEL_SCENARIO_PROJECT_ID || secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 24, cache: npm}
+      - run: npm ci
+      - name: Pull Vercel project settings
+        if: ${{ env.VERCEL_TOKEN != '' && env.VERCEL_ORG_ID != '' && env.VERCEL_PROJECT_ID != '' }}
+        run: npx --yes vercel@latest pull --yes --environment=production --token="$VERCEL_TOKEN"
+      - name: Build Vercel output
+        if: ${{ env.VERCEL_TOKEN != '' && env.VERCEL_ORG_ID != '' && env.VERCEL_PROJECT_ID != '' }}
+        run: npx --yes vercel@latest build --prod --token="$VERCEL_TOKEN"
       - name: Deploy with Vercel
         if: ${{ env.VERCEL_TOKEN != '' && env.VERCEL_ORG_ID != '' && env.VERCEL_PROJECT_ID != '' }}
-        run: npx --yes vercel@latest deploy --prod --token="$VERCEL_TOKEN" --yes
+        run: npx --yes vercel@latest deploy --prebuilt --prod --token="$VERCEL_TOKEN"
       - name: Explain skipped deployment
         if: ${{ env.VERCEL_TOKEN == '' || env.VERCEL_ORG_ID == '' || env.VERCEL_PROJECT_ID == '' }}
-        run: echo "Vercel deployment skipped. Configure VERCEL_TOKEN, VERCEL_ORG_ID, and VERCEL_PROJECT_ID in repository secrets."
+        run: |
+          echo "Vercel deployment skipped because required repository secrets are missing."
+          echo "Configure VERCEL_TOKEN and VERCEL_ORG_ID, plus VERCEL_SCENARIO_PROJECT_ID for the scenario branch or VERCEL_PROJECT_ID for main."

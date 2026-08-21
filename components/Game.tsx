@@ -21,6 +21,7 @@ import {
   hasCampaignProgress,
   readPersistedGameState,
 } from "../lib/game/persistence";
+import { buildAdvisorSystemPrompt } from "../lib/llm/advisorPrompt";
 
 function compactNumber(value: number): number {
   return Number.isFinite(value) ? Number(value.toFixed(2)) : 0;
@@ -136,7 +137,35 @@ export default function Game() {
           messages: [
             {
               role: "system",
-              content: `You are the ${persona} board advisor in an executive AI investment simulation. Reply in plain text only, under 120 words, using exactly these labels: Recommendation:, Why:, Next step:. Do not use Markdown, headings, or repeat the question. Be concise and actionable. Do not reveal internal archetype labels or seed values. Reference current initiative stats, maturity, funding history, governance, and any discovered combinations when relevant. ${s.scenarioMode ? `Scenario context: ${getScenario(s.scenarioId)?.frameworkContext.advisorPrompt || "Domain-specific scenario pressures are active."} Quarterly budget: ${s.quarterlyBudget}.` : "Standard mode is active; preserve the current campaign logic."} Current state: ${JSON.stringify({ ...s, advisorContext: { maturity: s.initiativeGeneration?.context, dynamicInitiatives: availableInitiatives.map((item) => ({ id: item.id, roi: item.currentRoi, cost: item.currentCost, risk: item.currentRisk, riskScore: item.riskScore, data: item.currentData, human: item.currentHuman, maturity: item.maturityLevel, quartersFunded: item.quartersFunded })), recentHistory: s.history?.slice(-3) || [], selected: s.selected || [], allocation: s.alloc || {}, causalChain: s.causalChain || [], recommendations: s.proactiveRecommendations || [], scenarioProgress: s.scenarioProgress || {} } })}`,
+              content: buildAdvisorSystemPrompt({
+                persona,
+                scenarioMode: Boolean(s.scenarioMode),
+                scenarioPrompt: getScenario(s.scenarioId)?.frameworkContext.advisorPrompt,
+                quarterlyBudget: s.quarterlyBudget,
+                state: {
+                  ...s,
+                  advisorContext: {
+                    maturity: s.initiativeGeneration?.context,
+                    dynamicInitiatives: availableInitiatives.map((item) => ({
+                      id: item.id,
+                      roi: item.currentRoi,
+                      cost: item.currentCost,
+                      risk: item.currentRisk,
+                      riskScore: item.riskScore,
+                      data: item.currentData,
+                      human: item.currentHuman,
+                      maturity: item.maturityLevel,
+                      quartersFunded: item.quartersFunded,
+                    })),
+                    recentHistory: s.history?.slice(-3) || [],
+                    selected: s.selected || [],
+                    allocation: s.alloc || {},
+                    causalChain: s.causalChain || [],
+                    recommendations: s.proactiveRecommendations || [],
+                    scenarioProgress: s.scenarioProgress || {},
+                  },
+                },
+              }),
             },
             { role: "user", content: userQuestion },
           ],

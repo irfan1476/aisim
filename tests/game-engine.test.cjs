@@ -46,6 +46,9 @@ const { scenarioInitiativeToState } = require('../lib/game/initiativeAdapter.ts'
 const { allocationToReadiness } = require('../lib/game/allocation.ts');
 const { maturityMultiplier } = require('../lib/game/maturity.ts');
 const { applyScenarioEffects } = require('../lib/game/effectResolver.ts');
+const { buildAdvisorSystemPrompt } = require('../lib/llm/advisorPrompt.ts');
+const { causalChain } = require('../lib/game/metrics.ts');
+const { generateProactiveRecommendations } = require('../lib/game/recommendations.ts');
 
 const allocation = {
   infra: 35,
@@ -176,6 +179,49 @@ test('Q1 resolves the initiative values shown to the player without regeneration
 test('campaign archetype uses the full allocation history', () => {
   const history = Array.from({ length: 8 }, () => ({ allocation: { infra: 15, data: 15, people: 35, mlops: 10, compliance: 15, innovation: 10 }, selectedIds: ['knowledge'] }));
   assert.equal(inferArchetypeFromCampaign([3, 3, 3, 3, 3], history), 'people-first');
+});
+
+test('advisor prompt includes scenario context and live learning signals', () => {
+  const prompt = buildAdvisorSystemPrompt({
+    persona: 'CFO',
+    scenarioMode: true,
+    scenarioPrompt: 'Connect decisions to fraud containment and responsible credit.',
+    quarterlyBudget: 5,
+    state: {
+      advisorContext: {
+        maturity: { organization: 0.7 },
+        dynamicInitiatives: [{ id: 'fraudDetection', riskScore: 48 }],
+        causalChain: [{ name: 'AI Fraud Detection' }],
+        recommendations: [{ title: 'Governance first' }],
+      },
+    },
+  });
+
+  assert.match(prompt, /fraud containment and responsible credit/);
+  assert.match(prompt, /Quarterly budget: 5/);
+  assert.match(prompt, /fraudDetection/);
+  assert.match(prompt, /Governance first/);
+});
+
+test('scenario causal and recommendation outputs contain actionable evidence', () => {
+  const scenario = getScenario('bankNext');
+  const states = scenarioInitiativesToStates(scenario.initiatives);
+  const state = initialGameState(undefined, {
+    scenarioMode: true,
+    scenarioId: 'bankNext',
+    scenarioStartingMetrics: scenario.startingState.startingMetrics,
+    scenarioProgress: {},
+    defaultAllocation: allocation,
+    quarterlyBudget: scenario.startingState.budget,
+  });
+  const scenarioState = { ...state, initiativeStates: states, selected: ['fraudDetection', 'complianceMonitoring'], scenarioMode: true, scenarioId: 'bankNext' };
+  const chain = causalChain(scenarioState, scenarioState.selected);
+  assert.ok(chain.length >= 1);
+  assert.ok(chain[0].explanation.includes('maturity'));
+  assert.ok(chain[0].effects[0].unit);
+  const recommendations = generateProactiveRecommendations({ ...state, selected: ['maintenance'], people: 10, risk: 50 });
+  assert.ok(recommendations.some((item) => item.priority === 'high'));
+  assert.ok(recommendations.every((item) => item.title && item.action && item.metric));
 });
 
 test('legacy migration derives generation context from the saved baseline', () => {
