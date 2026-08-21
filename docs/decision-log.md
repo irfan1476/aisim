@@ -253,3 +253,8 @@ Status: current-state clarification; product-owner decisions remain pending
 - **Review gate:** the documented alternative review route stages full multi-specialist calibration until after the pilot; it does **not** waive the agreed light operations/manufacturing and learning-design review required by `PF-PLAN-03` before engine implementation. A future intention to identify reviewers is not a completed review.
 - **Branch gate:** `Branch1-version-2` / `dc34433` remains a tagged, reproducible candidate V2 baseline. No product-owner approval to freeze it and no `codex/project-factory-v3-impl` branch creation has been received or performed.
 - **Current boundary:** P1 engine work remains unauthorised. The next executable P0 actions require an explicit V2-baseline confirmation and assigned qualified reviewers (or an explicitly approved substitute review mechanism with equivalent documented evidence).
+
+### Product-owner acknowledgement
+
+- **Accepted:** the alternative review route defers broad post-pilot calibration but does not waive the light operations/manufacturing and learning-design review gate.
+- **Still pending:** explicit approval of `Branch1-version-2` / `dc34433` as the V3 code baseline, and assignment of the two qualified reviewers (or approval to draft briefs while reviewer identities are being identified). No branch cut, documentation transfer, reviewer outreach, or engine work follows from the acknowledgement alone.
