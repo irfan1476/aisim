@@ -1,0 +1,27 @@
+{
+  "version": "v3.0",
+  "compatibilityVersion": "v2",
+  "owner": "operations",
+  "currency": {"code": "INR", "unit": "Cr"},
+  "metrics": [
+    {"key": "uptime", "unit": "%", "timeBasis": "quarter", "ownerRole": "operations", "min": 0, "max": 100, "start": 70}
+  ],
+  "evidence": [
+    {"id": "asset-data", "title": "Asset telemetry extract", "sourceType": "synthetic", "sourceStatus": "provisional_synthetic", "claimStatus": "supported", "informs": ["maintenance"]}
+  ],
+  "initiatives": [
+    {"id": "maintenance", "valueMetric": "uptime", "dependencies": [], "evidenceRequired": ["asset-data"], "ownerRole": "operations", "lifecycle": {"allowedTransitions": ["deferred to research", "research to pilot", "pilot to scale"]}, "capacityRequired": {"technicians": {"research": 2, "pilot": 4, "scale": 6}}, "effect": {"metric": "uptime", "delta": 5, "unit": "%", "sourceRuleId": "maintenance-signal", "sourceEvidenceIds": ["asset-data"]}}
+  ],
+  "gates": [
+    {"id": "asset-evidence", "appliesTo": ["maintenance"], "ownerRole": "operations", "requiredEvidence": ["asset-data"], "conditions": ["metric.uptime >= 70"], "explanation": "Telemetry must be reviewed before pilot."}
+  ],
+  "causalRules": [
+    {"id": "maintenance-signal", "metric": "uptime", "evidenceIds": ["asset-data"], "effects": [{"metric": "uptime", "delta": 5, "unit": "%"}]}
+  ],
+  "events": [
+    {"id": "line-failure", "triggerMetric": "uptime", "effects": [{"metric": "uptime", "delta": -5, "unit": "%", "sourceRuleId": "maintenance-signal", "sourceEvidenceIds": ["asset-data"]}]}
+  ],
+  "report": {"changes": [{"metric": "uptime", "ruleId": "maintenance-signal", "evidenceIds": ["asset-data"]}]},
+  "portfolioPolicy": {"lifecycleStates": ["deferred", "research", "pilot", "scale"], "budgetPosture": "constrained", "budget": {"currency": "INR", "capitalEnvelope": 5}},
+  "eventCoverage": {"line-failure": "implemented"}
+}
