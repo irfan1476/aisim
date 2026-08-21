@@ -1,6 +1,6 @@
 export type Allocation = { infra: number; data: number; people: number; mlops: number; compliance: number; innovation: number };
-export type Effect = { metric: string; delta: number; color: string };
-export type CausalItem = { name: string; effects: Effect[] };
+export type Effect = { metric: string; delta: number; color: string; unit?: string; explanation?: string };
+export type CausalItem = { name: string; effects: Effect[]; explanation?: string };
 export type Recommendation = { priority: 'high' | 'medium' | 'low'; title: string; message: string; action: string; metric: string };
 export type UserReflections = { q1?: 'yes' | 'partial' | 'no'; q6?: string };
 export type ScenarioState = {

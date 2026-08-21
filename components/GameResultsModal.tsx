@@ -86,11 +86,14 @@ export default function GameResultsModal({
                       className="rounded-xl bg-white p-3 text-sm"
                     >
                       <b>{item.name}</b>
+                      {item.explanation ? (
+                        <p className="mt-1 text-xs leading-5 text-ink/50">{item.explanation}</p>
+                      ) : null}
                       <span className="ml-2 text-ink/55">
                         {item.effects
                           ?.map(
                             (effect: any) =>
-                              `${effect.metric} ${effect.delta > 0 ? "+" : ""}${Number(effect.delta).toFixed(1)}%`,
+                              `${effect.metric} ${effect.delta > 0 ? "+" : ""}${Number(effect.delta).toFixed(1)}${effect.unit ? ` ${effect.unit}` : "%"}`,
                           )
                           .join(" · ")}
                       </span>

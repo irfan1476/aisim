@@ -20,6 +20,7 @@ import SelfAwarenessScore from "./SelfAwarenessScore";
 import { formatBudget, formatCurrency } from "../lib/currency";
 import { getScenario } from "../lib/scenarios/registry";
 import type { ScenarioProgressDefinition } from "../lib/scenarios/types";
+import { explainScore } from "../lib/game/scoring";
 
 interface GameDoneScreenProps {
   state: GameViewState;
@@ -181,6 +182,7 @@ export default function GameDoneScreen({
         return `In ${scenario.name}, your most effective movement was ${strongest.item.label}: ${formatScenarioMetric(strongest.value, strongest.item.unit)} (${Math.round(strongest.score)}% toward target). Your largest remaining gap is ${weakest.item.label}: ${formatScenarioMetric(weakest.value, weakest.item.unit)} against a target of ${formatScenarioMetric(weakest.item.target, weakest.item.unit)}. You concentrated funding on ${funded || "no repeated initiative"}, which shaped this outcome.`;
       })()
     : "";
+  const scoreBreakdown = explainScore(state as any);
   const exportReport = () => {
     const text = [
       `AISim Strategy Autopsy`,
@@ -258,6 +260,30 @@ export default function GameDoneScreen({
           </div>
         </section>
         {scenario && <section className="mt-6 rounded-3xl border border-[#54aeff]/35 bg-[#ddf4ff] p-6 shadow-sm md:p-8"><div className="flex flex-wrap items-start justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-[.2em] text-[#0969da]">Scenario performance</p><h2 className="mt-2 text-2xl font-bold">{scenario.name}</h2><p className="mt-2 text-sm text-[#57606a]">Budget framing: {formatBudget(state.quarterlyBudget, state.currencyMode)} per quarter · campaign spend: {formatCurrency(state.spent, state.currencyMode)}</p></div><div className="rounded-2xl bg-white px-5 py-3 text-center"><p className="text-xs text-[#57606a]">Scenario bonus</p><b className="text-3xl text-[#0969da]">+{state.scenarioBonus || 0}</b></div></div><p className="mt-5 rounded-2xl border border-[#54aeff]/25 bg-white p-4 text-sm leading-6 text-[#57606a]">{scenarioDiagnosis}</p><div className="mt-6 grid gap-3 sm:grid-cols-2">{scenario.progress.map((item) => { const value = scenarioMetricValue(item); const score = scenarioMetricScore(item); return <div key={item.key} className="rounded-xl bg-white p-4"><div className="flex items-start justify-between gap-3 text-sm font-bold"><span>{item.label}</span><span className="text-right text-[#0969da]">{formatScenarioMetric(value, item.unit)}</span></div><div className="mt-3 h-2 rounded-full bg-[#d0d7de]"><div className="h-full rounded-full bg-[#0969da]" style={{ width: `${score}%` }} /></div><div className="mt-2 flex justify-between gap-2 text-xs text-[#656d76]"><span>{Math.round(score)}% toward target</span><span>Target {formatScenarioMetric(item.target, item.unit)}</span></div></div>; })}</div></section>}
+        <section className="mt-6 rounded-3xl border border-[#d0d7de] bg-white p-6 shadow-sm md:p-8">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <h2 className="text-2xl font-bold">How the verdict was built</h2>
+              <p className="text-[#656d76]">A transparent score, so the result is explainable rather than mysterious.</p>
+            </div>
+            <span className="rounded-full bg-[#f6f8fa] px-3 py-1 text-sm font-bold">{scoreBreakdown.finalScore}/100</span>
+          </div>
+          <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              ["Outcome movement", scoreBreakdown.outcome, "Value, adoption, efficiency, and risk"],
+              ["Sustained execution", scoreBreakdown.sustainedExecution, "Consistency across quarters"],
+              ["Capability consistency", scoreBreakdown.capabilityConsistency, "Initiatives funded for four or more quarters"],
+              ["Scenario bonus", scoreBreakdown.scenarioBonus, scenario ? "Progress against this scenario's targets" : "Not applicable in Standard mode"],
+            ].map(([label, value, detail]) => (
+              <div key={String(label)} className="rounded-2xl bg-[#f6f8fa] p-4">
+                <p className="text-xs font-bold uppercase tracking-wide text-[#656d76]">{label}</p>
+                <b className="mt-2 block text-2xl text-[#0969da]">{Number(value).toFixed(label === "Outcome movement" ? 1 : 0)}</b>
+                <p className="mt-2 text-xs leading-5 text-[#656d76]">{detail}</p>
+              </div>
+            ))}
+          </div>
+          {scenario ? <p className="mt-4 rounded-2xl border border-[#54aeff]/25 bg-[#ddf4ff] p-4 text-sm leading-6 text-[#57606a]">Scenario progress is capped at a small bonus. It rewards movement toward the domain targets without overpowering the core operating results.</p> : null}
+        </section>
         <section className="mt-6 grid gap-6 lg:grid-cols-[1.35fr_.65fr]">
           <div className="rounded-3xl border border-[#d0d7de] bg-white p-6 shadow-sm md:p-8">
             <div className="flex items-center gap-3">
