@@ -480,3 +480,16 @@ Status: architecture accepted in principle; revisions required before design/imp
 - **Contradiction prevented:** the illustrative `pilot-ready` research outcome cannot be guaranteed or inferred from learner prediction. It needs authored evidence/state/seed rules and fixtures; G-PF-01 remains a scale gate.
 - **Implementation boundary:** existing V3 primitives may be reused, but the wireframe implies additive contracts not currently complete. Production implementation remains blocked until the revised design and those contracts are approved and tested.
 - **Artefact:** [Project Factory V3 — Window 1 Visual Wireframe Review](./project-factory-v3-window-1-wireframe-review.md).
+
+## 2026-08-21 — Revised Window 1 wireframes and behavioral contracts reviewed
+
+Status: wireframe interaction architecture accepted; behavioral-contract revisions required
+
+- **Wireframes:** the revised stable shell, state progression, whole-card selection, contextual links, explicit lifecycle language, energy/portfolio framing, research boundary, optional reflection, and replay-only Next Window are accepted. Branch variants, explicit labels, and responsive/accessibility annotations remain required.
+- **State correction:** do not introduce `ResearchCompleted` as a lifecycle. Keep lifecycle `Research` and add a separate source-bound `researchReview.status`.
+- **Persistence correction:** V3 ledger belongs in `state.v3State.ledger`, not legacy `scenarioState`; V3 window/quarter replay needs an additive serialisable window history and idempotent pause/resume cursor.
+- **Causality correction:** research branches require authored, initiative-specific findings and outcome artefacts. Arbitrary thresholds and hidden seed luck are rejected; learner prediction cannot affect the branch.
+- **Evidence correction:** distinguish available evidence, learner-cited decision evidence, resolver-produced outcome evidence, and gate-required evidence. Opening/citing an artefact never satisfies a gate by itself.
+- **Scope correction:** contracts are Project Factory reference contracts and candidate generic primitives until pilot evidence supports reuse across V3 scenarios.
+- **Implementation boundary:** production remains paused until the revised contracts, three-initiative branch content, wireframe variants, and representative-learner walkthrough are approved.
+- **Artefact:** [Project Factory V3 — Revised Wireframe and Behavioral-Contract Review](./project-factory-v3-revised-wireframe-contract-review.md).
