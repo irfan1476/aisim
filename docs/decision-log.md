@@ -556,3 +556,12 @@ Status: proposed UX/content correction; implementation remains paused
 - **Decision:** Add a cross-cutting decision-context contract. Each packet must show why now, sourced known facts, explicit unknowns, the decision test, accountable role, capital/capacity, deferral trigger, and plain-language terms. The exercise pack is the operating truth; private manufacturing knowledge is not required.
 - **Guardrail:** Learner prediction is not a knowledge test and cannot select the branch. If a non-manufacturing reviewer cannot make a bounded Research choice from the packet, add context or simplify the choice rather than adding a recommended answer.
 - **Next validation:** Re-run the Compare and remediation packet with a non-manufacturing reviewer or representative learner after UX-W1-08 is addressed.
+
+## 2026-08-21 — Predictive Maintenance context packet drafted
+
+Status: proposed UX revision; Quality/Workforce variants and learner validation pending
+
+- **Change:** The Predictive Maintenance Compare packet now co-locates why-now, known facts, unknowns, the Research decision test, commitment, accountable owner, deferral trigger, plain-language terms, and an explicit no-promise boundary.
+- **Progressive disclosure:** Only the decision-relevant summary is visible in the packet; source detail remains in a contextual drawer. This preserves orientation without recreating the full Evidence Room.
+- **Transfer pattern:** Visual Quality and Technician Knowledge now have compact context requirements with their own why-now, Research findings, and deferral trigger; their full packets still need authoring.
+- **Validation:** A non-manufacturing reviewer must be able to explain what is known, what Research will establish, what will not change, and what the commitment buys before UX-W1-08 can close.

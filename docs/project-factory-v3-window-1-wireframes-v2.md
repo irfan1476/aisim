@@ -164,6 +164,63 @@ findings will be positive. The packet explains what will be learned and what a
 later Pilot would require; it does not require the learner to supply hidden plant
 knowledge.
 
+### Complete reference packet — Predictive Maintenance
+
+The visible packet should use this compact order. Detailed source text remains
+behind the contextual evidence drawer.
+
+~~~text
+PREDICTIVE MAINTENANCE · RESEARCH
+
+WHY NOW
+Downtime is 12.0%; Line M-4 creates 31% of stoppage minutes.
+
+WHAT WE KNOW
+• Only 38% of critical assets have six months of usable sensor history.
+• Only 44% of failure codes are structured; M-4 vibration data is irregular.
+
+WHAT RESEARCH WILL RESOLVE
+• Can selected M-4 failure modes be detected early enough to act?
+• Is a named asset-data owner and read-only access available?
+• Is protected technician review/disposition capacity available?
+
+DECISION TEST
+All five scoped findings accepted → bounded Pilot may be considered later.
+Repairable gaps → remediation; failed actionability → priority not supported.
+
+COMMITMENT
+₹0.25 Cr · Data Engineering 1/4 · Governance Assurance 1/2 · Q1 only
+Owner: Maintenance lead with CIO/data owner
+
+IF DEFERRED
+M-4 remains exposed; the next review is triggered by a material failure or
+new asset-data/ownership evidence. No generic penalty is applied.
+
+THIS IS NOT A PROMISE
+Research does not deploy alerts, reduce downtime, or pass G-PF-01.
+
+[View source evidence] [Plain-language terms] [Select this Research packet]
+~~~
+
+Plain-language terms are available without leaving the decision: an **asset
+owner** is the role accountable for the machine data; **structured failure
+codes** are repair records grouped into usable cause categories; **read-only
+access** permits inspection without changing a production system; **disposition**
+is the technician's recorded decision to inspect, schedule, defer, or override.
+
+### Compact context for the other two packets
+
+Visual Quality and Technician Knowledge use the same visible order. Their
+decision-specific context is:
+
+| Packet | Why now | Research will resolve | If deferred |
+|---|---|---|---|
+| Visual Quality | Escaped defects are 1,240 PPM and the OEM requires traceable containment. | Whether selected Q-2 defects are visually observable; whether labels/capture are usable; whether a Quality owner can trace override/rework. | OEM containment and defect exposure remain; review when Q2 OEM evidence or a material escape changes the case. |
+| Technician Knowledge | Workforce readiness is 52/100 and 18% of senior technicians are retirement-eligible. | Whether a bounded knowledge set is validated; whether a technician review panel/time exists; whether safety/IP/withdrawal controls are usable. | Continuity exposure remains; review when protected review capacity or a material departure/workflow trigger changes the case. |
+
+The learner should not have to infer these connections from initiative names or
+generic evidence links.
+
 ## State 3 — Commit
 
 ~~~text
