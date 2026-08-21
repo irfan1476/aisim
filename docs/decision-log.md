@@ -469,3 +469,14 @@ Status: agreed; visual design authorised, production implementation not authoris
 - **Rejected alternatives remain rejected:** recommended-answer labels, immediate Energy pilot, invented Q0 movements or pressure scores, mandatory free text, full Evidence Room in the primary path, and unsupported research-stage metric movement.
 - **Next authorised deliverable:** visual wireframes for Orient, Compare, Commit, Outcome, Reflect, and Next Window using the stable shell and agreed semantic colours.
 - **Validation gate:** production implementation remains blocked until the wireframes are reviewed and tested with representative learners. No P3 reuse, additional events, active-play sidecar, AI reflection coach, or scoring changes are authorised.
+
+## 2026-08-21 — Window 1 visual wireframes reviewed
+
+Status: architecture accepted in principle; revisions required before design/implementation approval
+
+- **Accepted:** stable shell, six-state progression, three research packets, semantic colour grammar, monitored-energy context, later-window portfolio visibility, structured prediction, research no-benefit boundary, optional reflection, and source-bound outcome structure.
+- **Interaction revisions:** make packets whole-card/radio selections with one global primary action; remove generic persistent tool links and active-play full-ledger access; clarify Research/Pilot/Scale language; expand capacity abbreviations; and add responsive/keyboard/focus requirements.
+- **Blocking contract gaps:** define deterministic three-quarter window orchestration, research duration/per-quarter capacity schedule, research-result branches, pilot-readiness versus scale-gate state, and lifecycle-specific evidence requirements.
+- **Contradiction prevented:** the illustrative `pilot-ready` research outcome cannot be guaranteed or inferred from learner prediction. It needs authored evidence/state/seed rules and fixtures; G-PF-01 remains a scale gate.
+- **Implementation boundary:** existing V3 primitives may be reused, but the wireframe implies additive contracts not currently complete. Production implementation remains blocked until the revised design and those contracts are approved and tested.
+- **Artefact:** [Project Factory V3 — Window 1 Visual Wireframe Review](./project-factory-v3-window-1-wireframe-review.md).
