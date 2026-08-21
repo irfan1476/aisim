@@ -396,6 +396,16 @@ pilot; changing them changes the content version, not the resolver's hidden
 logic. The remediation packet must show capital, capacity, duration, owner,
 completion evidence, and the no-benefit boundary before the learner confirms it.
 
+### PF-RM-01 deterministic completion fixtures
+
+| Fixture | Authored completion findings | Result |
+|---|---|---|
+| PF-W2-RM-A | Named owners accept M-4 hierarchy; selected failure history is usable; technician review/disposition capacity is protected; read-only access and control boundaries are accepted. | `remediation-complete`; Pilot decision may become available in the next window; lifecycle remains Research. |
+| PF-W2-RM-B | Ownership is assigned, but selected failure history or protected technician review remains unresolved after Q4. | `remediation-incomplete`; Pilot remains unavailable; learner may defer, stop, or fund a separately authored repair. |
+
+Both fixtures preserve operating metrics and do not evaluate or mutate G-PF-01.
+The learner's funding choice and reflection cannot select A or B.
+
 ## Contract 4 — Pilot readiness versus Scale gate
 
 Research review, Pilot availability, lifecycle transition, and Scale gate are

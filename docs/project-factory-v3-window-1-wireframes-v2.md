@@ -372,6 +372,36 @@ keeps the lifecycle in Research. It does not evaluate G-PF-01 or create a
 downtime effect. A later outcome must report `remediation-complete` or
 `remediation-incomplete` using the declared completion evidence.
 
+### 6B-outcome — Remediation review
+
+For the complete fixture (`PF-W2-RM-A`), the learner sees:
+
+~~~text
+┌─ WINDOW 2 REMEDIATION REVIEW ────────────────────────────────────────────────┐
+│ [✓ COMPLETE] Evidence repair completed                                       │
+│ Lifecycle: Research                                                          │
+│ Pilot decision: May become available in the next window                       │
+│ Scale gate G-PF-01: Not yet eligible · not evaluated                         │
+│                                                                              │
+│ WHAT CHANGED                                                                 │
+│ ₹0.15 Cr committed; M-4 ownership, selected failure history, technician      │
+│ review capacity, and read-only control boundaries were accepted.             │
+│                                                                              │
+│ WHAT DID NOT CHANGE                                                          │
+│ Downtime remains 12.0%; no alert workflow or operating intervention exists.  │
+│                                                                              │
+│ WHY                                                                          │
+│ Remediation repaired evidence and operating readiness conditions. It did     │
+│ not create Pilot value. Pilot remains a later learner decision.              │
+│                                                                              │
+│ [View completion evidence]                         [Reflect on remediation]  │
+└──────────────────────────────────────────────────────────────────────────────┘
+~~~
+
+For `PF-W2-RM-B`, replace the status with `INCOMPLETE`, show the unresolved
+condition, keep Pilot unavailable, and offer `Defer` or `Stop` rather than imply
+that funding created readiness.
+
 ### 6C — Priority-not-supported
 
 ~~~text

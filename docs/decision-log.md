@@ -537,3 +537,12 @@ Status: proposed content; calibration/review pending
 - **Boundary:** The action keeps the initiative in `research`, consumes no active Pilot/Scale slot, does not evaluate G-PF-01, and cannot improve downtime, defects, workforce readiness, trust, or value metrics by itself.
 - **Exit:** Completion requires named owner acceptance, usable selected-failure history, protected technician review/disposition capacity, and accepted read-only/control boundaries. The result exposes either `remediation-complete` (Pilot may become available later) or `remediation-incomplete` (remain in Research with named missing evidence).
 - **Review status:** Values and completion evidence are provisional and must be calibrated before implementation. The walkthrough can now continue through a concrete remediation packet without inventing behavior.
+
+## 2026-08-21 — Remediation confirmation and completion fixtures
+
+Status: proposed walkthrough progression; calibration pending
+
+- **Learner action:** The product owner confirmed `Fund remediation` in the Window 2 packet.
+- **Deterministic result contract:** `PF-W2-RM-A` represents accepted ownership/history/review/access evidence and makes a later Pilot decision available; `PF-W2-RM-B` represents an unresolved completion condition and keeps Pilot unavailable.
+- **Guardrail:** Neither fixture improves operating metrics or evaluates G-PF-01. Funding, completion, and reflection remain separate from operating value.
+- **Next walkthrough state:** Continue with `PF-W2-RM-A` to test whether the complete remediation outcome clearly leads to a later Pilot choice.
