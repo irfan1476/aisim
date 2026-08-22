@@ -140,6 +140,57 @@ The 12-quarter horizon remains because it creates lagged effects and consequence
 
 Self-paced mode exposes one quarter at a time; workshop mode uses the grouped view. The interaction details remain subject to pilot validation, but the four-window cadence is the agreed first-pilot contract.
 
+### Methodical gameplay contract — no click-through play
+
+V3 is a guided executive exercise, not a sequence of screens that a learner can
+click through and abandon. Each board window follows the same six learner-facing
+states:
+
+`Orient → Compare → Commit → Outcome → Reflect → Next Window`
+
+The learner cannot advance by clicking a decorative link or opening a report. A
+single state-specific primary action advances the state. Secondary links disclose
+context and return focus to the originating task. The engine may resolve the
+underlying quarters automatically. `Resolve` is an internal transition phase
+between Commit and Outcome; it becomes visible only when an authored event, gate,
+or required response pauses the run.
+
+#### Facilitated 90-minute target schedule
+
+| Segment | Target | Purpose |
+|---|---:|---|
+| Welcome, role, baseline, and how to read evidence | 8 min | Establish the operating truth, reflection-only baseline, role, and decision method. |
+| Window 1 — Q1–Q3 | 16 min | Orient, compare three Research priorities, commit one, review the authored result, reflect, and frame Window 2. |
+| Window 2 — Q4–Q6 | 16 min | Review evidence, choose Pilot/remediation/defer/stop, respond to a gate or event if authored, and reflect. |
+| Window 3 — Q7–Q9 | 16 min | Decide whether to scale, pause, redirect, or protect capacity while managing stakeholder consequences. |
+| Window 4 — Q10–Q12 | 16 min | Sustain, respond to late evidence/events, compare predictions to outcomes, and prepare transfer. |
+| Final debrief and board memo | 18 min | Replay “you said → you did → what happened → what you learned,” complete the memo, and record a workplace transfer action. |
+| **Total target** | **90 min** | Facilitator may flex discussion time; the state order and primary transitions remain intact. |
+
+Within a typical window, the facilitator should reserve approximately 2 minutes
+for Orient, 5 for Compare, 2 for Commit, 3 for Resolve/Outcome, 2 for Reflect,
+and 2 for Next Window. A material event or gate pause may consume the buffer; it
+must explain why the pause occurred and resume from the saved cursor.
+
+#### Self-paced fallback
+
+Self-paced play exposes one quarter at a time inside the current board window,
+while retaining the same six learner-facing states and decision contract. It
+removes the clock. A learner may pause and resume at any state. The product should suggest
+roughly 10–20 minutes per board window and a final debrief, while never turning
+time into a score or silently skipping a required decision. “Stop funding an
+initiative” is a recorded strategic action; it is not an exit from the campaign.
+
+#### Completion rule
+
+The campaign is complete only after Q12 has resolved, the final debrief has been
+offered, and the learner has either completed or deliberately skipped the final
+transfer reflection/board memo. Closing the browser, leaving a drawer, or pausing
+does not complete the game; the saved window cursor is the return point.
+
+The pilot must test timing, state comprehension, discussion quality, and whether
+the method creates deliberate reasoning rather than hurried form completion.
+
 ## Proposed learning contract
 
 The learner plays an executive transformation lead for a five-plant automotive-component manufacturer. Over a 12-quarter horizon, they must protect tier-one OEM commitments while improving reliability, quality, energy efficiency, and workforce resilience.

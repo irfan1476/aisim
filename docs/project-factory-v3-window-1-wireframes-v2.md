@@ -55,6 +55,8 @@ claiming private knowledge about a real plant.
   has text and an icon or shape—colour is never the only signal.
 - The active-play path contains no full Evidence Room, analytics sidecar, or full
   decision ledger.
+- The learner cannot leave a state by clicking a report or secondary link. The
+  filled primary action is the only transition that advances the method.
 - On wide screens, comparable packets may sit side by side. On narrow screens,
   packets stack vertically in the same reading and tab order.
 - The action region may remain sticky, but must not cover content, trap scrolling,
@@ -85,6 +87,12 @@ claiming private knowledge about a real plant.
 
 The contextual drawers return focus to the link that opened them. Neither drawer
 changes selection, evidence citation, state, or outcome.
+
+### State timing
+
+In facilitated mode, Orient is a short framing step (about two minutes), not a
+screen to skip. The facilitator asks the learner/team to name the board question,
+the three headline signals, and the monitored context before opening Compare.
 
 ## State 2 — Compare
 

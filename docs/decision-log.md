@@ -574,3 +574,15 @@ Status: proposed UX revision; non-manufacturing validation pending
 - **Technician Knowledge:** The packet now explains readiness/retirement exposure, protected trainer capacity, bounded knowledge/review/safety questions, commitment, deferral trigger, and plain-language terms.
 - **Consistency:** All three packets use the same decision-context order and explicitly state what Research will not change. The learner can compare choices without knowing plant-specific internals.
 - **Next validation:** Test the packets with a non-manufacturing reviewer or representative learner. UX-W1-08 is draft-complete but remains open until comprehension is observed.
+
+## 2026-08-22 — Methodical gameplay and timing contract
+
+Status: agreed product direction; timing values remain pilot-calibrated
+
+- **Product-owner direction:** V3 gameplay must not be “click, click, exit.” It must use a methodological flow with deliberate state transitions and timing.
+- **Method:** Each board window follows the six learner-facing states `Orient → Compare → Commit → Outcome → Reflect → Next Window`. Resolve is an internal transition phase, visible only when an authored event/gate requires a pause. One filled primary action advances the method; secondary links disclose context only; a pause/resume returns to the saved cursor.
+- **Facilitated target:** 90 minutes: 8-minute prebrief, four 16-minute decision windows, and an 18-minute final debrief/board memo. Facilitator discussion may flex the time without changing the state order.
+- **Self-paced fallback:** Same method and state order without a punitive clock; learners may pause/resume. Stop/pause is a recorded strategic action, not an exit from the campaign.
+- **Completion:** The campaign ends only after Q12, final debrief, and deliberate completion/skip of the final transfer reflection/board memo. Closing a screen or drawer never completes a run.
+- **Validation:** The pilot must measure timing, comprehension, cognitive load, discussion quality, and whether the method produces deliberate reasoning rather than hurried form completion.
+- **Artefacts:** [V3 design brief](./project-factory-v3-design-brief.md), [Window 1 wireframes v2](./project-factory-v3-window-1-wireframes-v2.md), and [V3 implementation backlog](./project-factory-v3-implementation-backlog.md) items UX-FLOW-01/02.
