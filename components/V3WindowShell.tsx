@@ -93,6 +93,28 @@ export default function V3WindowShell({ state, pack, onCommit, onNextWindow, onR
   const budgetRemaining = state.v3State?.budget.remaining ?? state.quarterlyBudget;
   const selectedEvidence = evidenceIds.length ? evidenceIds : priority?.evidenceIds || [];
 
+  if (currentWindow.number > 1) {
+    return (
+      <main className="min-h-screen bg-mist" data-testid="v3-window-shell">
+        <header className="sticky top-0 z-20 border-b border-ink/10 bg-white/95 px-5 py-4 backdrop-blur">
+          <div className="mx-auto flex max-w-6xl items-center justify-between gap-4">
+            <div><p className="text-xs font-bold tracking-[.16em]">Project Factory V3</p><p className="text-xs text-ink/50">Window {currentWindow.number} · Q{currentWindow.range[0]}–Q{currentWindow.range[1]}</p></div>
+            <button type="button" aria-label="Reset V3 campaign" onClick={onReset} className="rounded-lg p-2 text-ink/45 hover:bg-ink/5"><RotateCcw size={17} /></button>
+          </div>
+        </header>
+        <div className="mx-auto max-w-3xl px-5 py-12">
+          <section className="rounded-3xl border border-amber-300/40 bg-white p-7 shadow-sm" data-testid="v3-window-preview-boundary">
+            <p className="text-xs font-bold uppercase tracking-[.18em] text-amber-700">Window 1 complete · Window 2 preview</p>
+            <h1 className="mt-3 text-3xl font-semibold tracking-[-.04em]">The next board window is not authored yet.</h1>
+            <p className="mt-4 text-sm leading-6 text-ink/65">Your Research decision is saved. This implementation slice stops here rather than showing Window 1 choices under a Window 2 label. The next authored step will use the Q2 signal and Q3 review to decide whether to Pilot, remediate, defer, or stop.</p>
+            <div className="mt-5 rounded-2xl border border-ink/10 bg-mist p-4 text-sm text-ink/65"><b>Saved carry-forward:</b> {priority?.displayName || "Selected priority"} remains in Research; capital remaining is ₹{Number(budgetRemaining).toFixed(2)} Cr.</div>
+            <button type="button" onClick={onReset} className="mt-7 flex w-full items-center justify-center gap-2 rounded-xl bg-ink px-5 py-4 text-sm font-bold text-white">Return to V3 setup <ArrowRight size={17} /></button>
+          </section>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen bg-mist" data-testid="v3-window-shell">
       <header className="sticky top-0 z-20 border-b border-ink/10 bg-white/95 px-5 py-4 backdrop-blur">

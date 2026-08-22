@@ -68,6 +68,10 @@ test('V3 completes the reflection handoff without exposing the active-play sidec
   await expect(page.getByRole('heading', { name: 'Your Research decision is carried forward.' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Enter Window 2' })).toBeVisible();
   await expect(page.getByRole('complementary', { name: 'V3 analytics' })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Enter Window 2' }).click();
+  await expect(page.getByTestId('v3-window-preview-boundary')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'The next board window is not authored yet.' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Review three priorities' })).toHaveCount(0);
 });
 
 test('Standard mode remains on the legacy path without the V3 shell', async ({ page }) => {
