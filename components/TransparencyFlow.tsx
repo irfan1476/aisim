@@ -15,7 +15,7 @@ const flow = [
   [
     "02 · Decision",
     "You make the trade-off",
-    "Choose up to three initiatives and divide the quarterly budget across infrastructure, data, people, MLOps, governance, and innovation.",
+    "Choose zero to three initiatives, decide how much of the campaign purse to deploy now, and balance the operating investment that makes the portfolio viable.",
   ],
   [
     "03 · Evolution",
@@ -122,16 +122,15 @@ export default function TransparencyFlow() {
           <GitBranch className="mt-1 shrink-0 text-[#3fb950]" size={20} />
           <div>
             <p className="text-xs font-bold uppercase tracking-widest text-[#3fb950]">
-              Worked example
+              What this means in any scenario
             </p>
             <p className="mt-2 text-sm leading-7 text-white/70">
-              Fund Predictive Maintenance and AI Visual Quality together, while
-              maintaining people and governance investment. Both initiatives
-              build maturity, governance continuously lowers their delivery
-              risk, and the combination can reinforce ROI, adoption, risk
-              reduction, and cost efficiency. Stop funding them for several
-              quarters and risk begins to rise before value and readiness start
-              to decay.
+              Choose a focused bet and support it with the right capability and
+              governance investment: it can build maturity, reduce delivery
+              risk, and unlock value over time. Spread capital too thinly or
+              stop funding a fragile initiative for several quarters, and the
+              campaign records the resulting pressure before deeper capability
+              and value begin to decay.
             </p>
           </div>
         </div>

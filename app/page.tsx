@@ -6,22 +6,21 @@ import {
   BrainCircuit,
   CheckCircle2,
   ClipboardList,
+  FileText,
   Gauge,
   GitBranch,
   History,
-  LineChart,
   RefreshCw,
-  Search,
   ShieldCheck,
   Sparkles,
   Target,
-  Users,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import Game from "../components/Game";
 import TransparencyFlow from "../components/TransparencyFlow";
 import HowToPlayGuide from "../components/HowToPlayGuide";
 import LearningLoopVisual from "../components/LearningLoopVisual";
+import CampaignEvidenceReplayVisual from "../components/CampaignEvidenceReplayVisual";
 import {
   hasCampaignProgress,
   readPersistedGameState,
@@ -32,7 +31,7 @@ const features = [
   [
     Target,
     "Choose a world, then a thesis",
-    "Start in open Standard mode or lead a manufacturing, banking, healthcare, or education organisation. The core decision loop stays consistent while the pressures, initiatives, metrics, crises, and success conditions change.",
+    "Start in open Standard mode or choose an operating environment. The core decision loop stays consistent while the pressures, initiatives, measures, crises, and success conditions change.",
   ],
   [
     Gauge,
@@ -53,145 +52,44 @@ const features = [
 const moats = [
   [
     Sparkles,
-    "A replayable decision laboratory",
-    "A campaign keeps its initiative conditions, scenario state, funding history, and results. Replaying is a deliberate experiment: hold a thesis steady, change one decision, and compare what followed.",
+    "Living system",
+    "Capital, initiative maturity, readiness, risk, and reserve carry forward. The next decision begins where the previous one left you.",
   ],
   [
-    RefreshCw,
-    "A stateful operating system",
-    "This is one connected campaign, not twelve quiz questions. Every initiative carries maturity, cumulative spend, readiness, human effort, cost, ROI, risk, and neglect into the next decision.",
-  ],
-  [
-    GitBranch,
-    "Scenario-native, not merely reskinned",
-    "Each domain has its own operating pressures, success metrics, initiative catalogue, crisis context, targets, and advisory language. Analytics use those domain outcomes as the primary signal.",
-  ],
-  [
-    Gauge,
-    "Consequences you can inspect",
-    "Causal explanations, budget ledgers, initiative roadmaps, history, diagnostics, and recommendations make a result traceable. The engine resolves the values you saw before confirming the quarter.",
-  ],
-  [
-    BrainCircuit,
-    "Guidance without surrendering agency",
-    "Coach previews and board questions are grounded in live state. Suggestions can pre-fill a portfolio, deployment, and operating allocation, but the learner always sees and edits the decision before it is resolved.",
+    FileText,
+    "Decision evidence",
+    "Every quarter leaves a readable record: what you chose, deployed, deferred, changed, and learned—so outcomes are explainable rather than mysterious.",
   ],
   [
     History,
-    "A strategy autopsy, not just a score",
-    "The final report connects the rating to allocation patterns, capital pace, initiative choices, scenario progress, risk, causal evidence, and a practical route to improve the next run.",
+    "Replay laboratory",
+    "Save or export the campaign, keep the context steady, change one decision pattern, and compare the evidence from a more deliberate next run.",
   ],
 ];
 const steps = [
   [
     ClipboardList,
     "Set the context and capital",
-    "2 minutes",
-    "Choose Standard mode or a domain scenario, set a finite campaign purse, and answer five baseline questions. Your answers shape the starting organisation, data, and team conditions without forcing a strategy label.",
+    "Start",
+    "Choose an operating environment, set a finite campaign purse, and answer five baseline questions.",
   ],
   [
     Target,
     "Shape the quarter",
-    "5 minutes per quarter",
-    "Read the current initiative conditions, select zero to three bets, decide how much of the campaign purse to deploy now, and distribute the operating allocation across the capabilities that make the bets work.",
+    "Decide",
+    "Select zero to three bets, choose what to deploy now, and support the operating conditions around them.",
   ],
   [
     BarChart3,
     "Preview, resolve, and explain",
-    "Immediate feedback",
-    "Use the Decision Coach or Board Advisor before committing. The engine then resolves the exact conditions shown, explaining how funding, operating investment, neglect, and combinations changed the portfolio and domain pressures.",
+    "Observe",
+    "Preview the trade-off, resolve the quarter, and see the evidence behind what changed.",
   ],
   [
     RefreshCw,
     "Reflect, compare, and adapt",
-    "Across 12 quarters",
-    "Review the causal chain, roadmap, scenario-native analytics, recommendations, and replay notebook. The final strategy autopsy turns all twelve quarters into evidence for your next campaign.",
-  ],
-];
-const tools = [
-  [
-    BrainCircuit,
-    "Evidence Board Advisor",
-    "Ask CFO, CTO, CHRO, or Risk questions grounded in the live campaign. It produces an evidence-based answer without an LLM; a configured cloud or local model can add a separate perspective.",
-    "Choose a persona, select a question or type your own, then use the evidence to challenge your decision.",
-    "Decision window → Board advisor",
-  ],
-  [
-    BarChart3,
-    "Scenario-native Analytics Hub",
-    "Live scorecards lead with the active scenario’s pressures and targets, alongside capital pace, initiative spend, KPIs, trends, diagnostics, history, and learning views.",
-    "Open Analytics after a decision or whenever you need to check the evidence.",
-    "Always-on analysis panel",
-  ],
-  [
-    Target,
-    "Strategy DNA + KPIs",
-    "See how choices shape leadership dimensions and transformation KPIs over time.",
-    "Review DNA and KPI signals after each result.",
-    "Analytics → DNA / KPIs",
-  ],
-  [
-    Search,
-    "Decision Heatmap",
-    "Compare quarter-by-quarter metric intensity and spot momentum, trade-offs, and risk.",
-    "Scan the color-coded grid and values.",
-    "Analytics → Trends",
-  ],
-  [
-    History,
-    "Time Machine",
-    "Revisit earlier decisions, metrics, initiatives, and historical comparisons.",
-    "Move the quarter slider or expand a completed quarter.",
-    "Analytics → History",
-  ],
-  [
-    GitBranch,
-    "Decision Coach + What-If",
-    "Preview portfolios, deployment amounts, operating allocation, risk, reward, and reserve before committing. Apply a useful suggestion as an editable starting point.",
-    "Use the Decision Coach first, then open Strategy Simulator when you want to compare alternatives.",
-    "Decision window",
-  ],
-  [
-    Gauge,
-    "BCG 10-20-70",
-    "Translate people, technology, and process investment into a strategic alignment score that influences outcomes.",
-    "Review the framework scorecard and final result.",
-    "Analytics → Frameworks",
-  ],
-  [
-    LineChart,
-    "Predictive forecasting",
-    "Project the next three quarters from current ROI, adoption, data, people, and governance trajectory.",
-    "Read the projection after each quarter.",
-    "Analytics → Trends",
-  ],
-  [
-    ShieldCheck,
-    "Failure analysis",
-    "Diagnose weak outcomes, identify the weakest capability, and connect it to a corrective action.",
-    "Open diagnostics when a metric falls.",
-    "Analytics → Diagnostics",
-  ],
-  [
-    GitBranch,
-    "Causal chain + recommendations",
-    "Trace decisions to metric effects, then preview and approve the next recommendation.",
-    "Read the results modal after submitting.",
-    "Quarter results",
-  ],
-  [
-    History,
-    "Initiative evolution + roadmap",
-    "Follow each initiative's maturity, cumulative spend, current ROI, data readiness, risk movement, and quarter-by-quarter funding history.",
-    "Compare the live card against its campaign baseline, then review the roadmap and Evolution view after each quarter.",
-    "Decision window / Analytics → History",
-  ],
-  [
-    RefreshCw,
-    "Reset and persistence",
-    "Refresh safely, resume campaigns, reset a campaign, or erase all local data when you want a clean run.",
-    "Use Campaign Tools in the analytics panel.",
-    "Analytics → Campaign Tools",
+    "Reflect",
+    "Use the final report, saved record, and replay comparison to test a stronger thesis.",
   ],
 ];
 
@@ -272,55 +170,33 @@ export default function Home() {
             <div className="flex items-center justify-between border-b border-white/10 pb-5">
               <div>
                 <p className="text-xs uppercase tracking-widest text-[#3fb950]">
-                  A campaign, not a quiz
+                  A living decision record
                 </p>
                 <p className="mt-1 text-xl font-semibold">
-                  Choose a world. Set your capital pace.
+                  Make choices worth learning from.
                 </p>
               </div>
               <span className="rounded-md bg-[#3fb950]/15 px-3 py-1 text-xs font-bold text-[#3fb950]">
-                0–3 bets
+                12 quarters
               </span>
             </div>
-            <div className="mt-7 grid grid-cols-2 gap-3">
+            <div className="mt-7 grid gap-3 sm:grid-cols-2">
               {[
-                ["Standard mode", "Open play", "Project Factory"],
-                ["BankNext", "Banking", "Fraud + trust"],
-                ["Care360", "Healthcare", "Access + safety"],
-                ["FutureReady", "Education", "Engagement + skills"],
-              ].map(([a, b, c]) => (
-                <div
-                  key={a}
-                  className="rounded-lg border border-white/10 bg-[#161b22] p-4"
-                >
-                  <p className="text-xs text-white/45">{a}</p>
-                  <p className="mt-2 text-lg font-semibold">{b}</p>
-                  <p className="mt-1 text-xs font-bold text-[#3fb950]">{c}</p>
+                ["01", "Choose a context", "Open practice or an operating environment"],
+                ["02", "Set your pace", "Deploy capital now or keep a reserve"],
+                ["03", "Read the evidence", "See capability, pressure, and trade-offs move"],
+                ["04", "Replay with intent", "Compare one changed strategic thesis"],
+              ].map(([number, title, copy], index) => (
+                <div key={title} className={`rounded-lg border p-4 ${index === 3 ? "border-[#3fb950]/40 bg-[#3fb950]/10" : "border-white/10 bg-[#161b22]"}`}>
+                  <p className="text-[10px] font-bold tracking-[.18em] text-[#3fb950]">{number}</p>
+                  <p className="mt-2 font-semibold">{title}</p>
+                  <p className="mt-1 text-xs leading-5 text-white/55">{copy}</p>
                 </div>
               ))}
             </div>
-            <div className="mt-6 rounded-lg border border-[#3fb950]/30 bg-[#3fb950]/10 p-4">
-              <div className="flex gap-3">
-                <BrainCircuit className="mt-1 text-[#3fb950]" size={20} />
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-widest text-[#3fb950]">
-                    Board advisor · CFO
-                  </p>
-                  <p className="mt-2 text-sm leading-6 text-white/75">
-                    “Your reserve and people allocation both protect the next
-                    constraint. What evidence would justify deploying more now?”
-                  </p>
-                </div>
-              </div>
-            </div>
-            <div className="mt-7 flex items-end gap-2">
-              {[16, 24, 20, 32, 40].map((h, i) => (
-                <div
-                  key={i}
-                  style={{ height: `${h * 4}px` }}
-                  className={`flex-1 rounded-t-lg ${i === 4 ? "bg-[#3fb950]" : "bg-[#08872b]/60"}`}
-                />
-              ))}
+            <div className="mt-6 flex items-center gap-3 rounded-lg border border-white/10 bg-white/5 p-4 text-sm text-white/75">
+              <FileText className="shrink-0 text-[#3fb950]" size={20} />
+              <span>Finish with a personalised strategy report—not just a score.</span>
             </div>
           </div>
         </div>
@@ -338,32 +214,20 @@ export default function Home() {
               One decision engine. Multiple worlds to lead.
             </h2>
             <p className="mt-6 text-lg leading-8 text-[#656d76]">
-              Start in Standard mode for open-ended practice, or choose a
-              domain-specific scenario. The decision loop stays consistent;
-              the organisation, pressures, initiatives, metrics, crisis context,
-              targets, and advisory evidence change with the world you lead.
+              Begin with open practice or select an operating environment. The
+              decision loop is consistent; the challenge you uncover is not.
             </p>
           </div>
-          <div className="mt-10 grid gap-4 md:grid-cols-2">
-            <article className="rounded-2xl border border-[#d0d7de] bg-white p-6 shadow-sm">
+          <div className="mt-10 grid overflow-hidden rounded-2xl border border-[#d0d7de] md:grid-cols-2">
+            <article className="bg-white p-6 md:p-8">
               <p className="text-xs font-bold uppercase tracking-[.2em] text-[#656d76]">Standard mode</p>
               <h3 className="mt-3 text-2xl font-bold">Build your own thesis.</h3>
-              <p className="mt-2 text-sm leading-6 text-[#656d76]">
-                The original Project Factory practice lab stays open-ended. Set
-                your own campaign purse, then use the same flexible deployment,
-                initiative evolution, coaching, analytics, and final autopsy as
-                every scenario.
-              </p>
+              <p className="mt-2 text-sm leading-6 text-[#656d76]">Open practice with the full capital, initiative, evidence, and replay loop.</p>
             </article>
-            <article className="rounded-2xl border border-[#54aeff]/40 bg-[#ddf4ff] p-6 shadow-sm">
+            <article className="border-t border-[#d0d7de] bg-[#ddf4ff] p-6 md:border-l md:border-t-0 md:p-8">
               <p className="text-xs font-bold uppercase tracking-[.2em] text-[#0969da]">Scenario mode</p>
-              <h3 className="mt-3 text-2xl font-bold">Lead inside a real pressure system.</h3>
-              <p className="mt-2 text-sm leading-6 text-[#57606a]">
-                Choose a domain with its own organisation, pressures, metrics,
-                initiatives, crisis context, targets, and advisor evidence. Your
-                progress is measured against that world without replacing the
-                core learning loop.
-              </p>
+              <h3 className="mt-3 text-2xl font-bold">Lead in a new context.</h3>
+              <p className="mt-2 text-sm leading-6 text-[#57606a]">A different organisation changes the evidence, pressure system, and final diagnosis—not your agency.</p>
             </article>
           </div>
           <div className="mt-12 rounded-3xl border border-[#d0d7de] bg-[#f6f8fa] p-6 md:p-8">
@@ -377,9 +241,8 @@ export default function Home() {
                 </h3>
               </div>
               <p className="max-w-md text-sm leading-6 text-[#656d76]">
-                Scenario mode is optional. Pick a world, set a finite campaign
-                purse, deploy when the evidence supports it, and learn how a
-                focused or broad portfolio changes its real pressures.
+                Scenario mode is optional. Pick a world now; discover its
+                pressure system and possible paths through play.
               </p>
             </div>
             <div className="mt-7 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -395,31 +258,12 @@ export default function Home() {
                     </span>
                   </div>
                   <h4 className="mt-5 text-lg font-bold">{scenario.name}</h4>
-                  <p className="mt-2 text-sm leading-6 text-[#656d76]">
-                    {scenario.description}
-                  </p>
-                  <div className="mt-5 border-t border-[#d0d7de] pt-4">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#656d76]">
-                      You will balance
-                    </p>
-                    <p className="mt-2 text-xs font-semibold leading-5 text-[#1f2328]">
-                      {scenario.challenges.slice(0, 3).map((challenge) => challenge.label).join(" · ")}
-                    </p>
-                    <div className="mt-4 flex flex-wrap gap-2 text-[10px] font-bold uppercase tracking-wider text-[#656d76]">
-                      <span className="rounded-full bg-[#f6f8fa] px-2 py-1">{scenario.difficulty}</span>
-                      <span className="rounded-full bg-[#f6f8fa] px-2 py-1">default pace {scenario.currency.defaultSymbol}{scenario.startingState.budget} {scenario.currency.defaultLabel}</span>
-                      <span className="rounded-full bg-[#f6f8fa] px-2 py-1">6 initiatives</span>
-                    </div>
-                  </div>
+                  <p className="mt-2 text-sm leading-6 text-[#656d76]">A {scenario.industry.toLowerCase()} operating environment with its own evidence, trade-offs, and final diagnosis.</p>
+                  <p className="mt-5 border-t border-[#d0d7de] pt-4 text-xs font-bold uppercase tracking-wider text-[#0969da]">Discover the pressure system in play</p>
                 </article>
               ))}
             </div>
-            <p className="mt-6 text-xs leading-5 text-[#656d76]">
-              Select a scenario and campaign purse before the baseline
-              assessment. Your answers still shape the starting conditions while
-              the chosen domain supplies the operating challenge and its native
-              measures of progress.
-            </p>
+            <p className="mt-6 text-xs leading-5 text-[#656d76]">Select a scenario and campaign purse before the baseline assessment. Your answers shape starting conditions; the chosen environment supplies the operating challenge.</p>
             <div className="mt-7 flex flex-wrap items-center gap-2 border-t border-[#d0d7de] pt-5 text-xs font-bold text-[#1f2328]">
               {[
                 "Choose a mode",
@@ -437,25 +281,17 @@ export default function Home() {
               ))}
             </div>
           </div>
-          <div className="mt-10 grid gap-4 md:grid-cols-2">
-            <div className="rounded-2xl border border-[#d0d7de] bg-white p-6">
-              <p className="text-xs font-bold uppercase tracking-[.2em] text-[#656d76]">Always included</p>
-              <ul className="mt-4 grid gap-2 text-sm leading-6 text-[#57606a]">
-                <li>• Five baseline questions, twelve connected quarters, and a finite campaign purse</li>
-                <li>• Flexible deployment: fund zero, one, two, or three initiatives and carry reserve forward</li>
-                <li>• Operating allocation, initiative evolution, responsive risk, crises, and trade-offs</li>
-                <li>• Decision Coach, causal explanations, Board Advisor, analytics, replay comparison, and final autopsy</li>
-              </ul>
-            </div>
-            <div className="rounded-2xl border border-[#54aeff]/40 bg-[#ddf4ff] p-6">
-              <p className="text-xs font-bold uppercase tracking-[.2em] text-[#0969da]">Scenario mode adds</p>
-              <ul className="mt-4 grid gap-2 text-sm leading-6 text-[#57606a]">
-                <li>• A domain-specific organisation, pressure system, and initiative catalogue</li>
-                <li>• Native outcome metrics, targets, constraints, and scenario progress</li>
-                <li>• Domain crisis context and evidence tailored for the Board Advisor</li>
-                <li>• Scenario-native analytics and a final performance diagnosis</li>
-              </ul>
-            </div>
+          <div className="mt-10 grid gap-3 md:grid-cols-3">
+            {[
+              ["Flexible capital", "Deploy what supports the quarter; preserve reserve for later."],
+              ["Living choices", "Funded and neglected initiatives carry their condition forward."],
+              ["Explainable outcome", "See direct evidence, reflective models, and your next experiment."],
+            ].map(([title, copy]) => (
+              <div key={title} className="rounded-xl border border-[#d0d7de] bg-white p-5">
+                <p className="font-bold">{title}</p>
+                <p className="mt-2 text-sm leading-6 text-[#656d76]">{copy}</p>
+              </div>
+            ))}
           </div>
           <div className="mt-12 grid gap-4 md:grid-cols-2">
             {features.map(([Icon, title, copy]) => (
@@ -485,7 +321,7 @@ export default function Home() {
                 diagnosis drawn from the complete decision record.
               </p>
             </div>
-            <div className="mt-9 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            <div className="mt-9 grid gap-3 md:grid-cols-3">
               {moats.map(([Icon, title, copy]) => (
                 <article
                   key={title as string}
@@ -501,10 +337,10 @@ export default function Home() {
             </div>
             <div className="mt-8 grid grid-cols-2 gap-3 border-t border-white/10 pt-7 md:grid-cols-4">
               {[
-                ["600", "calibration campaigns"],
-                ["6", "emergent patterns"],
                 ["12", "connected quarters"],
-                ["1", "evidence ledger"],
+                ["0–3", "initiative choices"],
+                ["4", "optional scenarios"],
+                ["1", "saved evidence record"],
               ].map(([value, label]) => (
                 <div key={label}>
                   <b className="text-3xl text-[#3fb950]">{value}</b>
@@ -516,37 +352,23 @@ export default function Home() {
             </div>
           </div>
           <div className="mt-20">
-            <p className="text-xs font-bold uppercase tracking-[.25em] text-[#08872b]">
-              Your decision toolkit
-            </p>
-            <h3 className="mt-3 text-3xl font-bold tracking-[-.03em]">
-              The strategic tools at your fingertips.
-            </h3>
-            <p className="mt-3 max-w-2xl leading-7 text-[#656d76]">
-              Every tool has a different job: inspect the current state, test a
-              decision, explain what changed, or compare this campaign with the
-              next attempt. They are designed to make reflection practical, not
-              to make the decision for you.
-            </p>
-            <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {tools.map(([Icon, title, copy, how, where], i) => (
-                <article
-                  key={title as string}
-                  className={`rounded-2xl border p-5 transition hover:-translate-y-1 hover:shadow-lg ${i % 4 === 0 ? "border-emerald-200 bg-emerald-50/60" : i % 4 === 1 ? "border-amber-200 bg-amber-50/60" : i % 4 === 2 ? "border-purple-200 bg-purple-50/60" : "border-sky-200 bg-sky-50/60"}`}
-                >
-                  <Icon size={22} className="text-[#08872b]" />
-                  <h4 className="mt-4 font-bold">{title as string}</h4>
-                  <p className="mt-2 text-sm leading-6 text-[#656d76]">
-                    {copy as string}
-                  </p>
-                  <p className="mt-4 text-xs leading-5">
-                    <b>How:</b> {how as string}
-                  </p>
-                  <p className="mt-1 text-xs text-[#656d76]">
-                    <b>Find it:</b> {where as string}
-                  </p>
-                </article>
-              ))}
+            <p className="text-xs font-bold uppercase tracking-[.25em] text-[#08872b]">Your decision workspace</p>
+            <h3 className="mt-3 text-3xl font-bold tracking-[-.03em]">Three moments. The right evidence at each one.</h3>
+            <div className="mt-8 grid overflow-hidden rounded-2xl border border-[#d0d7de] md:grid-cols-3">
+              {[
+                [Target, "Before you commit", "Decision Coach and What-If make the possible trade-off visible. Suggestions are editable starting points—not automatic decisions.", "bg-[#fff8c5]"],
+                [BarChart3, "After the quarter", "Analytics, causal explanations, history, and the Board Advisor help separate direct outcomes from reflective modelled views.", "bg-[#ddf4ff]"],
+                [History, "Across replays", "The final report, saved campaign record, and comparison tools turn a completed run into a more intentional next experiment.", "bg-[#dafbe1]"],
+              ].map(([Icon, title, copy, tone], index) => {
+                const ToolIcon = Icon as typeof Target;
+                return (
+                  <article key={title as string} className={`p-6 ${tone as string} ${index > 0 ? "border-t border-[#d0d7de] md:border-l md:border-t-0" : ""}`}>
+                    <ToolIcon size={22} className="text-[#08872b]" />
+                    <h4 className="mt-4 text-xl font-bold">{title as string}</h4>
+                    <p className="mt-2 text-sm leading-6 text-[#57606a]">{copy as string}</p>
+                  </article>
+                );
+              })}
             </div>
           </div>
           <div className="mt-12 grid gap-5 lg:grid-cols-[1.4fr_1fr]">
@@ -608,6 +430,7 @@ export default function Home() {
           <div className="mt-10">
             <LearningLoopVisual />
           </div>
+          <CampaignEvidenceReplayVisual className="mt-8" />
           <div className="mt-12 grid gap-4 lg:grid-cols-4">
             {steps.map(([Icon, title, time, copy], index) => (
               <article
@@ -642,33 +465,20 @@ export default function Home() {
               Always-on analysis
             </p>
             <h3 className="mt-3 text-3xl font-bold">
-              Analytics that explain the campaign you are actually running.
+              A sidecar that helps you see, not second-guess.
             </h3>
-            <div className="mt-7 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <p className="mt-3 max-w-2xl leading-7 text-[#656d76]">Live outcomes stay distinct from forecast and framework views, so the learner can tell what happened from what is being interpreted.</p>
+            <div className="mt-7 grid gap-4 md:grid-cols-3">
               {[
-                ["Live scenario state", "See the active domain pressures, target progress, capital remaining, and pace."],
-                ["Trends", "Follow portfolio and scenario-native metric movement; forecasts are labelled as modelled outlooks."],
-                ["Diagnostics", "Trace weak outcomes to evidence, the last completed decision, and the next constraint."],
-                ["Frameworks", "Use BCG, McKinsey, and PwC lenses as reflective models alongside the direct scenario outcomes."],
-                [
-                  "Capital and campaign memory",
-                  "See what was deployed, kept in reserve, funded, deferred, and learned.",
-                ],
-                ["Coach and recommendations", "Turn evidence into an editable next-quarter starting point."],
-                [
-                  "Initiative evolution",
-                  "Track maturity, cumulative spend, ROI, data, risk, and neglect.",
-                ],
-                [
-                  "Causal chain",
-                  "Connect initiative choices, deployment, and operating allocation to measurable consequences.",
-                ],
+                ["Live record", "Capital, reserve, initiative condition, scenario outcomes, and the decision ledger."],
+                ["Interpretation", "Trends, diagnostics, causal evidence, and clearly labelled modelled outlooks."],
+                ["Reflection", "Recommendations, the final report, and a concrete next experiment for the replay."],
               ].map(([title, copy]) => (
                 <div
                   key={title}
                   className="rounded-xl border border-[#d0d7de] bg-white p-5 shadow-sm"
                 >
-                  <Users size={19} className="text-[#08872b]" />
+                  <BarChart3 size={19} className="text-[#08872b]" />
                   <h4 className="mt-3 font-bold">{title}</h4>
                   <p className="mt-1 text-sm leading-6 text-[#656d76]">
                     {copy}

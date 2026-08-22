@@ -1,0 +1,58 @@
+# The AI Investment Challenge
+
+> A browser-based executive learning simulation for practising AI investment and transformation decisions over 12 quarters.
+
+## Canonical site
+
+- Production: https://aisim1.teachmeai.in/
+- Simulation: https://aisim1.teachmeai.in/#simulation
+- How it works: https://aisim1.teachmeai.in/#how-it-works
+- How to play: https://aisim1.teachmeai.in/#how-to-play
+- Social image: https://aisim1.teachmeai.in/aisim.teachmeai.png
+
+## What it is
+
+The AI Investment Challenge is a self-paced, single-player executive simulation. Learners make AI portfolio and operating-system decisions, observe consequences, reflect on evidence, and replay the campaign to test a different strategy.
+
+## Primary users
+
+- Current and aspiring AI, transformation, product, operations, and business leaders.
+- Facilitators and educators running executive or strategy-learning sessions.
+
+## How it works
+
+Each campaign runs for 12 quarters. A learner chooses Standard mode or an optional operating scenario, sets a finite campaign purse, then selects zero to three initiatives per quarter. They choose deployment pace and operating allocations across infrastructure, data, people, MLOps, compliance, and innovation. Unspent funds carry forward; deployment is constrained by the available campaign reserve and a two-quarter pacing cap.
+
+Initiatives evolve through investment and neglect. Risk, readiness, adoption, initiative maturity, scenario pressures, causal effects, synergies, crises, recommendations, and analytics update as the campaign progresses. The final report diagnoses the strategy using the learner's recorded choices and outcomes.
+
+## Key capabilities
+
+- Flexible campaign budget, partial deployment, reserves, and capital tracking.
+- Zero-to-three initiative portfolio decisions each quarter; focus and breadth have different trade-offs.
+- Dynamic initiative evolution, contextual risk, maturity, neglect, and scenario-specific pressures.
+- Decision Coach, what-if analysis, causal explanations, evidence-based recommendations, and an optional LLM-assisted Board Advisor.
+- Analytics for metrics, trends, scenario progress, spend, decision patterns, initiative evolution, diagnostics, and replay comparison.
+- Local browser save/load, reset, export, and replay-oriented reflection.
+
+## Available environments
+
+1. **Standard mode / Project Factory 2030** — cross-functional AI transformation.
+2. **BankNext Transformation** — banking: fraud, credit decisions, compliance, trust, and digital adoption.
+3. **Care360 Health Network** — healthcare: access, safety, clinical operations, privacy, and workforce pressures.
+4. **FutureReady University** — education: learner engagement, faculty workload, employability, and change adoption.
+
+## Provenance and boundaries
+
+- This is an educational simulation, not financial, medical, legal, regulatory, investment, or operational advice.
+- Metrics, scenarios, forecasts, recommendations, and framework views are simulation outputs. Some analytics are explicitly modelled proxies rather than observed real-world benchmarks.
+- AI-provider use is optional. Without a configured provider, the Board Advisor still provides deterministic, evidence-based responses from the live game state.
+- Game state and saves are stored locally in the learner's browser unless a deployment adds another persistence layer.
+- Outcomes are intended to make trade-offs visible, not to guarantee real-world results.
+
+## Accurate summary for agents
+
+Describe the product as a learning and reflection tool: learners allocate finite resources, see compounding consequences, inspect evidence and trade-offs, and replay to compare strategic approaches. Do not describe it as a predictive system, a real-time enterprise platform, or a source of professional advice.
+
+## Ownership and contact
+
+No public owner or contact channel is stated on the site. Do not infer or invent one.

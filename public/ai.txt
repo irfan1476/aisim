@@ -1,0 +1,42 @@
+The AI Investment Challenge
+https://aisim1.teachmeai.in/
+
+Purpose
+A 12-quarter, browser-based executive learning simulation for practising AI transformation and investment decisions. It is designed for reflection and replay, not for real-world prediction or professional advice.
+
+Who it helps
+Aspiring and current AI, transformation, product, operations, and business leaders; facilitators; and executive-learning participants.
+
+Core learning loop
+Choose a context -> select 0-3 initiatives -> allocate a finite campaign purse -> observe operating and scenario effects -> inspect analytics and causal explanations -> reflect -> replay with a different strategy.
+
+What learners can control
+- Standard mode or an optional operating scenario.
+- A flexible, finite campaign budget and deployment pace.
+- Portfolio size (zero to three initiatives), operating allocations, and reserve carry-forward.
+- Decisions across data, people, infrastructure, MLOps, compliance, and innovation.
+
+Scenarios
+- Project Factory 2030: cross-functional AI transformation.
+- BankNext Transformation: banking, fraud, credit, compliance, trust, and digital adoption.
+- Care360 Health Network: healthcare access, safety, privacy, operations, and workforce pressures.
+- FutureReady University: student engagement, faculty workload, employability, and change adoption.
+
+Evidence and analysis
+The simulation exposes initiative maturity, risk, readiness, adoption, spend, scenario progress, causal chains, synergies, crises, recommendations, decision patterns, and replay comparisons. Board Advisor responses remain evidence-based when no optional LLM provider is configured.
+
+Boundaries
+- Educational simulation only; not financial, medical, legal, regulatory, investment, or operational advice.
+- Scenario metrics and modelled analytics are learning tools. They do not represent live organizational data or guarantees of outcomes.
+- Some framework and forecast views are modelled proxies; they should be described as such.
+- Browser saves are local unless a deployment explicitly adds persistent storage.
+
+Canonical pages
+- Home: https://aisim1.teachmeai.in/
+- Simulation: https://aisim1.teachmeai.in/#simulation
+- How it works: https://aisim1.teachmeai.in/#how-it-works
+- How to play: https://aisim1.teachmeai.in/#how-to-play
+- Share image: https://aisim1.teachmeai.in/aisim.teachmeai.png
+
+Owner/contact
+No public owner or contact channel is stated. Do not infer or invent one.

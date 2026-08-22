@@ -19,7 +19,7 @@ const steps = [
   {
     label: "Brief",
     title: "Create your campaign context",
-    copy: "Choose Standard mode for open play or select a domain scenario—manufacturing, banking, healthcare, or higher education—then answer five baseline questions. Your answers quietly shape organisation, data, and team maturity.",
+    copy: "Choose Standard mode for open play or select a domain scenario, then answer five baseline questions. Your answers quietly shape organisation, data, and team maturity without revealing a strategy label.",
     action:
       "Answer honestly, then enter the boardroom. A new campaign receives reproducible but varied initiative conditions within the world you selected.",
     watch:
@@ -39,9 +39,9 @@ const steps = [
   {
     label: "Decide",
     title: "Build the quarter portfolio",
-    copy: "Choose up to three initiatives and divide the quarterly envelope across infrastructure, data, people, MLOps, compliance, and innovation.",
+    copy: "Choose zero to three initiatives, decide how much of your campaign purse to deploy this quarter, and distribute operating investment across infrastructure, data, people, MLOps, compliance, and innovation.",
     action:
-      "Keep the allocation at exactly 100%. Fund value and the operating system around it: data, people, maintenance, and governance all change what the initiatives can deliver.",
+      "You do not have to deploy the full campaign purse every quarter. Keep a reserve when it supports your thesis, then fund the operating system around the portfolio: data, people, delivery discipline, and governance all change what an initiative can deliver.",
     watch:
       "Repeated funding compounds maturity. Switching bets is valid, but prolonged neglect raises risk and eventually erodes capability.",
     Icon: Target,
@@ -71,7 +71,7 @@ const steps = [
     title: "Use the quarter as evidence",
     copy: "The roadmap and Analytics Hub preserve what you funded, how much you spent, how initiatives evolved, and which outcomes followed.",
     action:
-      "Review trends, diagnostics, KPIs, initiative evolution, frameworks, history, and the Time Machine before choosing the next quarter.",
+      "Review trends, diagnostics, live measures, initiative evolution, frameworks, history, and the Time Machine before choosing the next quarter.",
     watch:
       "Look for momentum, not one-quarter perfection. Decide which capabilities deserve consistency and which should be intentionally deprioritised.",
     Icon: History,
@@ -81,7 +81,7 @@ const steps = [
     title: "Read your strategy autopsy",
     copy: "After Q12, the simulation infers your strategic pattern from the complete campaign—not from a mode selected at the beginning.",
     action:
-      "Review the CEO rating, allocation averages, most-funded bets, risk movement, discovered combinations, quarter timeline, pattern confidence, closest alternative, and your roadmap to A+.",
+      "Review the CEO rating, allocation pattern, capital pace, most-funded bets, risk movement, discovered combinations, timeline, and your route to improve. Save or export the record, then replay one changed thesis to compare the result.",
     watch:
       "Your verdict rewards sustainable value: ROI matters, but so do adoption, risk control, people investment, and portfolio discipline.",
     Icon: Trophy,

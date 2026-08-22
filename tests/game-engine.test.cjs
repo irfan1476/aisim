@@ -72,8 +72,9 @@ test('resolveQuarter is deterministic for the same state and decision', () => {
 });
 
 test('run metadata makes reproducibility explicit while allowing seeded campaigns to vary', () => {
-  const first = initialGameState(createInferredGeneration([3, 3, 3, 3, 3]));
-  const same = initialGameState(createInferredGeneration([3, 3, 3, 3, 3]));
+  const seed = 73129;
+  const first = initialGameState(createInferredGeneration([3, 3, 3, 3, 3], seed));
+  const same = initialGameState(createInferredGeneration([3, 3, 3, 3, 3], seed));
   const different = initialGameState(createInferredGeneration([3, 3, 3, 3, 3], 99173));
   assert.equal(first.runMetadata.seed, same.runMetadata.seed);
   assert.equal(first.runMetadata.runId, same.runMetadata.runId);
