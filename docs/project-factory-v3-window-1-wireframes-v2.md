@@ -79,6 +79,8 @@ claiming private knowledge about a real plant.
 │                                                                              │
 │ [Constraint] ₹5 Cr programme capital. Research also uses scarce Data         │
 │ Engineering, plant, frontline, or Governance Assurance capacity.             │
+│ Capacity legend: 1/4 means one unit used of four available units in that     │
+│ pool; 1/2 means one unit used of two available units.                         │
 │                                                                              │
 │ [Why these signals?]  [What does Research mean?]                             │
 │                                                   [Review three priorities]  │
@@ -104,6 +106,7 @@ the three headline signals, and the monitored context before opening Compare.
 │ Cost: ₹0.25 Cr capital                                                       │
 │ Q1 capacity: Data Engineering 1/4 · Governance Assurance 1/2                │
 │ Research signal: Q2                                                         │
+│ Window review: end of Q3                                                     │
 │ Evidence: PF-E01 Plant dashboard · PF-E02 Asset-data assessment              │
 │ Boundary: incomplete sensing supports Research, not operating benefit.       │
 │ [View evidence for Predictive Maintenance]                                   │
@@ -114,6 +117,7 @@ the three headline signals, and the monitored context before opening Compare.
 │ Q1 capacity: Data Engineering 1/4 · Plant Integration 1/3 ·                  │
 │              Governance Assurance 1/2                                       │
 │ Research signal: Q2                                                         │
+│ Window review: end of Q3                                                     │
 │ Evidence: PF-E01 Plant dashboard · PF-E05 OEM brief                          │
 │           (early Q1 excerpts; full brief Q2)                                 │
 │ Boundary: labelled images, capture conditions, and traceability unresolved.  │
@@ -125,6 +129,7 @@ the three headline signals, and the monitored context before opening Compare.
 │ Q1 capacity: Data Engineering 1/4 · Frontline Change 1/3 ·                   │
 │              Governance Assurance 1/2                                       │
 │ Research signal: Q2                                                         │
+│ Window review: end of Q3                                                     │
 │ Evidence: PF-E04 Workforce brief · PF-E07 Governance brief                   │
 │ Boundary: retirement eligibility is not a departure forecast.                │
 │ [View evidence for Technician Knowledge]                                     │
@@ -200,9 +205,9 @@ COMMITMENT
 ₹0.25 Cr · Data Engineering 1/4 · Governance Assurance 1/2 · Q1 only
 Owner: Maintenance lead with CIO/data owner
 
-IF DEFERRED
-M-4 remains exposed; the next review is triggered by a material failure or
-new asset-data/ownership evidence. No generic penalty is applied.
+IF YOU DEFER NOW
+M-4 remains exposed; review again after a material failure or new asset-data/
+ownership evidence. No generic penalty is applied.
 
 THIS IS NOT A PROMISE
 Research does not deploy alerts, reduce downtime, or pass G-PF-01.
@@ -223,8 +228,8 @@ decision-specific context is:
 
 | Packet | Why now | Research will resolve | If deferred |
 |---|---|---|---|
-| Visual Quality | Escaped defects are 1,240 PPM and the OEM requires traceable containment. | Whether selected Q-2 defects are visually observable; whether labels/capture are usable; whether a Quality owner can trace override/rework. | OEM containment and defect exposure remain; review when Q2 OEM evidence or a material escape changes the case. |
-| Technician Knowledge | Workforce readiness is 52/100 and 18% of senior technicians are retirement-eligible. | Whether a bounded knowledge set is validated; whether a technician review panel/time exists; whether safety/IP/withdrawal controls are usable. | Continuity exposure remains; review when protected review capacity or a material departure/workflow trigger changes the case. |
+| Visual Quality | Escaped defects are 1,240 PPM and the OEM requires traceable containment (a record linking a flagged unit to its review and disposition). | Whether selected Q-2 defects are visually observable; whether labels/capture are usable; whether a Quality owner can trace override/rework. | If you defer now, OEM containment and defect exposure remain; review when Q2 OEM evidence or a material escape changes the case. |
+| Technician Knowledge | Workforce readiness is 52/100 and 18% of senior technicians are retirement-eligible. | Whether a bounded knowledge set (approved procedures for one workflow) is validated; whether a technician review panel/time exists; whether safety/IP/withdrawal controls are usable. | If you defer now, continuity exposure remains; review when protected review capacity or a material departure/workflow trigger changes the case. |
 
 The learner should not have to infer these connections from initiative names or
 generic evidence links.

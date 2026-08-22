@@ -223,6 +223,8 @@ The current additive UI is explicitly not learner-accepted. Do not add more tabs
 | UX-W1-08 | Draft complete — validation pending | All three opening priorities now have the same context pattern: why now, known facts, unknowns, decision test, accountable role, if-deferred trigger, cost/capacity, and plain-language terms. Validate that a non-manufacturing reviewer can make a bounded Research choice from the pack alone. |
 | UX-FLOW-01 | Proposed — method contract added | V3 gameplay follows the six learner-facing states `Orient → Compare → Commit → Outcome → Reflect → Next Window`. Resolve is an internal transition phase, visible only for an authored event/gate pause. One primary action advances state; drawers/reports cannot advance or exit the campaign; pause/resume returns to the saved cursor; stop is a strategic action, not campaign exit. |
 | UX-FLOW-02 | Proposed — timing contract added | Facilitated mode targets 90 minutes: 8-minute prebrief, four 16-minute windows, and an 18-minute final debrief/board memo. Self-paced mode retains the same state order without a punitive clock. Pilot measures timing, comprehension, cognitive load, and discussion quality. |
+| UX-W1-09 | Draft complete — desk-review corrections applied | Added a visible capacity legend, Q1/Q2/Q3 timing line, concrete `If you defer now` triggers, and inline plain-language terms to the three opening packets. |
+| UX-W1-10 | Pending participant validation | Run the context-comprehension walkthrough with 3–5 learners/facilitators, including at least one non-manufacturing reviewer; record prompts, wrong turns, timing, and evidence-drawer use. |
 
 #### Mandatory state-screen contract
 

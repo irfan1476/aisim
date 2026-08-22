@@ -575,6 +575,16 @@ Status: proposed UX revision; non-manufacturing validation pending
 - **Consistency:** All three packets use the same decision-context order and explicitly state what Research will not change. The learner can compare choices without knowing plant-specific internals.
 - **Next validation:** Test the packets with a non-manufacturing reviewer or representative learner. UX-W1-08 is draft-complete but remains open until comprehension is observed.
 
+## 2026-08-22 — Context-comprehension desk review started
+
+Status: preliminary review; participant validation pending
+
+- **Review method:** Cognitive walkthrough against seven questions: problem, known/unknown, Research purpose, Pilot condition, non-movement, commitment, and deferral consequence.
+- **Result:** The context contract passes conceptually. The packets now make a bounded Research decision possible without plant-specific knowledge, but capacity notation, timing, deferral wording, and inline terminology needed explicit treatment.
+- **Corrections applied:** Added `1/4`/`1/2` capacity legend, `Research Q1 · signal Q2 · board review Q3` timing, concrete `If you defer now` triggers, and plain-language terms for traceability and knowledge boundaries.
+- **Remaining gate:** This is a desk review, not participant evidence. UX-W1-10 requires 3–5 representative learners/facilitators, including a non-manufacturing reviewer, before design approval or implementation.
+- **Artefact:** [Context-Comprehension Review](./project-factory-v3-context-comprehension-review.md).
+
 ## 2026-08-22 — Methodical gameplay and timing contract
 
 Status: agreed product direction; timing values remain pilot-calibrated
