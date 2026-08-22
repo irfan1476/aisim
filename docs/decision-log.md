@@ -596,3 +596,45 @@ Status: agreed product direction; timing values remain pilot-calibrated
 - **Completion:** The campaign ends only after Q12, final debrief, and deliberate completion/skip of the final transfer reflection/board memo. Closing a screen or drawer never completes a run.
 - **Validation:** The pilot must measure timing, comprehension, cognitive load, discussion quality, and whether the method produces deliberate reasoning rather than hurried form completion.
 - **Artefacts:** [V3 design brief](./project-factory-v3-design-brief.md), [Window 1 wireframes v2](./project-factory-v3-window-1-wireframes-v2.md), and [V3 implementation backlog](./project-factory-v3-implementation-backlog.md) items UX-FLOW-01/02.
+
+## 2026-08-22 — Agent persona panel substituted for Window 1 walkthrough
+
+Status: **conditional design acceptance; production implementation still paused**
+
+- **User direction:** The product owner explicitly authorised context-aware,
+  industry-aware agents to substitute for the unavailable person walkthrough,
+  with the instruction to continue until a genuine product decision gate was
+  reached. This substitutes the design review activity; it does not fabricate
+  learner-effectiveness evidence.
+- **Panel:** Three reviewer personas completed the revised Window 1 materials:
+  (1) operations/manufacturing SME, (2) non-manufacturing executive learner,
+  and (3) learning-design/accessibility/facilitation reviewer. They inspected
+  the Orient, Compare, Commit, Research outcome, remediation, unsupported,
+  reflection, and Next Window contracts.
+- **Consensus:** Conditional acceptance for a representative walkthrough and
+  design checkpoint. The six-state method, single-action path, Research/no-
+  operating-benefit boundary, and Research/Pilot distinction are coherent. The
+  panel did not grant production approval or claim that a live learner would
+  learn effectively from the design.
+- **P0 corrections applied:**
+  - Added one shared capacity-unit contract and visible `1/4`/`1/2` legend;
+  - added metric scope, denominators, and time windows;
+  - made the Q1 activity → Q2 signal → Q3 interpretation/board-review timing
+    explicit in every opening packet;
+  - made deferral a scheduled end-of-Q3 review plus a named earlier trigger;
+  - added the M-4 early-action/maintenance-window boundary;
+  - clarified five-plant trainer capacity and OEM 24-hour scope;
+  - corrected Technician Knowledge `G-PF-05` from a scale mapping to an
+    action-specific Pilot gate;
+  - changed the facilitated target to 8-minute prebrief, four 15-minute
+    windows, 17-minute debrief, and a 5-minute contingency buffer;
+  - added facilitator prompts to prevent click-through play.
+- **Open validation:** A formative pilot must still test at least 4 of 5
+  representative participants answering the six context questions without
+  facilitator explanation, plus self-paced comprehension, accessibility,
+  cognitive load, timing, and discussion quality. The deferred quality/OEM and
+  technician-retirement event cards remain outside this checkpoint.
+- **Decision needed next:** Product owner must approve or request changes to
+  the corrected wireframes, behavioral contracts, and content corrections
+  before Window 1 production implementation begins.
+- **Artefacts:** [Context-Comprehension Review](./project-factory-v3-context-comprehension-review.md), [Window 1 Wireframes v2](./project-factory-v3-window-1-wireframes-v2.md), [Window 1 Behavioral Contracts v2](./project-factory-v3-behavioral-contracts-v2.md), [V3 Design Brief](./project-factory-v3-design-brief.md), [V3 Implementation Backlog](./project-factory-v3-implementation-backlog.md), and [V3 Content Pack](./project-factory-v3-content-pack.md).

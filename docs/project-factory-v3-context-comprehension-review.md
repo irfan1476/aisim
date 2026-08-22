@@ -1,6 +1,6 @@
 # Project Factory V3 — Context-Comprehension Review
 
-Status: **preliminary desk review; participant validation still required**
+Status: **conditional agent-panel acceptance; live learner validation deferred to pilot**
 
 Date: 2026-08-22
 
@@ -29,10 +29,13 @@ truth for the exercise.
 
 ## Method used
 
-This is a document-based cognitive walkthrough of the revised Orient, Compare,
-Commit, remediation packet, branch outcome, and Next Window materials. It is
-labelled preliminary because it has not yet been run with an independent
-non-manufacturing participant.
+This began as a document-based cognitive walkthrough of the revised Orient,
+Compare, Commit, remediation packet, branch outcome, and Next Window materials.
+At the product owner's explicit request, an industry-aware agent panel
+substituted for the unavailable live walkthrough: an operations/manufacturing
+SME persona, a non-manufacturing executive-learner persona, and a
+learning-design/accessibility/facilitation persona. This is sufficient for the
+design checkpoint but is not evidence of learner effectiveness.
 
 ## Findings
 
@@ -44,13 +47,13 @@ non-manufacturing participant.
 | What Research buys | Pass | Each packet names a bounded finding set and the three possible resolver branches. |
 | What Pilot requires | Pass | Pilot-ready conditions are named; Pilot is not automatic. |
 | What does not change | Pass | Packets explicitly state that Research does not improve operating metrics or pass a gate. |
-| Cost and capacity | Partial | Costs and pools are present, but `1/4` and `1/2` need a visible legend: one unit used of four/two available units. |
-| Timing | Partial | Commit shows Q1 activity and Q2 signal, but every Compare packet should also state `Research Q1 · signal Q2 · board review Q3`. |
-| Deferral | Partial | Triggers are source-bound, but “if deferred” should be phrased as a concrete review trigger, not as an abstract exposure. |
-| Domain terms | Partial | Predictive Maintenance terms are defined; Visual Quality and Technician Knowledge need the same visible-term treatment in the packet, not only in a drawer. |
+| Cost and capacity | Pass after correction | A shared-programme unit contract and visible `1/4`/`1/2` legend now state that the values are quarterly pool units, not headcount or person-days. |
+| Timing | Pass after correction | Each packet now states Research activity Q1, signal Q2, interpretation/board review Q3, and next decision Window 2. |
+| Deferral | Pass after correction | Each packet names an end-of-Q3 scheduled review plus an earlier source-bound trigger; no generic penalty is invented. |
+| Domain terms | Pass after correction | Each packet carries a compact plain-language term and the longer glossary remains contextual. |
 | Remediation choice | Pass with provisional content | PF-RM-01 now specifies work, owner, cost, capacity, duration, completion evidence, and no-benefit boundary. Values remain synthetic/provisional. |
 | Branch comprehension | Pass conceptually | Pilot-ready, remediation, and unsupported outcomes have distinct next actions. Participant validation remains open. |
-| Method and timing | Pass conceptually | Six learner states and 90-minute target are explicit; actual cognitive load is not yet measured. |
+| Method and timing | Pass conceptually | Six learner states, a 90-minute target, and a five-minute contingency buffer are explicit; actual cognitive load is not yet measured. |
 
 ## Required design corrections before participant walkthrough
 
@@ -84,16 +87,35 @@ Record wrong turns, prompts required, terms misunderstood, time spent, and
 whether the participant opens the full evidence drawer unnecessarily. Do not
 score whether the participant guessed the resolver branch.
 
+## Agent-panel walkthrough result
+
+| Persona | What it checked | Finding |
+|---|---|---|
+| Operations/manufacturing SME | Metric scope, capacity realism, early-action boundary, gate/action alignment, deferral exposure | The Research/Pilot boundary is credible after naming the M-4 maintenance-window test, shared capacity semantics, metric denominators, and the PF-I05 Pilot gate correction. |
+| Non-manufacturing executive learner | Whether a manager can choose without private plant knowledge; clarity of terms, commitment, timing, and handoff | The packet pattern is understandable when all three options use the same fields. Acronyms and “1/4” capacity notation were the main wrong-turn risks and are now addressed. |
+| Learning-design/accessibility/facilitation reviewer | Six-state method, cognitive load, 90-minute timing, psychological safety, accessibility, evaluation | The method is suitable for a guided walkthrough, but a click-through risk remains unless the facilitator asks the board-question/action/evidence prompts. Accessibility and learning-effectiveness still require pilot evidence. |
+
+The panel's consolidated decision is **conditional acceptance for design and a
+representative walkthrough**, not production acceptance. It reached consensus
+on the six-state method and Research/Pilot boundary. It required the corrections
+now applied in the content pack, wireframes, contracts, design brief, and
+backlog. It also required a future self-paced run and accessibility audit.
+
 ## Acceptance threshold
 
-The context layer passes when most participants can answer all six questions
-without facilitator explanation, can distinguish Research from Pilot, and can
-identify the next primary action. If they cannot, add context or simplify the
-packet; do not add a recommendation or make the branch predictable.
+For the design checkpoint, the agent panel passed when all three reviewer
+personas could answer the six questions, distinguish Research from Pilot, and
+identify the next primary action after the corrections. For the formative pilot,
+use a stricter threshold: at least **4 of 5 independent representative
+participants** should answer all six questions without facilitator explanation.
+If they cannot, add context or simplify the packet; do not add a recommendation
+or make the branch predictable.
 
 ## Current decision
 
-The revised context contract is directionally correct and materially better than
-the prior packet design, but UX-W1-08 remains open until the four corrections are
-applied and the participant walkthrough is completed. Production implementation
-remains paused.
+The revised context contract is materially better than the prior packet design.
+UX-W1-08 and UX-W1-10 are complete for the design checkpoint through the
+explicitly authorised agent-panel substitution. Live learner/facilitator
+validation, accessibility verification, and learning-effectiveness measurement
+remain pilot work. Production implementation remains paused pending explicit
+product-owner approval of this corrected design package.

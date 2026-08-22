@@ -1,6 +1,6 @@
 # Project Factory V3 — Window 1 Wireframes v2
 
-Status: **proposed for representative-learner walkthrough; production implementation paused**
+Status: **conditional agent-panel acceptance; production implementation paused**
 
 ## Purpose and boundary
 
@@ -106,7 +106,7 @@ the three headline signals, and the monitored context before opening Compare.
 │ Cost: ₹0.25 Cr capital                                                       │
 │ Q1 capacity: Data Engineering 1/4 · Governance Assurance 1/2                │
 │ Research signal: Q2                                                         │
-│ Window review: end of Q3                                                     │
+│ Q3 interpretation / board review                                             │
 │ Evidence: PF-E01 Plant dashboard · PF-E02 Asset-data assessment              │
 │ Boundary: incomplete sensing supports Research, not operating benefit.       │
 │ [View evidence for Predictive Maintenance]                                   │
@@ -117,7 +117,7 @@ the three headline signals, and the monitored context before opening Compare.
 │ Q1 capacity: Data Engineering 1/4 · Plant Integration 1/3 ·                  │
 │              Governance Assurance 1/2                                       │
 │ Research signal: Q2                                                         │
-│ Window review: end of Q3                                                     │
+│ Q3 interpretation / board review                                             │
 │ Evidence: PF-E01 Plant dashboard · PF-E05 OEM brief                          │
 │           (early Q1 excerpts; full brief Q2)                                 │
 │ Boundary: labelled images, capture conditions, and traceability unresolved.  │
@@ -129,7 +129,7 @@ the three headline signals, and the monitored context before opening Compare.
 │ Q1 capacity: Data Engineering 1/4 · Frontline Change 1/3 ·                   │
 │              Governance Assurance 1/2                                       │
 │ Research signal: Q2                                                         │
-│ Window review: end of Q3                                                     │
+│ Q3 interpretation / board review                                             │
 │ Evidence: PF-E04 Workforce brief · PF-E07 Governance brief                   │
 │ Boundary: retirement eligibility is not a departure forecast.                │
 │ [View evidence for Technician Knowledge]                                     │
@@ -188,6 +188,9 @@ PREDICTIVE MAINTENANCE · RESEARCH
 WHY NOW
 Downtime is 12.0%; Line M-4 creates 31% of stoppage minutes.
 
+SCOPE
+Five-plant Q1 network; the M-4 stoppage share is line-specific.
+
 WHAT WE KNOW
 • Only 38% of critical assets have six months of usable sensor history.
 • Only 44% of failure codes are structured; M-4 vibration data is irregular.
@@ -206,8 +209,9 @@ COMMITMENT
 Owner: Maintenance lead with CIO/data owner
 
 IF YOU DEFER NOW
-M-4 remains exposed; review again after a material failure or new asset-data/
-ownership evidence. No generic penalty is applied.
+M-4 remains exposed; review at the end of Q3, or earlier if a material failure
+or new asset-data/ownership evidence changes the case. No generic penalty is
+applied.
 
 THIS IS NOT A PROMISE
 Research does not deploy alerts, reduce downtime, or pass G-PF-01.
@@ -228,8 +232,8 @@ decision-specific context is:
 
 | Packet | Why now | Research will resolve | If deferred |
 |---|---|---|---|
-| Visual Quality | Escaped defects are 1,240 PPM and the OEM requires traceable containment (a record linking a flagged unit to its review and disposition). | Whether selected Q-2 defects are visually observable; whether labels/capture are usable; whether a Quality owner can trace override/rework. | If you defer now, OEM containment and defect exposure remain; review when Q2 OEM evidence or a material escape changes the case. |
-| Technician Knowledge | Workforce readiness is 52/100 and 18% of senior technicians are retirement-eligible. | Whether a bounded knowledge set (approved procedures for one workflow) is validated; whether a technician review panel/time exists; whether safety/IP/withdrawal controls are usable. | If you defer now, continuity exposure remains; review when protected review capacity or a material departure/workflow trigger changes the case. |
+| Visual Quality | Escaped defects are 1,240 PPM and the OEM requires traceable containment (a record linking a flagged unit to its review and disposition). | Whether selected Q-2 defects are visually observable; whether labels/capture are usable; whether a Quality owner can trace override/rework. | If you defer now, OEM containment and defect exposure remain; review at the end of Q3, or earlier when Q2 OEM evidence or a material escape changes the case. |
+| Technician Knowledge | Workforce readiness is 52/100 and 18% of senior technicians are retirement-eligible. | Whether a bounded knowledge set (approved procedures for one workflow) is validated; whether a technician review panel/time exists; whether safety/IP/withdrawal controls are usable. | If you defer now, continuity exposure remains; review at the end of Q3, or earlier when protected review capacity or a material departure/workflow trigger changes the case. |
 
 The learner should not have to infer these connections from initiative names or
 generic evidence links.
@@ -242,6 +246,10 @@ VISUAL QUALITY INSPECTION · RESEARCH
 WHY NOW
 Escaped defects are 1,240 PPM; first-pass yield is 91.2%; OEM containment
 requires a traceable human decision within 24 hours of a confirmed escape.
+
+SCOPE
+Q1 in-scope product families; Q-2 evidence is line-specific and is not a
+network-wide quality claim.
 
 WHAT WE KNOW
 • Two inspection-heavy lines produce 46% of reported scrap cost.
@@ -262,8 +270,9 @@ COMMITMENT
 Governance Assurance 1/2 · Q1 only · Owner: Quality head
 
 IF DEFERRED
-Quality/OEM exposure remains; review when the full Q2 brief or a material escape
-changes the evidence. No generic defect penalty is applied.
+Quality/OEM exposure remains; review at the end of Q3, or earlier when the full
+Q2 brief or a material escape changes the evidence. No generic defect penalty is
+applied.
 
 THIS IS NOT A PROMISE
 Research does not lower defects, improve yield, or satisfy G-PF-02.
@@ -282,6 +291,10 @@ TECHNICIAN KNOWLEDGE ASSISTANT · RESEARCH
 WHY NOW
 Workforce readiness is 52/100 and 18% of senior technicians are retirement-
 eligible within 18 months.
+
+SCOPE
+Five-plant Q1 workforce; 1.5 trainer-days per plant per quarter equals 7.5
+shared trainer-days if all plants are in scope, subject to emergency cover.
 
 WHAT WE KNOW
 • Only 1.5 trainer-days per plant per quarter are protected for workflow change.
@@ -305,9 +318,9 @@ COMMITMENT
 Governance Assurance 1/2 · Q1 only · Owner: Maintenance lead with technician rep
 
 IF DEFERRED
-Continuity exposure remains; review when protected review capacity or a material
-workflow/retirement trigger changes the evidence. No departure prediction is
-invented.
+Continuity exposure remains; review at the end of Q3, or earlier when protected
+review capacity or a material workflow/retirement trigger changes the evidence.
+No departure prediction is invented.
 
 THIS IS NOT A PROMISE
 Research does not raise workforce readiness, trust, or usage, and does not pass

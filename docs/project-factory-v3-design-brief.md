@@ -160,17 +160,21 @@ or required response pauses the run.
 | Segment | Target | Purpose |
 |---|---:|---|
 | Welcome, role, baseline, and how to read evidence | 8 min | Establish the operating truth, reflection-only baseline, role, and decision method. |
-| Window 1 — Q1–Q3 | 16 min | Orient, compare three Research priorities, commit one, review the authored result, reflect, and frame Window 2. |
-| Window 2 — Q4–Q6 | 16 min | Review evidence, choose Pilot/remediation/defer/stop, respond to a gate or event if authored, and reflect. |
-| Window 3 — Q7–Q9 | 16 min | Decide whether to scale, pause, redirect, or protect capacity while managing stakeholder consequences. |
-| Window 4 — Q10–Q12 | 16 min | Sustain, respond to late evidence/events, compare predictions to outcomes, and prepare transfer. |
-| Final debrief and board memo | 18 min | Replay “you said → you did → what happened → what you learned,” complete the memo, and record a workplace transfer action. |
-| **Total target** | **90 min** | Facilitator may flex discussion time; the state order and primary transitions remain intact. |
+| Window 1 — Q1–Q3 | 15 min | Orient, compare three Research priorities, commit one, review the authored result, reflect, and frame Window 2. |
+| Window 2 — Q4–Q6 | 15 min | Review evidence, choose Pilot/remediation/defer/stop, respond to a gate or event if authored, and reflect. |
+| Window 3 — Q7–Q9 | 15 min | Decide whether to scale, pause, redirect, or protect capacity while managing stakeholder consequences. |
+| Window 4 — Q10–Q12 | 15 min | Sustain, respond to late evidence/events, compare predictions to outcomes, and prepare transfer. |
+| Final debrief and board memo | 17 min | Replay “you said → you did → what happened → what you learned,” complete the memo, and record a workplace transfer action. |
+| Contingency / transition buffer | 5 min | Absorb an authored event pause, accessibility need, or discussion that needs more time; never skip a required state. |
+| **Total target** | **90 min** | Timing is a pilot target; the buffer protects deliberate reasoning rather than hurried form completion. |
 
 Within a typical window, the facilitator should reserve approximately 2 minutes
-for Orient, 5 for Compare, 2 for Commit, 3 for Resolve/Outcome, 2 for Reflect,
-and 2 for Next Window. A material event or gate pause may consume the buffer; it
-must explain why the pause occurred and resume from the saved cursor.
+for Orient, 4 for Compare, 2 for Commit, 3 for Resolve/Outcome, 2 for Reflect,
+and 2 for Next Window. A material event or gate pause may consume the separate
+five-minute buffer; it must explain why the pause occurred and resume from the
+saved cursor. The facilitator must ask: “What is the board question?”, “What is
+the one action now?”, and “What evidence will change the next decision?” before
+advancing a window.
 
 #### Self-paced fallback
 

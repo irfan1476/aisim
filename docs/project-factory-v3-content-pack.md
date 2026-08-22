@@ -140,6 +140,25 @@ All baseline values and targets below are expert-calibrated synthetic — provis
 | `asset_data_readiness` | Asset-data readiness | 0–100 index | 43 | ≥ 75 | higher is better; 0–100 | Data owner | Evidence-based composite; no scale gate should rely on the index alone. |
 | `cash_commitment` | Cumulative programme capital committed | ₹ Cr | 0.0 | ≤ 5.0 | lower is not inherently better; 0–5.5 | CFO | Immediate; run cost is tracked separately. |
 
+### Metric scope and denominator notes
+
+The visible metric label is intentionally short, but the resolver and learner
+brief must retain the following scope. These notes prevent a network average,
+index, or PPM value from being interpreted as a universal plant or product fact.
+
+| Metric | Scope / time window | Denominator or interpretation |
+|---|---|---|
+| Unplanned downtime | Five-plant Q1 baseline; M-4 share is Q1 line-specific. | Scheduled production time; network average can mask a severe single-line failure. |
+| First-pass yield | Q1 in-scope component families. | Units entering inspection that pass without rework; it does not reveal false rejects by itself. |
+| Escaped defects | Q1 shipped-unit PPM for in-scope product families. | Shipped units; confirmed OEM claims may lag the production signal. |
+| Energy per unit | Monthly Q1 observations rolled to quarter. | Produced units; mix and shift differences affect the index (Q1 = 100). |
+| Schedule adherence | Q1 planned material/production commitments. | Planned commitments; late supplier confirmation and planning error are not separated. |
+| Workforce readiness | Q1 five-plant capability/readiness sample. | Composite capability evidence, not a sentiment survey or departure forecast. |
+| Technician trust | Quarter-end pulse for affected workflow teams. | Interpreted with adoption and override evidence; not a network-wide attitude score. |
+| OEM confidence | Q1 account-review index for in-scope tier-one programmes. | Account-review observations; not a legal or commercial forecast. |
+| Asset-data readiness | Q1 five-plant in-scope critical-asset composite. | Readiness evidence; it cannot replace line-specific validation. |
+| Cash commitment | Cumulative from Q1 across programme operations. | Capital committed; recurring run cost is tracked separately. |
+
 ### Gate-evidence measures
 
 These are learner-visible pilot or readiness measures, not scorecard dimensions. They are declared here so gates and causal rules do not rely on hidden criteria. All starting positions are expert-calibrated synthetic — provisional.
@@ -172,7 +191,7 @@ The learner sees evidence progressively. Each artefact is intentionally incomple
 
 **Facts**
 
-- Unplanned downtime rose from 10.7% to 12.0% over 18 months; Line M-4 accounts for 31% of stoppage minutes while contributing 18% of volume.
+- Unplanned downtime rose from 10.7% to 12.0% over 18 months across the five-plant network; Line M-4 accounts for 31% of Q1 stoppage minutes while contributing 18% of Q1 volume. That M-4 share is line-specific, not representative of every plant.
 - First-pass yield is 91.2%; 46% of reported scrap cost originates at two inspection-heavy lines.
 - Escaped defects are 1,240 PPM, above the internal escalation threshold of 1,000 PPM.
 - Energy intensity is 15% above the prior baseline, with a large variance between comparable shifts.
@@ -197,9 +216,9 @@ The learner sees evidence progressively. Each artefact is intentionally incomple
 
 **Facts**
 
-- 71% of critical-asset records have a unique asset identifier; only 43% meet the completeness/ownership/readiness index.
-- 38% of critical assets have at least six months of usable sensor history; Line M-4 has partial vibration data but irregular sampling.
-- Only 44% of CMMS failure codes are in a structured, analysable category; free-text work orders use inconsistent terminology.
+- 71% of in-scope critical-asset records have a unique asset identifier; only 43% meet the completeness/ownership/readiness index.
+- 38% of in-scope critical-asset records have at least six months of usable sensor history; Line M-4 has partial vibration data but irregular sampling.
+- Only 44% of in-scope CMMS work orders use a structured, analysable failure-code category; free-text work orders use inconsistent terminology.
 - Maintenance planners and the data owner disagree on who approves revised asset hierarchies in two plants.
 - Current data-access controls support a limited, read-only pilot but not broader vendor access without a reviewed data-sharing arrangement.
 
@@ -222,7 +241,7 @@ The learner sees evidence progressively. Each artefact is intentionally incomple
 
 **Facts**
 
-- The M-4 machining-to-assembly hand-off has one planned eight-hour maintenance/change window per month; emergency work frequently consumes it.
+- The M-4 machining-to-assembly hand-off has one planned eight-hour maintenance/change window per month; emergency work frequently consumes it. A research result is actionable only if the selected failure modes can be detected with enough lead time for a named safe maintenance window and a technician disposition decision.
 - Visual inspection on Line Q-2 is followed by a manual rework loop that already consumes quality-engineer attention.
 - Introducing a new workflow on two plants in the same quarter would require the same plant-integration lead and shift trainers.
 - A supplier hand-off before final assembly causes material re-sequencing when OEM schedules change with less than seven days’ notice.
@@ -248,7 +267,7 @@ The learner sees evidence progressively. Each artefact is intentionally incomple
 **Facts**
 
 - 18% of senior maintenance technicians are eligible to retire within 18 months; two of the affected shifts cover M-4 and an inspection-heavy line.
-- Only 1.5 trainer-days per plant per quarter are currently protected for workflow change; emergency cover frequently displaces training.
+- Only 1.5 trainer-days per plant per quarter are currently protected for workflow change; if all five plants are in scope that represents 7.5 shared trainer-days in the quarter, and emergency cover frequently displaces training. This is a provisional capacity planning abstraction, not a staffing commitment.
 - Technician representatives support documenting troubleshooting knowledge if contributors can review material and if the assistant cannot issue unsafe instructions.
 - Existing maintenance alerts are often manually reconciled; technicians report that nuisance alerts reduce trust.
 - A pilot champion network can cover one pilot plant and one adjacent plant, not a simultaneous enterprise rollout.
@@ -272,7 +291,7 @@ The learner sees evidence progressively. Each artefact is intentionally incomple
 
 **Facts**
 
-- The largest OEM programme requires a documented containment and traceability response within 24 hours of a confirmed quality escape.
+- The largest OEM programme requires a documented containment and traceability response within 24 hours of a confirmed quality escape. This is an authored condition for that programme, not a universal engine rule for every customer.
 - The account team expects sustained PPM improvement before accepting a wider automated inspection workflow; a model score is not sufficient evidence.
 - A missed delivery on the top-volume programme would trigger senior review and could reduce confidence in broader digital-transformation claims.
 - OEM forecast changes vary materially by programme; the brief does not state whether the variability is avoidable.
@@ -384,18 +403,33 @@ portfolio_policy:
     currency: INR_Cr
     amount: 1.2
     scope: "Incremental annualised run cost at the end of the exercise."
+  capacity_unit_contract:
+    name: "shared-programme capacity unit per quarter"
+    definition: >
+      One quarter allocation from a named specialist pool. It is not a
+      person-day, headcount, or plant-local shift.
+    scope: >
+      Central programme pools shared across the five plants. A plant or line
+      boundary must be named separately in the initiative/change plan.
+    notation: >
+      1/4 means one unit used of four available units in that pool for the
+      quarter; it does not mean 25% of a named employee.
   capacity_pools:
     - id: data_engineering
       units_per_quarter: 4
+      scope: "Shared across the five plants; the action plan names the plant/line data boundary."
       definition: "Data quality, engineering, model/analytics analysis, and monitoring."
     - id: plant_integration
       units_per_quarter: 3
+      scope: "Shared across the five plants; the action plan names the plant/line deployment boundary."
       definition: "Plant controls/process integration and safe line-owner deployment."
     - id: frontline_change
       units_per_quarter: 3
+      scope: "Shared across the five plants; the action plan names the affected workflow and teams."
       definition: "Training, co-design, workflow testing, and shift release."
     - id: governance_assurance
       units_per_quarter: 2
+      scope: "Shared programme assurance; the action plan names the data/workflow boundary under review."
       definition: "Data access, validation, controls, monitoring, and incident/override design."
   exception_policy: >
     A capital or active-delivery exception requires joint CFO and COO approval,
@@ -692,7 +726,9 @@ initiative:
     - "At least 60% of pilot users rate retrieved content as useful or correctable."
     - "Every retrieved item displays source/review status and an escalation route."
     - "No unreviewed safety or confidential content is presented as guidance."
-  scale_gate: [G-PF-05]
+  governance_gates:
+    pilot: [G-PF-05]
+    scale: []
   stop_or_pause_criteria:
     - "Technician representative withdraws support because review time or safety boundary is not maintained."
     - "Repeated unsafe, stale, or confidential responses are unresolved."

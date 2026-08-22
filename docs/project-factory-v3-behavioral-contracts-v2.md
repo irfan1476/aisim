@@ -1,6 +1,6 @@
 # Project Factory V3 — Window 1 Behavioral Contracts v2
 
-Status: **proposed reference contract; review and walkthrough required before implementation**
+Status: **conditionally accepted reference contract; product-owner approval required before implementation**
 
 ## Contract boundary
 
@@ -16,6 +16,18 @@ The contract separates five concepts that must never be collapsed:
 3. initiative lifecycle;
 4. a source-bound Research review;
 5. later Pilot and Scale decisions.
+
+### Shared capacity-unit contract
+
+Capacity labels are programme-planning units, not hidden headcount. One unit
+means one quarter allocation from a named specialist pool; it is not a
+person-day, a percentage of a named employee, or a plant-local shift. The pools
+are shared across the five plants. A packet or operating-change plan must name
+the plant, line, workflow, or team boundary that will consume the unit.
+Therefore `Data Engineering 1/4` means one of four available Data Engineering
+units is committed for that quarter. It does not mean that 25% of a specific
+engineer is available. The UI must expose this legend before the first
+selection and keep the denominator visible in every packet.
 
 ## Contract 1 — Project Factory window orchestration
 
@@ -176,6 +188,13 @@ status remains `in-progress` until the signal is resolved.
 | Q2 | Observe and resolve the authored Research signal; create PF-R01-A, B, or C; consume no Research capacity by default. |
 | Q3 | Carry the finding and unresolved conditions into the window outcome; consume no Research capacity by default. |
 
+Every opening packet uses the same learner-facing timing line:
+`Research activity Q1 · signal available Q2 · interpretation/board review Q3 ·
+next decision Window 2`. If a learner defers, the packet states a scheduled
+review at the end of Q3 and an earlier review trigger only when the pack names
+one (for example, a material failure or new ownership evidence). Deferral does
+not create an invented metric penalty.
+
 The same timing shape applies to Visual Quality and Technician Knowledge using
 their authored capital and capacity pools. Research never consumes an active
 Pilot/Scale slot. Quarterly run cost is zero during Research unless the pack
@@ -235,6 +254,12 @@ Required scoped findings:
 - an accountable asset-data owner is named;
 - usable history exists for the selected failure modes, with limitations shown;
 - technician review/change capacity and the alert disposition owner are named.
+
+The early-action test is operational, not merely statistical: selected M-4
+failure modes must be detectable with enough lead time for the named safe
+maintenance/change window and a technician disposition decision. The pack's
+one planned eight-hour monthly window is a provisional context fact, not a
+universal rule for other plants or scenarios.
 
 Artefact limitations: no pilot alert usefulness, nuisance-alert rate, technician
 disposition, downtime benefit, or Scale evidence has been observed. Decision use:
