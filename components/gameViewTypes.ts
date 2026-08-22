@@ -60,12 +60,18 @@ export interface GameViewState {
   scenarioId?: string;
   currencyMode: CurrencyMode;
   quarterlyBudget: number;
+  campaignBudget: number;
+  campaignBudgetRemaining: number;
+  deploymentAmount: number;
+  quarterlyDeploymentCap: number;
+  lastQuarterDeployment: number;
   scenarioBudgetRemaining: number;
   scenarioStartingMetrics?: Record<string, number>;
   scenarioProgress?: Record<string, number>;
   quarterlyCrisisCost: number;
   scenarioOverspend: number;
   scenarioBonus: number;
+  runMetadata?: { runId: string; seed: number; scenarioId?: string; rulesVersion: string };
 }
 
 export interface Metric {

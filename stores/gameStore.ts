@@ -2,7 +2,7 @@
 
 import { create } from 'zustand';
 import { createJSONStorage, persist, type StateStorage } from 'zustand/middleware';
-import { initialGameState, type GameState } from '../lib/game/state';
+import { initialGameState, normalizeDeploymentAmount, quarterlyDeploymentCap, type Allocation, type GameState, type Recommendation } from '../lib/game/state';
 import { causalChain } from '../lib/game/metrics';
 import { generateCrisis } from '../lib/game/crises';
 import { getScenario } from '../lib/scenarios/registry';
@@ -31,6 +31,7 @@ type GameStore = GameState & {
   startGame: () => void;
   selectInitiatives: (ids: string[]) => void;
   updateAllocation: (key: keyof GameState['alloc'], value: number) => void;
+  setDeploymentAmount: (amount: number) => void;
   confirmDecisions: () => void;
   respondToCrisis: (impact: Record<string, number>, cost?: number) => void;
   advanceQuarter: () => void;
@@ -46,7 +47,7 @@ type GameStore = GameState & {
   dismissRecommendation: () => void;
   saveReflection: (reflection: Partial<GameState['userReflections']>) => void;
   loadGame: (state: unknown) => void;
-  initializeScenario: (scenarioId: string) => void;
+  initializeScenario: (scenarioId: string, campaignBudget?: number) => void;
 };
 
 const browserStorage: StateStorage = {
@@ -88,6 +89,35 @@ function crisisRoll(seed: number, quarter: number): number {
   return value / 4294967296;
 }
 
+const allocationKeys: (keyof Allocation)[] = ['infra', 'data', 'people', 'mlops', 'compliance', 'innovation'];
+
+function rebalanceAllocation(current: Allocation, targets: Partial<Allocation> = {}): Allocation {
+  const next = { ...current };
+  for (const key of allocationKeys) {
+    if (targets[key] !== undefined) next[key] = Math.min(50, Math.max(5, Math.round(Number(targets[key]))));
+  }
+  let difference = 100 - allocationKeys.reduce((sum, key) => sum + next[key], 0);
+  const candidates = [...allocationKeys.filter((key) => targets[key] === undefined), ...allocationKeys];
+  for (const key of candidates) {
+    if (Math.abs(difference) < 1) break;
+    if (difference > 0) {
+      const increase = Math.min(difference, 50 - next[key]);
+      next[key] += increase;
+      difference -= increase;
+    } else {
+      const decrease = Math.min(-difference, next[key] - 5);
+      next[key] -= decrease;
+      difference += decrease;
+    }
+  }
+  return next;
+}
+
+function recommendationFor(state: GameState, title: string): Recommendation | undefined {
+  return state.proactiveRecommendations.find((item) => item.title === title)
+    || state.history.at(-1)?.recommendations?.find((item) => item.title === title);
+}
+
 export const useGameStore = create<GameStore>()(persist((set, get) => ({
   ...initialGameState(),
 
@@ -96,9 +126,14 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
     set(initialGameState());
   },
 
-  initializeScenario: (scenarioId) => set((state) => {
+  initializeScenario: (scenarioId, campaignBudgetOverride) => set((state) => {
     const scenario = getScenario(scenarioId);
     if (!scenario) return state;
+    const campaignBudget = Number.isFinite(campaignBudgetOverride) && Number(campaignBudgetOverride) > 0
+      ? Number(campaignBudgetOverride)
+      : scenario.startingState.budget * 12;
+    const quarterlyBudget = campaignBudget / 12;
+    const deploymentCap = quarterlyDeploymentCap(campaignBudget, quarterlyBudget);
     const startingMetrics = { ...scenario.startingState.startingMetrics };
     const nativeMetrics = {
       efficiency: startingMetrics.efficiency ?? state.efficiency,
@@ -111,8 +146,13 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
       ...state,
       scenarioMode: true,
       scenarioId: scenario.id,
-      quarterlyBudget: scenario.startingState.budget,
-      scenarioBudgetRemaining: scenario.startingState.budget,
+      quarterlyBudget,
+      campaignBudget,
+      campaignBudgetRemaining: campaignBudget,
+      scenarioBudgetRemaining: quarterlyBudget,
+      deploymentAmount: Math.min(quarterlyBudget, deploymentCap),
+      quarterlyDeploymentCap: deploymentCap,
+      lastQuarterDeployment: 0,
       scenarioStartingMetrics: startingMetrics,
       scenarioProgress: progress,
       scenarioState: { metrics: startingMetrics, progress, flags: {} },
@@ -124,9 +164,13 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
     };
   }),
 
-  selectInitiatives: (ids) => set({ selected: [...ids] }),
+  selectInitiatives: (ids) => set({ selected: Array.from(new Set(ids)).slice(0, 3) }),
 
   updateAllocation: (key, value) => set((state) => ({ alloc: { ...state.alloc, [key]: value } })),
+
+  setDeploymentAmount: (amount) => set((state) => ({
+    deploymentAmount: normalizeDeploymentAmount(amount, state.campaignBudgetRemaining, state.quarterlyBudget),
+  })),
 
   confirmDecisions: () => {
     const state = normalizeGameState(get());
@@ -134,9 +178,22 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
     const scenario = state.scenarioMode ? getScenario(state.scenarioId) : undefined;
     const discovery = describeSynergies(state.selected, result.initiativeStates, scenario?.synergies);
     const synergyCostReduction = Math.min(0.15, discovery?.effects.reduce((sum, effect) => sum + effect.costReduction, 0) || 0);
-    const selectedCost = state.selected.reduce((sum, id) => sum + Number(result.initiativeStates[id]?.currentCost || 0), 0) * (1 - synergyCostReduction);
+    const selectedCost = state.selected.reduce((sum, id) => {
+      const initiative = result.initiativeStates[id];
+      return sum + Number(initiative?.baseCost ?? initiative?.cost ?? initiative?.currentCost ?? 0);
+    }, 0) * (1 - synergyCostReduction);
+    const campaignRemaining = Number(state.campaignBudgetRemaining ?? state.campaignBudget ?? state.quarterlyBudget * 12);
+    const deploymentCap = quarterlyDeploymentCap(campaignRemaining, state.quarterlyBudget);
+    const deploymentAmount = normalizeDeploymentAmount(state.deploymentAmount, campaignRemaining, state.quarterlyBudget);
+    if (selectedCost > deploymentAmount + 1e-9) {
+      set({ feedback: `This portfolio costs ${selectedCost.toFixed(2)} but only ${deploymentAmount.toFixed(2)} is deployed this quarter. Increase deployment, choose fewer initiatives, or keep the reserve.` });
+      return;
+    }
     const overspend = state.scenarioMode ? Math.max(0, selectedCost - state.quarterlyBudget) : 0;
-    const overspendRisk = state.scenarioMode && state.quarterlyBudget > 0 ? Math.min(15, overspend / state.quarterlyBudget * 10) : 0;
+    const purseOverrun = state.scenarioMode ? Math.max(0, selectedCost - campaignRemaining) : 0;
+    const overspendRisk = state.scenarioMode && state.quarterlyBudget > 0
+      ? Math.min(25, (overspend / state.quarterlyBudget) * 10 + (purseOverrun > 0 ? 10 : 0))
+      : 0;
     const adjustedMetrics = { ...result.metrics, risk: Math.min(95, Number(result.metrics.risk ?? state.risk) + overspendRisk) };
     const resolvedState = { ...state, ...adjustedMetrics, initiativeStates: result.initiativeStates, scenarioState: result.scenarioState };
     const newlyDiscovered = discovery?.effects.map(effect => effect.key) || [];
@@ -148,20 +205,39 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
     const scenarioCrisis = scenario && state.q % 3 === 0 && crisisRoll(state.initiativeGeneration.seed, state.q) < crisisProbability
       ? scenario.crises[Math.abs(state.initiativeGeneration.seed + state.q) % scenario.crises.length]
       : null;
+    const nextCrisis = scenarioCrisis
+      ? { ...scenarioCrisis, options: scenarioCrisis.options.map((option) => [option.label, option.description, option.impacts, option.cost] as [string, string, Record<string, number>, number?]) }
+      : state.q % 3 === 0 && crisisRoll(state.initiativeGeneration.seed, state.q) < crisisProbability
+        ? generateCrisis(state.initiativeGeneration.seed + state.q)
+        : null;
+    const nextCausalChain = causalChain(resolvedState, state.selected);
+    const nextRecommendations = generateProactiveRecommendations(resolvedState);
     set({
       ...resolvedState,
       score: Math.min(100, deriveScore(state, adjustedMetrics) + scenarioBonus),
       scenarioProgress,
       scenarioState: result.scenarioState,
+      portfolio: result.snapshot.portfolio,
+      selectedCount: result.snapshot.selectedCount ?? result.snapshot.selectedIds?.length ?? 0,
+      portfolioPosture: result.snapshot.portfolioPosture ?? 'pause',
+      portfolioBreadth: result.snapshot.breadth ?? 0,
+      concentrationRisk: result.snapshot.concentrationRisk ?? 0,
       scenarioOverspend: overspend,
+      campaignBudgetRemaining: Math.max(0, campaignRemaining - selectedCost),
+      deploymentAmount,
+      quarterlyDeploymentCap: deploymentCap,
+      lastQuarterDeployment: selectedCost,
+      scenarioBudgetRemaining: state.scenarioMode
+        ? Math.max(0, state.quarterlyBudget - selectedCost)
+        : state.scenarioBudgetRemaining,
       scenarioBonus,
       stage: 'results',
-      crisis: scenarioCrisis ? { ...scenarioCrisis, options: scenarioCrisis.options.map((option) => [option.label, option.description, option.impacts, option.cost] as [string, string, Record<string, number>, number?]) } : state.q % 3 === 0 && crisisRoll(state.initiativeGeneration.seed, state.q) < crisisProbability ? generateCrisis(state.initiativeGeneration.seed + state.q) : null,
-      causalChain: causalChain(resolvedState, state.selected),
-      proactiveRecommendations: generateProactiveRecommendations(resolvedState),
+      crisis: nextCrisis,
+      causalChain: nextCausalChain,
+      proactiveRecommendations: nextRecommendations,
       discoveredSynergies,
       feedback: discovery?.message || `Quarter ${state.q} resolved. Your portfolio is now showing the consequences of this allocation.`,
-      history: [...state.history, { ...result.snapshot, metrics: adjustedMetrics }],
+      history: [...state.history, { ...result.snapshot, deployedAmount: selectedCost, fixedInitiativeSpend: selectedCost, budgetProvenance: 'campaign-purse-with-two-quarter-cap', metrics: adjustedMetrics, crisis: nextCrisis, causalChain: nextCausalChain, recommendations: nextRecommendations }],
     });
   },
 
@@ -186,22 +262,31 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
     const next = {
       ...state,
       ...nativeImpact,
-      spent: state.spent + (state.scenarioMode ? cost : 0),
+      spent: state.spent + cost,
+      campaignBudgetRemaining: Math.max(0, Number(state.campaignBudgetRemaining ?? state.campaignBudget ?? state.quarterlyBudget * 12) - cost),
       scenarioBudgetRemaining: state.scenarioMode ? Math.max(0, state.scenarioBudgetRemaining - cost) : state.scenarioBudgetRemaining,
-      quarterlyCrisisCost: state.quarterlyCrisisCost + (state.scenarioMode ? cost : 0),
+      quarterlyDeploymentCap: quarterlyDeploymentCap(Math.max(0, Number(state.campaignBudgetRemaining ?? state.campaignBudget ?? state.quarterlyBudget * 12) - cost), state.quarterlyBudget),
+      quarterlyCrisisCost: state.quarterlyCrisisCost + cost,
       crisis: null,
       stage: 'results' as const,
       ...(scenarioMetrics ? { scenarioState: { ...state.scenarioState, metrics: scenarioMetrics } } : {}),
     };
+    const nextScenarioState = scenarioMetrics && scenario
+      ? { ...next.scenarioState, progress: calculateProgressPercentages(scenarioMetrics, scenario) }
+      : next.scenarioState;
+    const history = next.history.length
+      ? [...next.history.slice(0, -1), {
+          ...next.history[next.history.length - 1],
+          scenarioState: nextScenarioState,
+          crisisResponse: impact,
+          metrics: { ...next.history[next.history.length - 1].metrics, spent: next.spent },
+        }]
+      : next.history;
     return {
       ...next,
+      history,
       scenarioProgress: scenario ? calculateScenarioProgress(next, scenario)?.values : next.scenarioProgress,
-      ...(scenarioMetrics && scenario ? {
-        scenarioState: {
-          ...next.scenarioState,
-          progress: calculateProgressPercentages(scenarioMetrics, scenario),
-        },
-      } : {}),
+      scenarioState: nextScenarioState,
     };
   }),
 
@@ -217,6 +302,8 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
       proactiveRecommendations: [],
       quarterlyCrisisCost: 0,
       scenarioBudgetRemaining: state.scenarioBudgetRemaining === undefined ? state.quarterlyBudget : state.quarterlyBudget,
+      quarterlyDeploymentCap: quarterlyDeploymentCap(state.campaignBudgetRemaining, state.quarterlyBudget),
+      deploymentAmount: Math.min(state.quarterlyBudget, quarterlyDeploymentCap(state.campaignBudgetRemaining, state.quarterlyBudget)),
       scenarioOverspend: 0,
       feedback: `Quarter ${state.q + 1} is ready.`,
     });
@@ -254,15 +341,38 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
 
   clearWhatIfDraft: removeWhatIfDraft,
   approveRecommendation: (title) => set((state) => {
+    const source = recommendationFor(state, title);
     const allocationKey = title.toLowerCase().includes('compliance') || title.toLowerCase().includes('risk') ? 'compliance' : title.toLowerCase().includes('data') ? 'data' : title.toLowerCase().includes('training') || title.toLowerCase().includes('adoption') || title.toLowerCase().includes('people') ? 'people' : undefined;
-    const guidance = { title, action: allocationKey ? `Increase ${allocationKey} allocation before confirming this quarter.` : 'Review this recommendation before confirming the quarter.', allocationKey };
-    return { approvedRecommendations: state.approvedRecommendations.includes(title) ? state.approvedRecommendations : [...state.approvedRecommendations, title], nextQuarterGuidance: guidance, feedback: `Recommendation approved: ${title}. It is queued as next-quarter guidance.` };
+    const guidance = { title, action: source?.action || (allocationKey ? `Increase ${allocationKey} allocation before confirming this quarter.` : 'Review this recommendation before confirming the quarter.'), allocationKey, initiativeIds: source?.initiativeIds, preferredInitiativeIds: source?.preferredInitiativeIds, deploymentAmount: source?.deploymentAmount, operatingAllocationTargets: source?.operatingAllocationTargets };
+    const approvedRecommendations = state.approvedRecommendations.includes(title) ? state.approvedRecommendations : [...state.approvedRecommendations, title];
+    const history = state.history.length
+      ? [...state.history.slice(0, -1), { ...state.history[state.history.length - 1], approvedRecommendations }]
+      : state.history;
+    return { approvedRecommendations, nextQuarterGuidance: guidance, history, feedback: `Recommendation approved: ${title}. It is queued as next-quarter guidance.` };
   }),
   applyRecommendation: () => set((state) => {
-    const key = state.nextQuarterGuidance?.allocationKey as keyof typeof state.alloc | undefined;
-    if (!key) return { feedback: 'Review the recommendation manually before confirming.', nextQuarterGuidance: null };
-    const current = state.alloc[key]; const increase = Math.min(8, 20 - current); const source: keyof typeof state.alloc = key === 'infra' ? 'innovation' : 'infra'; const available = state.alloc[source]; const shift = Math.min(increase, Math.max(0, available - 5));
-    return shift <= 0 ? { feedback: `Keep ${key} at ${current}%; the recommendation is noted for this quarter.`, nextQuarterGuidance: null } : { alloc: { ...state.alloc, [key]: current + shift, [source]: available - shift }, feedback: `Applied guidance: ${key} allocation increased by ${shift} points.`, nextQuarterGuidance: null };
+    const guidance = state.nextQuarterGuidance;
+    if (!guidance) return { feedback: 'Review the recommendation manually before confirming.' };
+    const ids = Array.from(new Set((guidance.preferredInitiativeIds?.length ? guidance.preferredInitiativeIds : guidance.initiativeIds) || []))
+      .filter((id) => Boolean(state.initiativeStates?.[id]))
+      .slice(0, 3);
+    // Preserve compatibility with approvals created by older saves, which
+    // only carried an allocation key. New recommendations always carry the
+    // complete actionable payload above.
+    if (!guidance.operatingAllocationTargets && guidance.allocationKey) {
+      const key = guidance.allocationKey as keyof Allocation;
+      const current = state.alloc[key];
+      const increase = Math.min(8, 20 - current);
+      const source = key === 'infra' ? 'innovation' : 'infra';
+      const shift = Math.min(increase, Math.max(0, state.alloc[source] - 5));
+      if (shift > 0) {
+        return { alloc: { ...state.alloc, [key]: current + shift, [source]: state.alloc[source] - shift }, feedback: `Applied guidance: ${key} allocation increased by ${shift} points.`, nextQuarterGuidance: null };
+      }
+    }
+    const allocation = rebalanceAllocation(state.alloc, guidance.operatingAllocationTargets);
+    const deployment = normalizeDeploymentAmount(guidance.deploymentAmount, state.campaignBudgetRemaining, state.quarterlyBudget);
+    const selectedText = ids.length ? ` Selected: ${ids.join(', ')}.` : ' No initiative matched this recommendation; review the cards manually.';
+    return { selected: ids, alloc: allocation, deploymentAmount: deployment, feedback: `Applied guidance for ${guidance.title}. You can edit the initiatives, deployment, and operating allocation before confirming.${selectedText}`, nextQuarterGuidance: null };
   }),
   dismissRecommendation: () => set({ nextQuarterGuidance: null, feedback: 'Recommendation dismissed for this quarter; it remains in campaign history.' }),
 

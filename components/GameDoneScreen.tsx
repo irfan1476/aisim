@@ -8,6 +8,7 @@ import {
   TrendingUp,
   TriangleAlert,
 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import type { GameViewState } from "./gameViewTypes";
 import { initiatives } from "../lib/game/initiatives";
 import {
@@ -21,6 +22,8 @@ import { formatBudget, formatCurrency } from "../lib/currency";
 import { getScenario } from "../lib/scenarios/registry";
 import type { ScenarioProgressDefinition } from "../lib/scenarios/types";
 import { explainScore } from "../lib/game/scoring";
+import { buildReplayRun, deleteReplayRun, readReplayRuns, saveReplayRun, type ReplayRun } from "../lib/replay";
+import RunComparison from "./RunComparison";
 
 interface GameDoneScreenProps {
   state: GameViewState;
@@ -33,6 +36,11 @@ type Snapshot = {
   allocation?: Record<string, number>;
   synergiesDiscovered?: string[];
   metrics?: Record<string, number>;
+  portfolio?: { selectedCount?: number; portfolioPosture?: string };
+  selectedCount?: number;
+  portfolioPosture?: string;
+  deployedAmount?: number;
+  fixedInitiativeSpend?: number;
 };
 const n = (value: unknown, digits = 1) => Number(value || 0).toFixed(digits);
 
@@ -75,6 +83,15 @@ export default function GameDoneScreen({
   state,
   onPlayAgain,
 }: GameDoneScreenProps) {
+  const [runName, setRunName] = useState("");
+  const [savedRuns, setSavedRuns] = useState<ReplayRun[]>([]);
+  const [saved, setSaved] = useState(false);
+  const draftRun = useMemo(() => buildReplayRun(state as any, runName), [state, runName]);
+  useEffect(() => { setSavedRuns(readReplayRuns()); }, []);
+  const saveCurrentRun = () => {
+    setSavedRuns(saveReplayRun(draftRun));
+    setSaved(true);
+  };
   const history = (state.history || []) as Snapshot[];
   const reflection = calculateReflection(state as any);
   const averageAllocation = (key: string) => {
@@ -182,6 +199,15 @@ export default function GameDoneScreen({
         return `In ${scenario.name}, your most effective movement was ${strongest.item.label}: ${formatScenarioMetric(strongest.value, strongest.item.unit)} (${Math.round(strongest.score)}% toward target). Your largest remaining gap is ${weakest.item.label}: ${formatScenarioMetric(weakest.value, weakest.item.unit)} against a target of ${formatScenarioMetric(weakest.item.target, weakest.item.unit)}. You concentrated funding on ${funded || "no repeated initiative"}, which shaped this outcome.`;
       })()
     : "";
+  const neglectedPressure = scenarioEvidence.at(-1);
+  const pairCounts = history
+    .map((item) => (item.selectedIds?.length ? item.selectedIds : item.chosen || []).sort().join(" + "))
+    .filter(Boolean)
+    .reduce<Record<string, number>>((counts, key) => { counts[key] = (counts[key] || 0) + 1; return counts; }, {});
+  const strongestCombination = Object.entries(pairCounts).sort((a, b) => b[1] - a[1])[0]?.[0];
+  const nextExperiment = neglectedPressure
+    ? `Replay from the next campaign and address ${neglectedPressure.item.label} earlier. Keep your strongest observed combination, then change only one quarter so you can test whether that pressure was the limiting factor.`
+    : "Replay with one deliberate change: keep the same portfolio, but change the quarter in which you make your highest-impact investment.";
   const scoreBreakdown = explainScore(state as any);
   const exportReport = () => {
     const text = [
@@ -259,6 +285,7 @@ export default function GameDoneScreen({
             ))}
           </div>
         </section>
+        {scenario && <section className="mt-6 rounded-3xl border border-[#d0d7de] bg-white p-6 shadow-sm"><p className="text-xs font-bold uppercase tracking-[.2em] text-[#0969da]">Campaign budget ledger</p><div className="mt-4 grid gap-3 sm:grid-cols-3"><div><p className="text-xs text-[#656d76]">Total purse</p><b className="text-xl">{formatBudget(state.campaignBudget || state.quarterlyBudget * 12, state.currencyMode)}</b></div><div><p className="text-xs text-[#656d76]">Spent</p><b className="text-xl">{formatCurrency(state.spent, state.currencyMode)}</b></div><div><p className="text-xs text-[#656d76]">Remaining</p><b className="text-xl text-[#0969da]">{formatCurrency(state.campaignBudgetRemaining ?? 0, state.currencyMode)}</b></div></div><p className="mt-3 text-xs text-[#656d76]">The purse is finite across all twelve quarters; unused capital is not automatically a failure.</p></section>}
         {scenario && <section className="mt-6 rounded-3xl border border-[#54aeff]/35 bg-[#ddf4ff] p-6 shadow-sm md:p-8"><div className="flex flex-wrap items-start justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-[.2em] text-[#0969da]">Scenario performance</p><h2 className="mt-2 text-2xl font-bold">{scenario.name}</h2><p className="mt-2 text-sm text-[#57606a]">Budget framing: {formatBudget(state.quarterlyBudget, state.currencyMode)} per quarter · campaign spend: {formatCurrency(state.spent, state.currencyMode)}</p></div><div className="rounded-2xl bg-white px-5 py-3 text-center"><p className="text-xs text-[#57606a]">Scenario bonus</p><b className="text-3xl text-[#0969da]">+{state.scenarioBonus || 0}</b></div></div><p className="mt-5 rounded-2xl border border-[#54aeff]/25 bg-white p-4 text-sm leading-6 text-[#57606a]">{scenarioDiagnosis}</p><div className="mt-6 grid gap-3 sm:grid-cols-2">{scenario.progress.map((item) => { const value = scenarioMetricValue(item); const score = scenarioMetricScore(item); return <div key={item.key} className="rounded-xl bg-white p-4"><div className="flex items-start justify-between gap-3 text-sm font-bold"><span>{item.label}</span><span className="text-right text-[#0969da]">{formatScenarioMetric(value, item.unit)}</span></div><div className="mt-3 h-2 rounded-full bg-[#d0d7de]"><div className="h-full rounded-full bg-[#0969da]" style={{ width: `${score}%` }} /></div><div className="mt-2 flex justify-between gap-2 text-xs text-[#656d76]"><span>{Math.round(score)}% toward target</span><span>Target {formatScenarioMetric(item.target, item.unit)}</span></div></div>; })}</div></section>}
         <section className="mt-6 rounded-3xl border border-[#d0d7de] bg-white p-6 shadow-sm md:p-8">
           <div className="flex items-center justify-between gap-4">
@@ -284,6 +311,31 @@ export default function GameDoneScreen({
           </div>
           {scenario ? <p className="mt-4 rounded-2xl border border-[#54aeff]/25 bg-[#ddf4ff] p-4 text-sm leading-6 text-[#57606a]">Scenario progress is capped at a small bonus. It rewards movement toward the domain targets without overpowering the core operating results.</p> : null}
         </section>
+        <section className="mt-6 grid gap-6 lg:grid-cols-2">
+          <div className="rounded-3xl border border-[#d0d7de] bg-white p-6 shadow-sm md:p-8">
+            <div className="flex items-center gap-3"><CheckCircle2 className="text-[#1a7f37]" /><h2 className="text-2xl font-bold">What the campaign taught you</h2></div>
+            <div className="mt-6 space-y-4 text-sm leading-6 text-[#57606a]">
+              <p><b className="text-[#1f2328]">What worked:</b> {topBetEvidence}. {best ? `Your strongest recorded ROI position was Q${best.q}.` : "No completed quarter was recorded."}</p>
+              <p><b className="text-[#1f2328]">What was neglected:</b> {neglectedPressure ? `${neglectedPressure.item.label} finished furthest from its scenario target.` : "Review the quarters where you preserved budget or left initiatives unfunded."}</p>
+              <p><b className="text-[#1f2328]">Missed opportunity:</b> {neglectedPressure ? `An earlier investment in ${neglectedPressure.item.label} may have given the capability more time to mature.` : "A saved reserve can be valuable, but leaving a binding pressure unattended for too long carries a learning cost."}</p>
+              <p><b className="text-[#1f2328]">The trade-off:</b> {state.adoption >= 60 ? "You accepted some risk to build adoption and operating momentum." : "You created value, but the operating system did not keep pace with the portfolio."} {strongestCombination ? `Your most repeated combination was ${strongestCombination.replaceAll(" + ", " + ")}.` : ""}</p>
+            </div>
+          </div>
+          <div className="rounded-3xl border border-[#d4a72c]/40 bg-[#fff8c5] p-6 shadow-sm md:p-8">
+            <div className="flex items-center gap-3"><Sparkles className="text-[#9a6700]" /><h2 className="text-2xl font-bold">Your next experiment</h2></div>
+            <p className="mt-6 text-lg font-semibold leading-8 text-[#3d2e00]">{nextExperiment}</p>
+            <p className="mt-4 text-sm leading-6 text-[#6e5620]">Change one meaningful variable at a time. The aim is to learn which timing and portfolio shape works under these conditions—not to discover one permanent correct answer.</p>
+            <p className="mt-4 text-xs leading-5 text-[#6e5620]">Frozen evidence: {history.length} quarter snapshots · run {state.runMetadata?.runId || `seed-${state.initiativeGeneration?.seed || "unknown"}`} · rules {state.runMetadata?.rulesVersion || "2.0"}. Advisor wording never changes the measured result.</p>
+          </div>
+        </section>
+        <section className="mt-6 rounded-3xl border border-[#d0d7de] bg-white p-6 shadow-sm md:p-8">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div><h2 className="text-2xl font-bold">Save this campaign</h2><p className="mt-1 text-sm text-[#656d76]">Name the hypothesis you tested so a later run has something meaningful to compare.</p></div>
+            <div className="flex flex-wrap gap-2"><input value={runName} onChange={(event) => setRunName(event.target.value)} placeholder="e.g. Governance first" className="rounded-xl border border-[#d0d7de] px-3 py-2 text-sm outline-none focus:border-[#0969da]" /><button type="button" onClick={saveCurrentRun} className="rounded-xl bg-[#0d1b2e] px-4 py-2 text-sm font-bold text-white hover:bg-[#0969da]">{saved ? "Saved" : "Save run"}</button></div>
+          </div>
+          <p className="mt-4 text-xs leading-5 text-[#656d76]">Stored locally with the scenario, seed, rules version, and frozen quarter snapshots. No advisor wording is used to calculate this report.</p>
+        </section>
+        <RunComparison runs={savedRuns} currentRun={draftRun} onDelete={(id) => setSavedRuns(deleteReplayRun(id))} />
         <section className="mt-6 grid gap-6 lg:grid-cols-[1.35fr_.65fr]">
           <div className="rounded-3xl border border-[#d0d7de] bg-white p-6 shadow-sm md:p-8">
             <div className="flex items-center gap-3">
@@ -387,7 +439,10 @@ export default function GameDoneScreen({
                     <div className="pr-3 pt-3">
                       <p className="font-bold">Q{item.q}</p>
                       <p className="mt-2 line-clamp-2 min-h-10 text-xs text-[#656d76]">
-                        {(item.chosen || []).join(" · ") || "No initiatives"}
+                        {(item.chosen || item.selectedIds || []).join(" · ") || "No initiatives"}
+                      </p>
+                      <p className="mt-1 text-xs text-[#656d76]">
+                        {item.portfolio?.selectedCount ?? item.selectedCount ?? (item.chosen || item.selectedIds || []).length} funded · recorded spend {n(item.metrics?.spent)}
                       </p>
                       <p
                         className={`mt-3 text-sm font-bold ${change >= 0 ? "text-[#1a7f37]" : "text-[#cf222e]"}`}
@@ -395,6 +450,7 @@ export default function GameDoneScreen({
                         {change >= 0 ? "+" : ""}
                         {n(change)}% ROI
                       </p>
+                      <p className="mt-1 text-xs text-[#656d76]">Spent {formatCurrency(item.deployedAmount ?? item.fixedInitiativeSpend ?? 0, state.currencyMode)}</p>
                     </div>
                   </div>
                 );

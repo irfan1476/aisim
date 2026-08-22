@@ -7,7 +7,7 @@ import type { GameState, QuarterSnapshot } from "./state";
 import { normalizeGameState } from "./persistence";
 import { evaluateSynergies } from "./generator";
 import { getScenario } from "../scenarios/registry";
-import { applyScenarioEffects, calculateStandardEffects } from "./effectResolver";
+import { applyScenarioEffects, calculatePortfolioDynamics, calculateStandardEffects } from "./effectResolver";
 
 export type QuarterDecision = { selected: string[]; alloc: GameState["alloc"] };
 
@@ -25,15 +25,18 @@ export function resolveQuarter(
   snapshot: QuarterSnapshot;
 } {
   const current = hydrateGameState(state);
+  const selected = decision.selected
+    .filter((id, index, ids) => Boolean(current.initiativeStates[id]) && ids.indexOf(id) === index)
+    .slice(0, 3);
   const evolved = updateInitiativeStates(
     current.initiativeStates,
-    decision.selected,
+    selected,
     decision.alloc,
     { adoption: current.adoption },
   );
-  const chosen = decision.selected.map((id) => evolved[id]).filter(Boolean);
+  const chosen = selected.map((id) => evolved[id]).filter(Boolean);
   const scenario = current.scenarioMode ? getScenario(current.scenarioId) : undefined;
-  const synergies = evaluateSynergies(decision.selected, evolved, scenario?.synergies);
+  const synergies = evaluateSynergies(selected, evolved, scenario?.synergies);
   const synergyMultiplier =
     1 + synergies.reduce((sum, effect) => sum + effect.roiBoost, 0);
   const synergyRiskReduction = synergies.reduce(
@@ -48,7 +51,7 @@ export function resolveQuarter(
     0.15,
     synergies.reduce((sum, effect) => sum + effect.costReduction, 0),
   );
-  const metrics = calculateStandardEffects(current, decision.selected, decision.alloc, chosen, {
+  const metrics = calculateStandardEffects(current, selected, decision.alloc, chosen, {
     synergyMultiplier,
     synergyRiskReduction,
     synergyAdoption,
@@ -61,7 +64,7 @@ export function resolveQuarter(
           ? current.scenarioState
           : { metrics: { ...(current.scenarioStartingMetrics || {}) }, progress: { ...(current.scenarioProgress || {}) }, flags: {} },
         evolved,
-        decision.selected,
+        selected,
         decision.alloc,
         current.adoption,
         synergies,
@@ -70,10 +73,18 @@ export function resolveQuarter(
   const resolvedMetrics = scenario
     ? ({ ...metrics, ...scenarioState.metrics } as Partial<GameState>)
     : metrics;
+  const portfolio = calculatePortfolioDynamics(selected.length, Object.keys(current.initiativeStates || {}).length);
   const snapshot: QuarterSnapshot = {
     q: current.q,
     chosen: chosen.map((item) => item.name),
-    selectedIds: [...decision.selected],
+    selectedIds: [...selected],
+    portfolio,
+    selectedCount: portfolio.selectedCount,
+    portfolioPosture: portfolio.portfolioPosture,
+    breadth: portfolio.breadth,
+    concentrationRisk: portfolio.concentrationRisk,
+    portfolioProvenance: portfolio.provenance,
+    provenance: portfolio.provenance,
     allocation: { ...decision.alloc },
     metrics: resolvedMetrics,
     initiativeStates: JSON.parse(JSON.stringify(evolved)),

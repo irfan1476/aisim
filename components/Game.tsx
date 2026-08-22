@@ -21,10 +21,18 @@ import {
   hasCampaignProgress,
   readPersistedGameState,
 } from "../lib/game/persistence";
+import { answerBoardAdvisorQuestion, type BoardPersona } from "../lib/game/boardAdvisor";
 import { buildAdvisorSystemPrompt } from "../lib/llm/advisorPrompt";
 
 function compactNumber(value: number): number {
   return Number.isFinite(value) ? Number(value.toFixed(2)) : 0;
+}
+
+function deterministicAdvisorAnswer(state: GameViewState, persona: string, question: string): string {
+  const boardPersona: BoardPersona = ["CFO", "CTO", "CHRO", "RISK"].includes(persona)
+    ? (persona as BoardPersona)
+    : "CFO";
+  return answerBoardAdvisorQuestion(state, boardPersona, question);
 }
 
 export default function Game() {
@@ -43,6 +51,7 @@ export default function Game() {
   const [scenarioMode, setScenarioMode] = useState(false);
   const [scenarioId, setScenarioId] = useState("projectFactory");
   const [currencyMode, setCurrencyMode] = useState<CurrencyMode>("$");
+  const [campaignBudget, setCampaignBudget] = useState(120);
   const [debug, setDebug] = useState(false);
   useEffect(() => {
     setDebug(
@@ -59,6 +68,7 @@ export default function Game() {
     setScenarioMode(Boolean(persisted.scenarioMode));
     setScenarioId(persisted.scenarioId || "projectFactory");
     setCurrencyMode(persisted.currencyMode || "$");
+    setCampaignBudget(Number(persisted.campaignBudget || persisted.quarterlyBudget * 12 || 120));
     setScreen(persisted.stage === "done" ? "done" : "game");
     // The persisted campaign is read once when the game shell mounts.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -115,19 +125,15 @@ export default function Game() {
         | "innovation",
       value,
     );
+  const updateDeployment = (amount: number) => store.setDeploymentAmount(amount);
   const llm = useLLMStore();
-  const ask = async () => {
-    if (!question.trim() || isAsking) return;
-    const userQuestion = question;
+  const ask = async (questionOverride?: string) => {
+    const userQuestion = (questionOverride ?? question).trim();
+    if (!userQuestion || isAsking) return;
     setQuestion("");
-    setAnswer("");
+    const evidenceAnswer = deterministicAdvisorAnswer(s, persona, userQuestion);
+    setAnswer(evidenceAnswer);
     setIsAsking(true);
-    const replies: Record<string, string> = {
-      CFO: `At ${s.roi.toFixed(1)}% ROI and $${s.spent.toFixed(1)}M spent, your next question is payback. Keep people above 15% to protect value realization.`,
-      CTO: `Data readiness is ${s.data}%. Some initiatives will become easier to scale as data foundations compound.`,
-      CHRO: `Adoption is ${s.adoption}%. Your people allocation is ${s.alloc.people}%; invest in enablement if you want the transformation to stick.`,
-      RISK: `Risk exposure is ${s.risk}%, while compliance is ${s.compliance}%. Governance investment can make individual initiatives safer over time.`,
-    };
     try {
       const response = await fetch("/api/llm/chat", {
         method: "POST",
@@ -142,6 +148,9 @@ export default function Game() {
                 scenarioMode: Boolean(s.scenarioMode),
                 scenarioPrompt: getScenario(s.scenarioId)?.frameworkContext.advisorPrompt,
                 quarterlyBudget: s.quarterlyBudget,
+                campaignBudget: s.campaignBudget,
+                campaignBudgetRemaining: s.campaignBudgetRemaining,
+                spent: s.spent,
                 state: {
                   ...s,
                   advisorContext: {
@@ -173,10 +182,13 @@ export default function Game() {
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error);
-      setAnswer(data.content || replies[persona]);
-      setIsAsking(false);
+      const aiPerspective = typeof data.content === "string" ? data.content.trim() : "";
+      if (aiPerspective) {
+        setAnswer(`${evidenceAnswer}\n\nAI perspective\n${aiPerspective}`);
+      }
     } catch {
-      setAnswer(replies[persona]);
+      // The deterministic answer is already visible and remains the safe fallback.
+    } finally {
       setIsAsking(false);
     }
   };
@@ -204,11 +216,16 @@ export default function Game() {
         scenarioMode={scenarioMode}
         scenarioId={scenarioId}
         currencyMode={currencyMode}
+        campaignBudget={campaignBudget}
         onNameChange={setName}
         onExperimentalChange={setExperimental}
-        onScenarioModeChange={setScenarioMode}
+        onScenarioModeChange={(enabled) => {
+          setScenarioMode(enabled);
+          if ((campaignBudget === 120 && enabled) || (campaignBudget === 60 && !enabled)) setCampaignBudget(enabled ? 60 : 120);
+        }}
         onScenarioChange={setScenarioId}
         onCurrencyChange={setCurrencyMode}
+        onCampaignBudgetChange={setCampaignBudget}
         onContinue={() => setScreen("assessment")}
       />
     );
@@ -228,11 +245,11 @@ export default function Game() {
           const scenario = scenarioMode ? getScenario(scenarioId) : undefined;
           store.resetCampaign();
           store.loadGame({
-            ...initialGameState(generation, { currencyMode }),
+            ...initialGameState(generation, { currencyMode, campaignBudget, quarterlyBudget: campaignBudget / 12 }),
             baseline: assessment,
             experimental,
           });
-          if (scenario) store.initializeScenario(scenario.id);
+          if (scenario) store.initializeScenario(scenario.id, campaignBudget);
           setScreen("hypothesis");
         }}
         canContinue={assessment.length === 5}
@@ -297,6 +314,7 @@ export default function Game() {
         onAsk={ask}
         onToggleInitiative={toggle}
         onAllocationChange={updateAlloc}
+        onDeploymentChange={updateDeployment}
         onConfirm={confirm}
         onReset={reset}
       />

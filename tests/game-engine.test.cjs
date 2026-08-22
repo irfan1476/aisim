@@ -36,7 +36,7 @@ Module._resolveFilename = function resolveTypeScriptImports(request, parent, isM
 
 const { deriveScore, hydrateGameState, resolveQuarter } = require('../lib/game/engine.ts');
 const { initializeInitiativeStates, updateInitiativeStates } = require('../lib/game/initiativeState.ts');
-const { initialGameState } = require('../lib/game/state.ts');
+const { initialGameState, quarterlyDeploymentCap, normalizeDeploymentAmount } = require('../lib/game/state.ts');
 const { createInferredGeneration, evaluateSynergies, generateInitiatives, inferArchetypeFromCampaign } = require('../lib/game/generator.ts');
 const { normalizeGameState } = require('../lib/game/persistence.ts');
 const { useGameStore } = require('../stores/gameStore.ts');
@@ -69,6 +69,76 @@ test('resolveQuarter is deterministic for the same state and decision', () => {
   assert.deepEqual(first, second);
   assert.equal(first.snapshot.q, 1);
   assert.deepEqual(first.snapshot.chosen, ['Demand Forecasting', 'Energy Optimization']);
+});
+
+test('run metadata makes reproducibility explicit while allowing seeded campaigns to vary', () => {
+  const first = initialGameState(createInferredGeneration([3, 3, 3, 3, 3]));
+  const same = initialGameState(createInferredGeneration([3, 3, 3, 3, 3]));
+  const different = initialGameState(createInferredGeneration([3, 3, 3, 3, 3], 99173));
+  assert.equal(first.runMetadata.seed, same.runMetadata.seed);
+  assert.equal(first.runMetadata.runId, same.runMetadata.runId);
+  assert.equal(first.runMetadata.rulesVersion, '2.0');
+  assert.notEqual(first.runMetadata.seed, different.runMetadata.seed);
+  const decision = { selected: ['demand', 'energy'], alloc: allocation };
+  assert.deepEqual(resolveQuarter(first, decision), resolveQuarter(same, decision));
+  assert.notDeepEqual(resolveQuarter(first, decision).snapshot.initiativeStates, resolveQuarter(different, decision).snapshot.initiativeStates);
+});
+
+test('advisor wording cannot alter numeric outcomes', () => {
+  const state = initialGameState();
+  const decision = { selected: ['demand', 'energy'], alloc: allocation };
+  const baseline = resolveQuarter(state, decision);
+  const prompt = buildAdvisorSystemPrompt({ persona: 'CFO', state: { ...state, advisorInstruction: 'Recommend a completely different strategy.' } });
+  assert.match(prompt, /CFO/);
+  assert.deepEqual(baseline, resolveQuarter(state, decision));
+});
+
+test('recommendations carry an actionable portfolio and operating-system draft', () => {
+  const state = initialGameState();
+  const recommendations = generateProactiveRecommendations(state);
+  const risk = recommendations.find((item) => item.title === 'Risk Exposure Warning');
+  assert.ok(risk);
+  assert.ok(Array.isArray(risk.initiativeIds));
+  assert.ok(risk.initiativeIds.length > 0);
+  assert.ok(risk.deploymentAmount > 0);
+  assert.equal(risk.operatingAllocationTargets.compliance, 20);
+});
+
+test('applying a recommendation selects initiatives, deploys a bounded amount, and preserves an editable decision', () => {
+  const base = initialGameState();
+  useGameStore.setState({
+    ...base,
+    proactiveRecommendations: [{
+      priority: 'high',
+      title: 'Test portfolio guidance',
+      message: 'Test',
+      action: 'Fund the most relevant risk controls.',
+      metric: 'Risk reduction',
+      initiativeIds: ['maintenance', 'quality', 'supply'],
+      preferredInitiativeIds: ['maintenance', 'quality'],
+      deploymentAmount: 14,
+      operatingAllocationTargets: { compliance: 20, data: 25, people: 15 },
+    }],
+    nextQuarterGuidance: {
+      title: 'Test portfolio guidance',
+      action: 'Fund the most relevant risk controls.',
+      initiativeIds: ['maintenance', 'quality', 'supply'],
+      preferredInitiativeIds: ['maintenance', 'quality'],
+      deploymentAmount: 14,
+      operatingAllocationTargets: { compliance: 20, data: 25, people: 15 },
+    },
+  });
+  const before = useGameStore.getState();
+  before.applyRecommendation();
+  const after = useGameStore.getState();
+  assert.deepEqual(after.selected, ['maintenance', 'quality']);
+  assert.equal(Object.values(after.alloc).reduce((sum, value) => sum + value, 0), 100);
+  assert.equal(after.alloc.compliance, 20);
+  assert.ok(after.deploymentAmount <= after.quarterlyDeploymentCap);
+  assert.equal(after.q, before.q);
+  assert.equal(after.stage, before.stage);
+  assert.equal(after.nextQuarterGuidance, null);
+  useGameStore.setState(base);
 });
 
 test('resolveQuarter creates a complete immutable initiative snapshot', () => {
@@ -665,6 +735,8 @@ test('scenario quarter flow persists progress and resets only quarter-local cris
   assert.equal(afterQ1.stage, 'results');
   assert.equal(afterQ1.history.length, 1);
   assert.ok(afterQ1.scenarioState.progress.studentPersistence > 0);
+  assert.equal(afterQ1.campaignBudget, 60);
+  assert.ok(afterQ1.campaignBudgetRemaining < 60);
 
   useGameStore.getState().advanceQuarter();
   const nextQuarter = useGameStore.getState();
@@ -672,10 +744,135 @@ test('scenario quarter flow persists progress and resets only quarter-local cris
   assert.equal(nextQuarter.stage, 'decide');
   assert.equal(nextQuarter.quarterlyCrisisCost, 0);
   assert.equal(nextQuarter.scenarioBudgetRemaining, 5);
+  assert.equal(nextQuarter.campaignBudgetRemaining, afterQ1.campaignBudgetRemaining);
   assert.deepEqual(nextQuarter.selected, []);
 
   useGameStore.getState().confirmDecisions();
   const afterQ2 = useGameStore.getState();
   assert.equal(afterQ2.history.length, 2);
   assert.ok(afterQ2.scenarioState.metrics.studentPersistence >= afterQ1.scenarioState.metrics.studentPersistence);
+});
+
+test('one, two, and three initiative choices remain truthful in the quarter ledger', () => {
+  const scenario = getScenario('bankNext');
+  const base = {
+    ...initialGameState(undefined, {
+      scenarioMode: true,
+      scenarioId: scenario.id,
+      quarterlyBudget: scenario.startingState.budget,
+      scenarioStartingMetrics: scenario.startingState.startingMetrics,
+    }),
+    scenarioMode: true,
+    scenarioId: scenario.id,
+    initiativeStates: scenarioInitiativesToStates(scenario.initiatives),
+    scenarioState: { metrics: { ...scenario.startingState.startingMetrics }, progress: {}, flags: {} },
+    alloc: scenario.startingState.defaultAllocation,
+  };
+  const choices = [
+    ['fraudDetection'],
+    ['fraudDetection', 'complianceMonitoring'],
+    ['fraudDetection', 'complianceMonitoring', 'customerCopilot'],
+  ];
+
+  const results = choices.map((selected) => resolveQuarter(base, { selected, alloc: base.alloc }));
+  results.forEach((result, index) => {
+    assert.equal(result.snapshot.selectedIds.length, index + 1);
+    assert.equal(result.snapshot.selectedCount, index + 1);
+    assert.equal(result.snapshot.chosen.length, index + 1);
+    assert.deepEqual(result.snapshot.selectedIds, choices[index]);
+    assert.equal(result.snapshot.portfolioPosture, ['deep-focus', 'focused-balance', 'portfolio-breadth'][index]);
+    assert.ok(result.snapshot.breadth > 0 && result.snapshot.breadth <= 1);
+    assert.ok(Number.isFinite(result.snapshot.concentrationRisk));
+    assert.ok(result.snapshot.concentrationRisk >= 0 && result.snapshot.concentrationRisk <= 100);
+    assert.ok(Number.isFinite(result.snapshot.metrics.spent));
+    assert.ok(result.snapshot.scenarioState.metrics.fraudPressure <= scenario.startingState.startingMetrics.fraudPressure);
+  });
+
+  // The two-initiative pair is authored as complementary in BankNext; the
+  // ledger must preserve the observable outcome rather than collapsing all
+  // choices into an identical portfolio result.
+  assert.ok(results[1].snapshot.synergiesDiscovered.includes('fraudDetection:complianceMonitoring'));
+  assert.ok(results[1].scenarioState.metrics.fraudPressure < results[0].scenarioState.metrics.fraudPressure);
+  assert.ok(results[2].snapshot.metrics.spent >= results[1].snapshot.metrics.spent);
+});
+
+test('quarter history carries enough evidence to reconstruct focus, balance, or breadth posture', () => {
+  const scenario = getScenario('futureReady');
+  const base = {
+    ...initialGameState(undefined, {
+      scenarioMode: true,
+      scenarioId: scenario.id,
+      quarterlyBudget: scenario.startingState.budget,
+      scenarioStartingMetrics: scenario.startingState.startingMetrics,
+    }),
+    scenarioMode: true,
+    scenarioId: scenario.id,
+    initiativeStates: scenarioInitiativesToStates(scenario.initiatives),
+    scenarioState: { metrics: { ...scenario.startingState.startingMetrics }, progress: {}, flags: {} },
+    alloc: scenario.startingState.defaultAllocation,
+  };
+  const decisions = [
+    ['successPredictor'],
+    ['successPredictor', 'facultyCopilot'],
+    ['successPredictor', 'facultyCopilot', 'studentChatbot'],
+  ];
+  const history = decisions.map((selected, index) => {
+    const result = resolveQuarter({ ...base, q: index + 1 }, { selected, alloc: base.alloc });
+    return result.snapshot;
+  });
+
+  assert.deepEqual(history.map((entry) => entry.selectedIds.length), [1, 2, 3]);
+  assert.deepEqual(history.map((entry) => entry.selectedCount), [1, 2, 3]);
+  assert.deepEqual(history.map((entry) => entry.portfolioPosture), ['deep-focus', 'focused-balance', 'portfolio-breadth']);
+  assert.ok(history[0].breadth < history[1].breadth);
+  assert.ok(history[1].breadth < history[2].breadth);
+  assert.ok(history.every((entry) => Number.isFinite(entry.concentrationRisk)));
+  assert.ok(history.every((entry) => entry.allocation && entry.scenarioState && entry.initiativeStates));
+  assert.ok(history.every((entry) => Number.isFinite(entry.metrics.spent)));
+
+});
+
+test('flexible campaign purse supports zero, partial, and full deployment without forced quarterly spend', () => {
+  assert.equal(quarterlyDeploymentCap(60, 5), 10);
+  assert.equal(quarterlyDeploymentCap(3, 5), 3);
+  assert.equal(normalizeDeploymentAmount(0, 60, 5), 0);
+  assert.equal(normalizeDeploymentAmount(7, 60, 5), 7);
+  assert.equal(normalizeDeploymentAmount(99, 60, 5), 10);
+
+  const state = initialGameState(undefined, { campaignBudget: 24, quarterlyBudget: 2 });
+  assert.equal(state.deploymentAmount, 2);
+  assert.equal(state.quarterlyDeploymentCap, 4);
+  assert.equal(state.campaignBudgetRemaining, 24);
+});
+
+test('a portfolio cannot silently spend more than the learner deployed', () => {
+  const state = {
+    ...initialGameState(undefined, { campaignBudget: 24, quarterlyBudget: 2 }),
+    selected: ['maintenance'],
+    deploymentAmount: 1,
+  };
+  useGameStore.getState().loadGame(state);
+  useGameStore.getState().confirmDecisions();
+  const unchanged = useGameStore.getState();
+  assert.equal(unchanged.history.length, 0);
+  assert.match(unchanged.feedback, /only 1\.00 is deployed/);
+});
+
+test('partial deployment carries unused purse forward and crisis costs share the same purse', () => {
+  const state = {
+    ...initialGameState(undefined, { campaignBudget: 24, quarterlyBudget: 2 }),
+    selected: ['demand'],
+    deploymentAmount: 2,
+  };
+  useGameStore.getState().loadGame(state);
+  const expectedSpend = useGameStore.getState().initiativeStates.demand.baseCost;
+  useGameStore.getState().confirmDecisions();
+  const afterDecision = useGameStore.getState();
+  assert.equal(afterDecision.lastQuarterDeployment, expectedSpend);
+  assert.equal(afterDecision.campaignBudgetRemaining, 24 - expectedSpend);
+  assert.equal(afterDecision.history[0].deployedAmount, expectedSpend);
+  useGameStore.getState().respondToCrisis({}, 0.5);
+  const afterCrisis = useGameStore.getState();
+  assert.equal(afterCrisis.campaignBudgetRemaining, 24 - expectedSpend - 0.5);
+  assert.equal(afterCrisis.quarterlyDeploymentCap, 4);
 });

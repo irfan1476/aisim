@@ -1,8 +1,9 @@
 import { initiatives, type Initiative } from './initiatives';
 import type { DynamicInitiative } from './generator';
+import type { FrameworkContribution } from '../scenarios/types';
 
 export type MaturityLevel = 'nascent' | 'developing' | 'mature' | 'optimized';
-export interface InitiativeState extends Initiative { currentData: number; currentRoi: number; currentRisk: 'LOW' | 'MED' | 'HIGH'; currentCost: number; currentHuman: number; quartersFunded: number; quartersSinceLastFund: number; totalInvestment: number; maturityLevel: MaturityLevel; dataInvestment: number; governanceInvestment: number; trainingInvestment: number; baseRoi?: number; baseCost?: number; baseData?: number; baseHuman?: number; baseRiskScore?: number; riskScore?: number; synergies?: string[]; scenarioMetadata?: { primaryMetric: string; baseEffect: number; effectUnit: string; neglect: { decayRate: number; penaltyThreshold: number; penaltyAmount: number } }; }
+export interface InitiativeState extends Initiative { currentData: number; currentRoi: number; currentRisk: 'LOW' | 'MED' | 'HIGH'; currentCost: number; currentHuman: number; quartersFunded: number; quartersSinceLastFund: number; totalInvestment: number; maturityLevel: MaturityLevel; dataInvestment: number; governanceInvestment: number; trainingInvestment: number; baseRoi?: number; baseCost?: number; baseData?: number; baseHuman?: number; baseRiskScore?: number; riskScore?: number; synergies?: string[]; scenarioMetadata?: { primaryMetric: string; baseEffect: number; effectUnit: string; neglect: { decayRate: number; penaltyThreshold: number; penaltyAmount: number }; frameworkContribution?: FrameworkContribution }; }
 const roundMetric = (value: number) => Number(value.toFixed(2));
 const riskScoreFor = (item: InitiativeState) => item.riskScore ?? (item.currentRisk === 'LOW' ? 24 : item.currentRisk === 'MED' ? 48 : 72);
 const riskBandFor = (score: number): 'LOW' | 'MED' | 'HIGH' => score < 35 ? 'LOW' : score < 65 ? 'MED' : 'HIGH';

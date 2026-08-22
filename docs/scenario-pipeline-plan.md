@@ -3,6 +3,8 @@
 Status date: 2026-08-20
 Working branch: `feature/scenario-generic-pipeline`
 
+> Planning addendum (2026-08-21): [Scenario Learning Research and Architecture](./scenario-learning-research-and-architecture.md) records the agreed learning direction, research basis, five recommended next domains, content standard, and proposed depth-layer architecture. [Current Scenarios: Depth-Layer Architecture and Change Approach](./current-scenarios-v2-approach.md) maps that direction onto the four committed packs; [Project Factory 2030 v2 Design Brief](./project-factory-v2-design-brief.md), [Implementation Backlog](./project-factory-v2-implementation-backlog.md), and [Content-Authoring Template](./scenario-v2-content-authoring-template.md) now define the agreed reference-pack direction. [Version and Branch Strategy](./version-branch-strategy.md) keeps v3 separate from the active v2 line until an explicit integration decision. [Project Decision Log](./decision-log.md) records shareable decisions and open questions after substantive work. This pipeline remains the source of truth for the currently implemented generic-scenario work.
+
 This document is the source of truth for the domain-agnostic scenario work. It separates decisions already agreed from work that remains. Standard mode must remain behaviourally compatible throughout.
 
 ## Agreed architecture
@@ -46,6 +48,21 @@ This document is the source of truth for the domain-agnostic scenario work. It s
 - [x] Extract the existing Standard metric calculation into a separately tested `calculateStandardEffects` function; the original Standard formulas remain unchanged behind the pure resolver.
 
 ### Phase 2 — Test and integration hardening — next
+
+#### Analytics V2 wiring audit — first pass implemented 2026-08-22
+
+- [x] Add a shared scenario/native analytics metric view model.
+- [x] Rewire Dashboard and Diagnostics to the active scenario metric catalog.
+- [x] Make the decision heatmap target-progress and scenario-aware.
+- [x] Use historical allocations for Strategy DNA.
+- [x] Remove Project Factory-specific initiative IDs from BCG alignment heuristics.
+- [x] Correct Q1 roadmap spend and scenario currency display.
+- [x] Deduct selected scenario initiative cost from the quarter budget envelope.
+- [ ] Add KPI provenance and scenario scorecard cards.
+- [ ] Add causal-chain, gate, crisis, and recommendation evidence to Diagnostics.
+- [ ] Add a complete scenario metric ledger to History.
+
+The detailed tab-by-tab contract and remaining actions are recorded in [Analytics V2 — Scenario Wiring Audit and Action Plan](./analytics-v2-audit-and-action-plan.md).
 
 #### P1-A: Pure-module tests
 
@@ -117,6 +134,15 @@ npm run test:e2e
 The test command currently updates the generated `balance-report.json` timestamp. That generated file must not be included in scenario commits unless explicitly requested.
 
 ## Definition of done
+
+### Campaign purse model
+
+- [x] Let the player choose one finite campaign purse before the baseline assessment.
+- [x] Derive a suggested quarterly planning pace from the purse over 12 quarters.
+- [x] Deduct initiative and crisis costs from the campaign balance without replenishing it on quarter transition.
+- [x] Persist and migrate `campaignBudget` and `campaignBudgetRemaining` while retaining the legacy quarterly fields.
+- [x] Show purse, remaining capital, pace, and spend context in setup, decision-making, analytics, and advisor context.
+- [ ] Add final-summary budget stewardship evidence and full end-to-end budget selection coverage.
 
 The scenario work is ready for review only when:
 

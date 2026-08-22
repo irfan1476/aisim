@@ -1,6 +1,5 @@
 import {
   ArrowRight,
-  BrainCircuit,
   Check,
   Clock3,
   Info,
@@ -12,6 +11,9 @@ import {
   X,
 } from "lucide-react";
 import AnalyticsHub from "./AnalyticsHub";
+import DecisionPreview from "./DecisionPreview";
+import DecisionCoach from "./DecisionCoach";
+import BoardAdvisor from "./BoardAdvisor";
 import type { GameInitiative, GameViewState, Metric } from "./gameViewTypes";
 import { formatBudget, formatCurrency } from "../lib/currency";
 import { getScenario } from "../lib/scenarios/registry";
@@ -28,9 +30,10 @@ interface Props {
   isAsking: boolean;
   onPersonaChange: (persona: string) => void;
   onQuestionChange: (question: string) => void;
-  onAsk: () => void;
+  onAsk: (questionOverride?: string) => void;
   onToggleInitiative: (id: string) => void;
   onAllocationChange: (key: string, value: number) => void;
+  onDeploymentChange: (amount: number) => void;
   onConfirm: () => void;
   onReset: () => void;
 }
@@ -49,6 +52,7 @@ export default function GameDecisionView({
   onAsk,
   onToggleInitiative,
   onAllocationChange,
+  onDeploymentChange,
   onConfirm,
   onReset,
 }: Props) {
@@ -109,6 +113,7 @@ export default function GameDecisionView({
               <Clock3 size={15} /> Self-paced mode
             </div>
           </div>
+          <DecisionCoach state={state} initiatives={initiatives} />
           <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
             {metrics.map((metric) => (
               <div
@@ -133,6 +138,7 @@ export default function GameDecisionView({
               </div>
             ))}
           </div>
+          <DecisionPreview state={state} initiatives={initiatives} />
           {state.scenarioMode && <ScenarioProgress state={state} />}
           <div className="rounded-3xl border border-ink/8 bg-white p-5">
             <div className="flex items-center justify-between">
@@ -268,8 +274,9 @@ export default function GameDecisionView({
                   Balance the operating system
                 </h2>
                 <p className="mt-1 text-sm text-ink/50">
-                  Your {formatBudget(state.quarterlyBudget || 10, state.currencyMode)} quarterly transformation envelope
-                  {state.scenarioMode && <span className="ml-2 text-emerald">· {formatBudget(state.scenarioBudgetRemaining ?? state.quarterlyBudget, state.currencyMode)} remaining after crises</span>}
+                  Campaign purse: {formatBudget(state.campaignBudget || (state.quarterlyBudget || 10) * 12, state.currencyMode)}
+                  <span className="ml-2 text-emerald">· {formatBudget(state.campaignBudgetRemaining ?? state.quarterlyBudget * 12, state.currencyMode)} remaining</span>
+                  <span className="ml-2 text-ink/40">· pace {formatBudget(state.quarterlyBudget || 10, state.currencyMode)} / quarter</span>
                 </p>
               </div>
               <span
@@ -286,7 +293,7 @@ export default function GameDecisionView({
                       {key === "mlops" ? "MLOps & maintenance" : key}
                     </span>
                     <span className="text-ink/45">
-                      {value}% · {formatCurrency((value / 100) * (state.quarterlyBudget || 10), state.currencyMode)}
+                      {value}% · {formatCurrency((value / 100) * (state.deploymentAmount || 0), state.currencyMode)}
                     </span>
                   </div>
                   <input
@@ -302,6 +309,18 @@ export default function GameDecisionView({
                   />
                 </label>
               ))}
+            </div>
+            <div className="mt-6 rounded-2xl border border-gold/25 bg-gold/5 p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-wider text-ink/55">Deploy this quarter</p>
+                  <p className="mt-1 text-xs leading-5 text-ink/55">The quarterly pace is a guide, not a target. Keep a reserve or deploy up to two suggested paces when timing matters.</p>
+                </div>
+                <b className="text-sm text-ink">{formatBudget(state.deploymentAmount || 0, state.currencyMode)}</b>
+              </div>
+              <input data-testid="deployment-amount" aria-label="Deploy this quarter" type="range" min="0" max={Math.max(0, state.quarterlyDeploymentCap || state.quarterlyBudget || 0)} step="0.1" value={Math.min(state.deploymentAmount || 0, state.quarterlyDeploymentCap || state.quarterlyBudget || 0)} onChange={(event) => onDeploymentChange(Number(event.target.value))} className="mt-4 w-full accent-[#D4AF37]" />
+              <div className="mt-2 flex justify-between text-[11px] text-ink/45"><span>Reserve all</span><span>Suggested pace: {formatBudget(state.quarterlyBudget || 0, state.currencyMode)}</span><span>Cap: {formatBudget(state.quarterlyDeploymentCap || 0, state.currencyMode)}</span></div>
+              <p className="mt-2 text-[11px] text-ink/45">Unused campaign capital carries forward. Selected initiatives still need to fit within this deployment amount.</p>
             </div>
             {total !== 100 && (
               <p className="mt-5 flex items-center gap-2 rounded-xl bg-crimson/8 px-3 py-2 text-xs font-bold text-crimson">
@@ -321,47 +340,16 @@ export default function GameDecisionView({
           </div>
         </section>
         <aside className="space-y-5">
-          <div className="rounded-3xl bg-ink p-5 text-white">
-            <div className="flex items-center gap-3">
-              <BrainCircuit className="text-gold" size={21} />
-              <div>
-                <p className="text-xs font-bold uppercase tracking-widest text-gold">
-                  Board advisor
-                </p>
-                <p className="text-sm font-semibold">Ask the room</p>
-              </div>
-            </div>
-            <div className="mt-5 flex gap-2">
-              {["CFO", "CTO", "CHRO", "RISK"].map((advisor) => (
-                <button
-                  key={advisor}
-                  onClick={() => onPersonaChange(advisor)}
-                  className={`rounded-lg px-2.5 py-1.5 text-[10px] font-bold ${persona === advisor ? "bg-gold text-ink" : "bg-white/10 text-white/55"}`}
-                >
-                  {advisor}
-                </button>
-              ))}
-            </div>
-            <div className="mt-5 min-h-24 rounded-2xl bg-white/10 p-4 text-sm leading-6 text-white">
-              {isAsking ? "Thinking…" : answer || state.feedback}
-            </div>
-            <div className="mt-3 flex gap-2">
-              <input
-                value={question}
-                onChange={(event) => onQuestionChange(event.target.value)}
-                onKeyDown={(event) => event.key === "Enter" && onAsk()}
-                placeholder="Ask a question..."
-                className="min-w-0 flex-1 rounded-xl border border-white/10 bg-white/10 px-3 py-3 text-sm text-white outline-none placeholder:text-white/40"
-              />
-              <button
-                disabled={isAsking}
-                onClick={onAsk}
-                className="rounded-xl bg-gold px-3 text-ink"
-              >
-                <ArrowRight size={16} />
-              </button>
-            </div>
-          </div>
+          <BoardAdvisor
+            context={state}
+            persona={persona as "CFO" | "CTO" | "CHRO" | "RISK"}
+            answer={answer}
+            question={question}
+            isAsking={isAsking}
+            onPersonaChange={onPersonaChange as (persona: "CFO" | "CTO" | "CHRO" | "RISK") => void}
+            onQuestionChange={onQuestionChange}
+            onAsk={onAsk}
+          />
           <div className="rounded-3xl border border-ink/8 bg-white p-5">
             <div className="flex items-center gap-2">
               <ShieldAlert size={17} className="text-gold" />

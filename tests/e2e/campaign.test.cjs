@@ -208,6 +208,31 @@ async function persistedState(page) {
   });
 }
 
+test("board advisor answers distinct suggested questions without an LLM", async ({ page }) => {
+  await page.route("**/api/llm/chat", (route) =>
+    route.fulfill({
+      status: 503,
+      contentType: "application/json",
+      body: JSON.stringify({ error: "No provider configured" }),
+    }),
+  );
+  await startCampaign(page, profiles.balanced);
+
+  const advisor = page.getByTestId("board-advisor");
+  const questions = advisor.locator("button").filter({ hasText: /\?/ });
+  await expect(questions).toHaveCount(3);
+
+  await questions.nth(0).click();
+  const first = await advisor.getByTestId("board-advisor-answer").textContent();
+  await expect(advisor.getByTestId("board-advisor-answer")).toContainText("Evidence");
+  await expect(advisor.getByTestId("board-advisor-answer")).not.toContainText("Checking whether");
+
+  await questions.nth(1).click();
+  const second = await advisor.getByTestId("board-advisor-answer").textContent();
+  expect(second).not.toEqual(first);
+  await expect(advisor.getByTestId("board-advisor-answer")).toContainText("Next check");
+});
+
 test("full campaign preserves Q1 values, survives reloads, and ends with evidence", async ({
   page,
 }) => {

@@ -32,6 +32,14 @@ export type ScenarioNeglectConfig = {
   penaltyAmount: number;
 };
 
+/** Explicit 0-100 capability coverage authored by each scenario pack. */
+export type FrameworkContribution = {
+  peopleChange: number;
+  processWorkflow: number;
+  techData: number;
+  algorithmModel: number;
+};
+
 /**
  * A scenario-declared relationship between two initiatives.
  *
@@ -56,6 +64,7 @@ export type ScenarioInitiative = Initiative & {
   initialMaturity?: MaturityLevel;
   baseRiskScore?: number;
   neglect?: ScenarioNeglectConfig;
+  frameworkContribution?: FrameworkContribution;
   provisional?: boolean;
 };
 

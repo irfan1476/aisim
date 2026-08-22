@@ -25,6 +25,7 @@ export function scenarioInitiativesToStates(initiatives: ScenarioInitiative[]): 
       baseEffect: definition.baseEffect,
       effectUnit: definition.effectUnit,
       neglect: definition.neglect || { decayRate: 0.15, penaltyThreshold: 4, penaltyAmount: Math.abs(definition.baseEffect) * 0.35 },
+      frameworkContribution: definition.frameworkContribution,
     };
   });
   return states;

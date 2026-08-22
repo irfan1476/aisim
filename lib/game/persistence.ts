@@ -1,4 +1,4 @@
-import { initialGameState, type Allocation, type GameState, type MetricKey, type QuarterSnapshot } from './state';
+import { initialGameState, normalizeDeploymentAmount, quarterlyDeploymentCap, type Allocation, type GameState, type MetricKey, type PortfolioSnapshot, type QuarterSnapshot } from './state';
 import { initializeInitiativeStates, type InitiativeState } from './initiativeState';
 import { createInitiativeGeneration, generateInitiatives, inferArchetypeFromDecisions, type InitiativeGeneration, type ScenarioArchetype } from './generator';
 import { getScenario } from '../scenarios/registry';
@@ -41,6 +41,23 @@ function stringArrayOr(value: unknown, fallback: string[]): string[] {
   return Array.isArray(value)
     ? value.filter((item): item is string => typeof item === 'string')
     : [...fallback];
+}
+
+function normalizePortfolio(value: unknown): PortfolioSnapshot | undefined {
+  if (!isRecord(value)) return undefined;
+  const posture = value.portfolioPosture ?? value.posture;
+  if (posture !== 'pause' && posture !== 'deep-focus' && posture !== 'focused-balance' && posture !== 'portfolio-breadth') return undefined;
+  return {
+    selectedCount: Math.max(0, Math.min(3, Math.round(numberOr(value.selectedCount, 0)))),
+    availableInitiatives: Math.max(0, Math.round(numberOr(value.availableInitiatives, 0))),
+    portfolioPosture: posture,
+    breadth: numberOr(value.breadth, 0),
+    focusMultiplier: numberOr(value.focusMultiplier, 1),
+    concentrationRisk: numberOr(value.concentrationRisk, 0),
+    coordinationPressure: numberOr(value.coordinationPressure, 0),
+    neglectedCount: Math.max(0, Math.round(numberOr(value.neglectedCount, 0))),
+    provenance: 'calculated-from-portfolio-choice',
+  };
 }
 
 function normalizeGeneration(value: unknown, baseline: number[]): InitiativeGeneration {
@@ -124,6 +141,22 @@ function normalizeSnapshot(
       flags: isRecord(value.scenarioState.flags) ? Object.fromEntries(Object.entries(value.scenarioState.flags).filter(([, item]) => typeof item === 'boolean')) as Record<string, boolean> : {},
     };
   }
+  snapshot.portfolio = normalizePortfolio(value.portfolio);
+  const snapshotPortfolio = snapshot.portfolio;
+  if (snapshotPortfolio) {
+    snapshot.selectedCount = snapshotPortfolio.selectedCount;
+    snapshot.portfolioPosture = snapshotPortfolio.portfolioPosture;
+    snapshot.breadth = snapshotPortfolio.breadth;
+    snapshot.concentrationRisk = snapshotPortfolio.concentrationRisk;
+    snapshot.portfolioProvenance = snapshotPortfolio.provenance;
+    snapshot.provenance = snapshotPortfolio.provenance;
+  }
+  if (Array.isArray(value.causalChain)) snapshot.causalChain = value.causalChain as QuarterSnapshot['causalChain'];
+  if (Array.isArray(value.recommendations)) snapshot.recommendations = value.recommendations as QuarterSnapshot['recommendations'];
+  if (Array.isArray(value.approvedRecommendations)) snapshot.approvedRecommendations = stringArrayOr(value.approvedRecommendations, []);
+  if (value.deployedAmount !== undefined) snapshot.deployedAmount = Math.max(0, numberOr(value.deployedAmount, 0));
+  if (value.fixedInitiativeSpend !== undefined) snapshot.fixedInitiativeSpend = Math.max(0, numberOr(value.fixedInitiativeSpend, snapshot.deployedAmount || 0));
+  if (value.budgetProvenance === 'campaign-purse-with-two-quarter-cap') snapshot.budgetProvenance = value.budgetProvenance;
   return snapshot;
 }
 
@@ -142,6 +175,13 @@ export function normalizeGameState(value: unknown): GameState {
     ? source.baseline.filter((item): item is number => typeof item === 'number' && Number.isFinite(item))
     : [...defaults.baseline];
   next.initiativeGeneration = normalizeGeneration(source.initiativeGeneration, next.baseline);
+  const savedRun = isRecord(source.runMetadata) ? source.runMetadata : {};
+  next.runMetadata = {
+    runId: typeof savedRun.runId === 'string' && savedRun.runId ? savedRun.runId : `run-${next.initiativeGeneration.seed}-${typeof source.scenarioId === 'string' ? source.scenarioId : 'standard'}`,
+    seed: numberOr(savedRun.seed, next.initiativeGeneration.seed),
+    scenarioId: typeof savedRun.scenarioId === 'string' ? savedRun.scenarioId : (typeof source.scenarioId === 'string' ? source.scenarioId : undefined),
+    rulesVersion: typeof savedRun.rulesVersion === 'string' ? savedRun.rulesVersion : '2.0',
+  };
   const persistedScenarioMode = source.scenarioMode === true;
   const persistedScenarioId = typeof source.scenarioId === 'string' ? source.scenarioId : undefined;
   const persistedScenario = persistedScenarioMode ? getScenario(persistedScenarioId) : undefined;
@@ -183,7 +223,17 @@ export function normalizeGameState(value: unknown): GameState {
   }
   next.currencyMode = source.currencyMode === '₹' ? '₹' : '$';
   next.quarterlyBudget = numberOr(source.quarterlyBudget, next.scenarioMode ? 5 : 10);
+  const legacyCampaignBudget = next.quarterlyBudget * 12;
+  next.campaignBudget = numberOr(source.campaignBudget, legacyCampaignBudget);
+  next.campaignBudgetRemaining = numberOr(source.campaignBudgetRemaining, Math.max(0, next.campaignBudget - next.spent));
   next.scenarioBudgetRemaining = numberOr(source.scenarioBudgetRemaining, next.quarterlyBudget);
+  next.quarterlyDeploymentCap = quarterlyDeploymentCap(next.campaignBudgetRemaining, next.quarterlyBudget);
+  next.deploymentAmount = normalizeDeploymentAmount(
+    source.deploymentAmount === undefined ? undefined : numberOr(source.deploymentAmount, next.quarterlyBudget),
+    next.campaignBudgetRemaining,
+    next.quarterlyBudget,
+  );
+  next.lastQuarterDeployment = Math.max(0, numberOr(source.lastQuarterDeployment, next.history.at(-1)?.deployedAmount ?? 0));
   next.scenarioStartingMetrics = isRecord(source.scenarioStartingMetrics) ? Object.fromEntries(Object.entries(source.scenarioStartingMetrics).filter(([, item]) => typeof item === 'number' && Number.isFinite(item))) as Record<string, number> : undefined;
   next.scenarioProgress = isRecord(source.scenarioProgress) ? Object.fromEntries(Object.entries(source.scenarioProgress).filter(([, item]) => typeof item === 'number' && Number.isFinite(item))) as Record<string, number> : undefined;
   const savedScenarioState = isRecord(source.scenarioState) ? source.scenarioState : {};
@@ -202,8 +252,15 @@ export function normalizeGameState(value: unknown): GameState {
   next.approvedRecommendations = stringArrayOr(source.approvedRecommendations, defaults.approvedRecommendations);
   next.discoveredSynergies = stringArrayOr(source.discoveredSynergies, defaults.discoveredSynergies);
   next.nextQuarterGuidance = isRecord(source.nextQuarterGuidance) && typeof source.nextQuarterGuidance.title === 'string' && typeof source.nextQuarterGuidance.action === 'string'
-    ? { title: source.nextQuarterGuidance.title, action: source.nextQuarterGuidance.action, allocationKey: typeof source.nextQuarterGuidance.allocationKey === 'string' ? source.nextQuarterGuidance.allocationKey : undefined, target: typeof source.nextQuarterGuidance.target === 'string' ? source.nextQuarterGuidance.target : undefined }
+    ? { title: source.nextQuarterGuidance.title, action: source.nextQuarterGuidance.action, allocationKey: typeof source.nextQuarterGuidance.allocationKey === 'string' ? source.nextQuarterGuidance.allocationKey : undefined, target: typeof source.nextQuarterGuidance.target === 'string' ? source.nextQuarterGuidance.target : undefined, initiativeIds: stringArrayOr(source.nextQuarterGuidance.initiativeIds, []), preferredInitiativeIds: stringArrayOr(source.nextQuarterGuidance.preferredInitiativeIds, []), deploymentAmount: typeof source.nextQuarterGuidance.deploymentAmount === 'number' ? source.nextQuarterGuidance.deploymentAmount : undefined, operatingAllocationTargets: isRecord(source.nextQuarterGuidance.operatingAllocationTargets) ? source.nextQuarterGuidance.operatingAllocationTargets as GameState['alloc'] : undefined }
     : defaults.nextQuarterGuidance;
+  next.portfolio = normalizePortfolio(source.portfolio) || next.history.at(-1)?.portfolio;
+  next.selectedCount = Math.max(0, Math.min(3, Math.round(numberOr(source.selectedCount, next.portfolio?.selectedCount ?? defaults.selectedCount))));
+  next.portfolioPosture = source.portfolioPosture === 'pause' || source.portfolioPosture === 'deep-focus' || source.portfolioPosture === 'focused-balance' || source.portfolioPosture === 'portfolio-breadth'
+    ? source.portfolioPosture
+    : (next.portfolio?.portfolioPosture ?? defaults.portfolioPosture);
+  next.portfolioBreadth = numberOr(source.portfolioBreadth, next.portfolio?.breadth ?? defaults.portfolioBreadth);
+  next.concentrationRisk = numberOr(source.concentrationRisk, next.portfolio?.concentrationRisk ?? defaults.concentrationRisk);
   return next;
 }
 
