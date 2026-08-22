@@ -21,6 +21,7 @@ import { useEffect, useState } from "react";
 import Game from "../components/Game";
 import TransparencyFlow from "../components/TransparencyFlow";
 import HowToPlayGuide from "../components/HowToPlayGuide";
+import LearningLoopVisual from "../components/LearningLoopVisual";
 import {
   hasCampaignProgress,
   readPersistedGameState,
@@ -30,96 +31,96 @@ import { scenarioList } from "../lib/scenarios/registry";
 const features = [
   [
     Target,
-    "A living portfolio",
-    "Every campaign starts with different initiative costs, returns, readiness, and risk. Consistent funding builds capability; neglect causes decay.",
+    "Choose a world, then a thesis",
+    "Start in open Standard mode or lead a manufacturing, banking, healthcare, or education organisation. The core decision loop stays consistent while the pressures, initiatives, metrics, crises, and success conditions change.",
   ],
   [
     Gauge,
-    "Risk that responds",
-    "Initiative and portfolio risk move continuously with maturity, governance, funding choices, and neglect—not just a static LOW, MED, or HIGH label.",
+    "Capital is a campaign decision",
+    "Set a finite campaign purse, choose how much to deploy this quarter, and keep the remainder for later. You may fund zero, one, two, or three initiatives—depth, breadth, timing, and reserve all have consequences.",
   ],
   [
     GitBranch,
-    "Combinations you discover",
-    "Some initiatives reinforce one another. Discover capability combinations through play and earn changes to ROI, adoption, risk, and delivery cost.",
+    "Preview before you commit",
+    "The Decision Coach turns the live state into a readable preview: what your selection, deployment, and operating allocation could improve, constrain, or leave exposed. Apply a suggestion, then adjust it yourself.",
   ],
   [
     BrainCircuit,
-    "Evidence-based coaching",
-    "Ask a cloud or local board advisor about current initiative maturity, spend, risk, and history, then receive a final strategy diagnosis grounded in all 12 quarters.",
+    "Reflect with evidence",
+    "The Board Advisor answers from the current campaign even without an LLM. Ask about a bottleneck, reserve, risk, people, data, or portfolio mix; a connected model can add an optional perspective.",
   ],
 ];
 const moats = [
   [
     Sparkles,
-    "Strategy is inferred—not selected",
-    "Players never choose a flattering label. The final pattern is inferred from baseline instincts, all 12 allocation decisions, initiative choices, risk trajectory, and discoveries—with a confidence score and closest alternative.",
+    "A replayable decision laboratory",
+    "A campaign keeps its initiative conditions, scenario state, funding history, and results. Replaying is a deliberate experiment: hold a thesis steady, change one decision, and compare what followed.",
   ],
   [
     RefreshCw,
     "A stateful operating system",
-    "This is one continuous campaign, not 12 disconnected questions. Every initiative carries maturity, spend, readiness, human effort, cost, ROI, risk, and neglect into the next decision.",
+    "This is one connected campaign, not twelve quiz questions. Every initiative carries maturity, cumulative spend, readiness, human effort, cost, ROI, risk, and neglect into the next decision.",
   ],
   [
     GitBranch,
-    "Consequences you can inspect",
-    "The engine resolves the initiative values shown before confirmation. Baseline comparisons, causal chains, roadmaps, history, and diagnostics make the result explainable instead of mysterious.",
+    "Scenario-native, not merely reskinned",
+    "Each domain has its own operating pressures, success metrics, initiative catalogue, crisis context, targets, and advisory language. Analytics use those domain outcomes as the primary signal.",
   ],
   [
     Gauge,
-    "Balanced, not scripted",
-    "The mechanics are calibrated across 600 seeded campaigns and six strategic patterns. Every path has a distinct trade-off, while no tested strategy dominates the field by more than 10 average score points.",
+    "Consequences you can inspect",
+    "Causal explanations, budget ledgers, initiative roadmaps, history, diagnostics, and recommendations make a result traceable. The engine resolves the values you saw before confirming the quarter.",
   ],
   [
     BrainCircuit,
-    "AI guidance grounded in live state",
-    "The board advisor can reason over current initiative economics, maturity, funding history, risk, allocations, recommendations, and discoveries—using cloud providers or a local Ollama model.",
+    "Guidance without surrendering agency",
+    "Coach previews and board questions are grounded in live state. Suggestions can pre-fill a portfolio, deployment, and operating allocation, but the learner always sees and edits the decision before it is resolved.",
   ],
   [
     History,
-    "Replay creates deliberate practice",
-    "Saved campaign memory and an evidence-based strategy autopsy make each replay a controlled leadership experiment: change the thesis, compare the outcome, and build judgment.",
+    "A strategy autopsy, not just a score",
+    "The final report connects the rating to allocation patterns, capital pace, initiative choices, scenario progress, risk, causal evidence, and a practical route to improve the next run.",
   ],
 ];
 const steps = [
   [
     ClipboardList,
-    "Establish the context",
+    "Set the context and capital",
     "2 minutes",
-    "Complete five baseline questions. They shape the hidden operating context and the campaign-specific initiative conditions—without asking you to choose a strategy type.",
+    "Choose Standard mode or a domain scenario, set a finite campaign purse, and answer five baseline questions. Your answers shape the starting organisation, data, and team conditions without forcing a strategy label.",
   ],
   [
     Target,
-    "Make the quarter decision",
+    "Shape the quarter",
     "5 minutes per quarter",
-    "Read the current initiative values, choose up to three bets, allocate the six-part operating budget to exactly 100%, and test alternatives if needed.",
+    "Read the current initiative conditions, select zero to three bets, decide how much of the campaign purse to deploy now, and distribute the operating allocation across the capabilities that make the bets work.",
   ],
   [
     BarChart3,
-    "Resolve the consequences",
+    "Preview, resolve, and explain",
     "Immediate feedback",
-    "The engine resolves the same values you were shown. Funding changes maturity, data, people capability, cost, ROI, and risk; neglected initiatives begin to deteriorate.",
+    "Use the Decision Coach or Board Advisor before committing. The engine then resolves the exact conditions shown, explaining how funding, operating investment, neglect, and combinations changed the portfolio and domain pressures.",
   ],
   [
     RefreshCw,
-    "Learn and adapt",
+    "Reflect, compare, and adapt",
     "Across 12 quarters",
-    "Review the causal chain, roadmap, risk movement, discoveries, analytics, and recommendations. Your complete decision history shapes the final strategic pattern and CEO verdict.",
+    "Review the causal chain, roadmap, scenario-native analytics, recommendations, and replay notebook. The final strategy autopsy turns all twelve quarters into evidence for your next campaign.",
   ],
 ];
 const tools = [
   [
     BrainCircuit,
-    "Board Advisor + Ollama",
-    "Ask CFO, CTO, CHRO, or Risk perspectives using a configured cloud or local model.",
-    "Choose a provider, enter a model, and ask a question.",
+    "Evidence Board Advisor",
+    "Ask CFO, CTO, CHRO, or Risk questions grounded in the live campaign. It produces an evidence-based answer without an LLM; a configured cloud or local model can add a separate perspective.",
+    "Choose a persona, select a question or type your own, then use the evidence to challenge your decision.",
     "Decision window → Board advisor",
   ],
   [
     BarChart3,
-    "Analytics Hub",
-    "Eight icon-led views keep live scorecards, KPIs, trends, diagnostics, frameworks, history, DNA, and learning available.",
-    "Open Analytics at any point in the campaign.",
+    "Scenario-native Analytics Hub",
+    "Live scorecards lead with the active scenario’s pressures and targets, alongside capital pace, initiative spend, KPIs, trends, diagnostics, history, and learning views.",
+    "Open Analytics after a decision or whenever you need to check the evidence.",
     "Always-on analysis panel",
   ],
   [
@@ -145,9 +146,9 @@ const tools = [
   ],
   [
     GitBranch,
-    "What-If analysis",
-    "Test portfolios, allocations, risk, reward, saved scenarios, and apply an approved draft.",
-    "Open Strategy Simulator before committing.",
+    "Decision Coach + What-If",
+    "Preview portfolios, deployment amounts, operating allocation, risk, reward, and reserve before committing. Apply a useful suggestion as an editable starting point.",
+    "Use the Decision Coach first, then open Strategy Simulator when you want to compare alternatives.",
     "Decision window",
   ],
   [
@@ -247,9 +248,10 @@ export default function Home() {
             you lead for real.
           </h1>
           <p className="mt-8 max-w-xl text-lg leading-8 text-[#656d76]">
-            Run a living 12-quarter AI transformation where initiative economics
-            vary, capabilities compound, risk mutates, and your strategic
-            identity emerges from what you actually do.
+            Lead a living 12-quarter transformation across open play or four
+            domain scenarios. Set the campaign purse, choose your deployment
+            pace, see capability and risk respond, and learn from the record
+            your decisions create.
           </p>
           <button
             onClick={() => setStarted(true)}
@@ -270,14 +272,14 @@ export default function Home() {
             <div className="flex items-center justify-between border-b border-white/10 pb-5">
               <div>
                 <p className="text-xs uppercase tracking-widest text-[#3fb950]">
-                  Live board view
+                  A campaign, not a quiz
                 </p>
                 <p className="mt-1 text-xl font-semibold">
-                  Choose your operating environment
+                  Choose a world. Set your capital pace.
                 </p>
               </div>
               <span className="rounded-md bg-[#3fb950]/15 px-3 py-1 text-xs font-bold text-[#3fb950]">
-                Q4 / 12
+                0–3 bets
               </span>
             </div>
             <div className="mt-7 grid grid-cols-2 gap-3">
@@ -305,8 +307,8 @@ export default function Home() {
                     Board advisor · CFO
                   </p>
                   <p className="mt-2 text-sm leading-6 text-white/75">
-                    “Your people allocation is creating a faster path to value.
-                    Can you defend the payback period to the board?”
+                    “Your reserve and people allocation both protect the next
+                    constraint. What evidence would justify deploying more now?”
                   </p>
                 </div>
               </div>
@@ -336,10 +338,10 @@ export default function Home() {
               One decision engine. Multiple worlds to lead.
             </h2>
             <p className="mt-6 text-lg leading-8 text-[#656d76]">
-              Start in Standard mode for the original open-ended practice lab,
-              or choose a domain-specific scenario. The rules stay consistent;
-              the organisation, pressures, initiatives, metrics, budget, and
-              crises change with the world you are asked to lead.
+              Start in Standard mode for open-ended practice, or choose a
+              domain-specific scenario. The decision loop stays consistent;
+              the organisation, pressures, initiatives, metrics, crisis context,
+              targets, and advisory evidence change with the world you lead.
             </p>
           </div>
           <div className="mt-10 grid gap-4 md:grid-cols-2">
@@ -347,18 +349,20 @@ export default function Home() {
               <p className="text-xs font-bold uppercase tracking-[.2em] text-[#656d76]">Standard mode</p>
               <h3 className="mt-3 text-2xl font-bold">Build your own thesis.</h3>
               <p className="mt-2 text-sm leading-6 text-[#656d76]">
-                The original Project Factory practice lab stays open-ended. Your
-                baseline answers and decisions shape the operating pattern that
-                is revealed at the end.
+                The original Project Factory practice lab stays open-ended. Set
+                your own campaign purse, then use the same flexible deployment,
+                initiative evolution, coaching, analytics, and final autopsy as
+                every scenario.
               </p>
             </article>
             <article className="rounded-2xl border border-[#54aeff]/40 bg-[#ddf4ff] p-6 shadow-sm">
               <p className="text-xs font-bold uppercase tracking-[.2em] text-[#0969da]">Scenario mode</p>
               <h3 className="mt-3 text-2xl font-bold">Lead inside a real pressure system.</h3>
               <p className="mt-2 text-sm leading-6 text-[#57606a]">
-                Choose a domain with its own organisation, constraints, metrics,
-                initiatives, crises, targets, and budget framing. Progress is
-                measured against that world without replacing the core game loop.
+                Choose a domain with its own organisation, pressures, metrics,
+                initiatives, crisis context, targets, and advisor evidence. Your
+                progress is measured against that world without replacing the
+                core learning loop.
               </p>
             </article>
           </div>
@@ -373,8 +377,9 @@ export default function Home() {
                 </h3>
               </div>
               <p className="max-w-md text-sm leading-6 text-[#656d76]">
-                Scenario mode is optional. Pick a world, fund up to three bets,
-                and learn how your choices perform against its real pressures.
+                Scenario mode is optional. Pick a world, set a finite campaign
+                purse, deploy when the evidence supports it, and learn how a
+                focused or broad portfolio changes its real pressures.
               </p>
             </div>
             <div className="mt-7 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -402,7 +407,7 @@ export default function Home() {
                     </p>
                     <div className="mt-4 flex flex-wrap gap-2 text-[10px] font-bold uppercase tracking-wider text-[#656d76]">
                       <span className="rounded-full bg-[#f6f8fa] px-2 py-1">{scenario.difficulty}</span>
-                      <span className="rounded-full bg-[#f6f8fa] px-2 py-1">{scenario.currency.defaultSymbol}{scenario.startingState.budget} {scenario.currency.defaultLabel} / quarter</span>
+                      <span className="rounded-full bg-[#f6f8fa] px-2 py-1">default pace {scenario.currency.defaultSymbol}{scenario.startingState.budget} {scenario.currency.defaultLabel}</span>
                       <span className="rounded-full bg-[#f6f8fa] px-2 py-1">6 initiatives</span>
                     </div>
                   </div>
@@ -410,18 +415,19 @@ export default function Home() {
               ))}
             </div>
             <p className="mt-6 text-xs leading-5 text-[#656d76]">
-              The scenario selector appears before the baseline assessment. Your
-              answers still shape the starting conditions, while the chosen
-              domain supplies the challenge context.
+              Select a scenario and campaign purse before the baseline
+              assessment. Your answers still shape the starting conditions while
+              the chosen domain supplies the operating challenge and its native
+              measures of progress.
             </p>
             <div className="mt-7 flex flex-wrap items-center gap-2 border-t border-[#d0d7de] pt-5 text-xs font-bold text-[#1f2328]">
               {[
                 "Choose a mode",
                 "Answer five questions",
-                "Fund up to three bets",
-                "Allocate 100%",
-                "Respond to crises",
-                "Review the verdict",
+                "Set a campaign purse",
+                "Deploy 0–3 initiatives",
+                "Balance the operating system",
+                "Resolve, reflect, replay",
               ].map((label, index) => (
                 <span key={label} className="flex items-center gap-2">
                   <span className="rounded-full bg-[#1f2328] px-2 py-1 text-white">{index + 1}</span>
@@ -435,19 +441,19 @@ export default function Home() {
             <div className="rounded-2xl border border-[#d0d7de] bg-white p-6">
               <p className="text-xs font-bold uppercase tracking-[.2em] text-[#656d76]">Always included</p>
               <ul className="mt-4 grid gap-2 text-sm leading-6 text-[#57606a]">
-                <li>• Five baseline questions and twelve connected quarters</li>
-                <li>• Up to three initiatives and six-part budget allocation</li>
-                <li>• Initiative evolution, risk dynamics, crises, and trade-offs</li>
-                <li>• Analysis sidebar, causal chain, recommendations, and final verdict</li>
+                <li>• Five baseline questions, twelve connected quarters, and a finite campaign purse</li>
+                <li>• Flexible deployment: fund zero, one, two, or three initiatives and carry reserve forward</li>
+                <li>• Operating allocation, initiative evolution, responsive risk, crises, and trade-offs</li>
+                <li>• Decision Coach, causal explanations, Board Advisor, analytics, replay comparison, and final autopsy</li>
               </ul>
             </div>
             <div className="rounded-2xl border border-[#54aeff]/40 bg-[#ddf4ff] p-6">
               <p className="text-xs font-bold uppercase tracking-[.2em] text-[#0969da]">Scenario mode adds</p>
               <ul className="mt-4 grid gap-2 text-sm leading-6 text-[#57606a]">
-                <li>• A domain-specific organisation and initiative catalogue</li>
-                <li>• Native metrics, targets, constraints, and budget framing</li>
-                <li>• Domain crises and industry-grounded advisor context</li>
-                <li>• A separate scenario performance diagnosis and bonus</li>
+                <li>• A domain-specific organisation, pressure system, and initiative catalogue</li>
+                <li>• Native outcome metrics, targets, constraints, and scenario progress</li>
+                <li>• Domain crisis context and evidence tailored for the Board Advisor</li>
+                <li>• Scenario-native analytics and a final performance diagnosis</li>
               </ul>
             </div>
           </div>
@@ -473,10 +479,10 @@ export default function Home() {
                 </h3>
               </div>
               <p className="max-w-2xl leading-7 text-white/65">
-                The moat is the connected learning system: campaign variation,
-                persistent initiative state, responsive risk, emergent
-                combinations, explainable outcomes, and a diagnosis drawn from
-                the complete decision record.
+                The defensible value is the connected learning system: a finite
+                capital runway, persistent initiative state, scenario-native
+                pressures, responsive risk, explainable outcomes, and a final
+                diagnosis drawn from the complete decision record.
               </p>
             </div>
             <div className="mt-9 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -517,9 +523,10 @@ export default function Home() {
               The strategic tools at your fingertips.
             </h3>
             <p className="mt-3 max-w-2xl leading-7 text-[#656d76]">
-              Every tool answers a different leadership question. Use them when
-              you need evidence, a second opinion, or a safer way to test a
-              move.
+              Every tool has a different job: inspect the current state, test a
+              decision, explain what changed, or compare this campaign with the
+              next attempt. They are designed to make reflection practical, not
+              to make the decision for you.
             </p>
             <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {tools.map(([Icon, title, copy, how, where], i) => (
@@ -549,18 +556,19 @@ export default function Home() {
                 <div>
                   <h3 className="text-xl font-bold">Safe to fail</h3>
                   <p className="mt-2 leading-7 text-white/65">
-                    Experiment without real-world consequences. Learn from
-                    mistakes, try again, and build the intuition to lead under
-                    pressure.
+                    Experiment without real-world consequences. Deliberately
+                    keep a reserve, concentrate on one initiative, spread across
+                    three, or change your operating allocation—then replay the
+                    campaign to compare the strategic consequences.
                   </p>
                 </div>
               </div>
             </div>
             <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
               {[
-                ["Confidence builder", "Practice boardroom conversations"],
-                ["Strategic compass", "Test investment theses"],
-                ["Decision lab", "Make mistakes safely"],
+                ["Confidence builder", "Practice evidence-led boardroom conversations"],
+                ["Strategic compass", "Test capital pace and portfolio theses"],
+                ["Replay notebook", "Compare attempts and learn from the difference"],
               ].map(([title, copy]) => (
                 <div
                   key={title}
@@ -590,12 +598,15 @@ export default function Home() {
               Your strategy emerges through play.
             </h2>
             <p className="mt-5 text-lg leading-8 text-[#656d76]">
-              You choose the operating world, but not the strategic identity you
-              will be given. Your baseline shapes the starting conditions;
-              every quarter then changes initiative capability, risk, cost, and
-              momentum. The campaign remembers what you funded, neglected, and
-              discovered.
+              You choose the operating world and capital runway—not a flattering
+              strategy label. Your baseline shapes the starting conditions;
+              every quarter then changes initiative capability, risk, cost,
+              reserve, and momentum. The campaign remembers what you funded,
+              deferred, neglected, and discovered.
             </p>
+          </div>
+          <div className="mt-10">
+            <LearningLoopVisual />
           </div>
           <div className="mt-12 grid gap-4 lg:grid-cols-4">
             {steps.map(([Icon, title, time, copy], index) => (
@@ -631,26 +642,26 @@ export default function Home() {
               Always-on analysis
             </p>
             <h3 className="mt-3 text-3xl font-bold">
-              Analytics and insights, available when you need them.
+              Analytics that explain the campaign you are actually running.
             </h3>
             <div className="mt-7 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
               {[
-                ["Live dashboard", "See your current scorecard at a glance."],
-                ["Trends", "Follow metric movement and forecasts."],
-                ["Diagnostics", "Find the reason behind weak outcomes."],
-                ["Frameworks", "View BCG, McKinsey, and PwC lenses."],
+                ["Live scenario state", "See the active domain pressures, target progress, capital remaining, and pace."],
+                ["Trends", "Follow portfolio and scenario-native metric movement; forecasts are labelled as modelled outlooks."],
+                ["Diagnostics", "Trace weak outcomes to evidence, the last completed decision, and the next constraint."],
+                ["Frameworks", "Use BCG, McKinsey, and PwC lenses as reflective models alongside the direct scenario outcomes."],
                 [
-                  "Campaign memory",
-                  "See what was funded, neglected, and learned.",
+                  "Capital and campaign memory",
+                  "See what was deployed, kept in reserve, funded, deferred, and learned.",
                 ],
-                ["Recommendations", "Turn evidence into your next move."],
+                ["Coach and recommendations", "Turn evidence into an editable next-quarter starting point."],
                 [
                   "Initiative evolution",
-                  "Track maturity, spend, ROI, data, and risk.",
+                  "Track maturity, cumulative spend, ROI, data, risk, and neglect.",
                 ],
                 [
                   "Causal chain",
-                  "Connect decisions to measurable consequences.",
+                  "Connect initiative choices, deployment, and operating allocation to measurable consequences.",
                 ],
               ].map(([title, copy]) => (
                 <div
@@ -674,9 +685,10 @@ export default function Home() {
                   Strategy Simulator: test before you commit.
                 </h3>
                 <p className="mt-2 leading-7 text-[#656d76]">
-                  Preview alternative portfolios, explore What-If outcomes,
-                  compare risk and reward, save a strategy, and apply it to your
-                  next decision.
+                  Preview alternative portfolios, deployment amounts, operating
+                  allocations, risk, reward, and reserve use before committing.
+                  Compare the outcomes, save a useful draft, and apply it as an
+                  editable starting point for your next decision.
                 </p>
               </div>
             </div>
@@ -690,25 +702,25 @@ export default function Home() {
               <p>
                 <b className="text-[#3fb950]">Quarters 1–4</b>
                 <span className="block mt-1 text-white/60">
-                  Foundation building
+                  Build evidence, capability, and an intentional capital pace
                 </span>
               </p>
               <p>
                 <b className="text-[#3fb950]">Quarters 5–8</b>
-                <span className="block mt-1 text-white/60">Scaling impact</span>
+                <span className="block mt-1 text-white/60">Scale what is working; correct what is not</span>
               </p>
               <p>
                 <b className="text-[#3fb950]">Quarters 9–12</b>
                 <span className="block mt-1 text-white/60">
-                  Transformation complete
+                  Consolidate value, resilience, and the final diagnosis
                 </span>
               </p>
             </div>
             <p className="mt-6 text-sm text-white/60">
-              Finish the journey to earn your CEO rating: A+ Transformation
-              Leader · A Strategic Driver · B+ Capable Executor · B Developing
-              Practitioner. Your strategic pattern is revealed only after the
-              full campaign.
+              Finish the journey for a CEO rating and strategy autopsy. The
+              report explains the result through scenario progress, capital pace,
+              allocation patterns, initiative choices, risk movement, causal
+              evidence, and what to test differently on the next replay.
             </p>
           </div>
           <button
