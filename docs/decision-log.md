@@ -651,3 +651,11 @@ Status: implemented local vertical slice; broader orchestration and pilot remain
 - **Known limits:** this is the first learner-facing vertical slice, not the complete four-window engine. Q1–Q3 are currently represented as a deliberate Research timing contract and carry-forward hook; full quarter-by-quarter window history/cursor persistence, three resolver-authored Research-result branches, Window 2 content, and the deferred Quality/OEM and Technician Retirement events are still pending. No P3 reuse work is started.
 - **Follow-up:** run the browser suite when execution permission is available, then inspect the connected loop with a representative learner/facilitator before extending the shell to later windows. Keep the sidecar read-only and out of active play until the learner loop is accepted.
 - **Artefacts:** [V3 Window shell](../components/V3WindowShell.tsx), [Project Factory V3 pack](../lib/scenarios/projectFactoryV3.ts), [V3 E2E flow](../tests/e2e/v3-project-factory.test.cjs), and [implementation backlog](./project-factory-v3-implementation-backlog.md).
+
+## 2026-08-22 — Window 2 boundary made explicit
+
+Status: implemented
+
+- **Reason:** A carry-forward hook must not imply that Window 2 is playable when only Window 1 has been authored. Showing Window 1 choices under a Window 2 heading would reproduce the orientation failure this reset is intended to solve.
+- **Change:** After the learner enters Window 2, the V3 shell now presents a labelled preview boundary stating that the next board window is not authored yet, preserves the saved Research decision and remaining capital, removes Window 1 action controls, and offers a single return-to-setup action.
+- **Verification:** The V3 browser flow now asserts this boundary and confirms that the Window 1 priority action is absent. The complete browser flow remains 5/5 passing.
