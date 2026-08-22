@@ -36,6 +36,7 @@ type GameStore = GameState & {
   confirmDecisions: () => void;
   respondToCrisis: (impact: Record<string, number>, cost?: number) => void;
   advanceQuarter: () => void;
+  advanceV3Window: (nextQuarter: number) => void;
   quickReset: () => void;
   resetCampaign: () => void;
   resetAllData: () => void;
@@ -251,6 +252,24 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
       feedback: `Quarter ${state.q + 1} is ready.`,
     });
   },
+
+  advanceV3Window: (nextQuarter) => set((state) => {
+    if (!state.v3State) return state;
+    const quarter = Math.max(state.q, Math.min(12, Math.floor(nextQuarter)));
+    return {
+      ...state,
+      q: quarter,
+      stage: 'decide',
+      selected: [],
+      crisis: null,
+      causalChain: [],
+      proactiveRecommendations: [],
+      quarterlyCrisisCost: 0,
+      scenarioOverspend: 0,
+      feedback: `Window ${Math.ceil(quarter / 3)} is ready.`,
+      v3State: { ...state.v3State, currentQuarter: quarter },
+    };
+  }),
 
   quickReset: () => set((state) => quickResetState(normalizeGameState(state))),
 

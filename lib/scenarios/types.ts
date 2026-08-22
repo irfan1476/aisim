@@ -120,6 +120,33 @@ export type V3Event = {
   effects?: Array<{ metric: string; delta: number; unit?: string; sourceRuleId?: string; sourceEvidenceIds?: string[] }>;
 };
 
+export type V3WindowPriority = {
+  id: string;
+  displayName: string;
+  problem: string;
+  whyNow: string;
+  knownFacts: string[];
+  researchQuestions: string[];
+  boundary: string;
+  owner: string;
+  costInrCr: number;
+  capacity: Record<string, number>;
+  evidenceIds: string[];
+  signalQuarter: number;
+  deferral: string;
+  terms?: string[];
+};
+
+export type V3WindowDefinition = {
+  id: string;
+  quarterRange: [number, number];
+  boardQuestion: string;
+  headlineSignals: Array<{ label: string; value: string; target?: string; tone?: 'risk' | 'context' }>;
+  monitoredContext: string;
+  laterPriorities: string[];
+  priorities: V3WindowPriority[];
+};
+
 export type V3CausalRule = {
   [key: string]: unknown;
   id: string;
@@ -153,6 +180,7 @@ export type V3ScenarioPack = {
   boardMemo?: Record<string, unknown>;
   responsibleImpact?: Record<string, unknown>;
   eventCoverage?: Record<string, unknown>;
+  windowOne?: V3WindowDefinition;
 };
 
 /**

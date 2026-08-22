@@ -25,6 +25,56 @@ export const projectFactoryV3Pack: V3ScenarioPack = {
     { key: 'asset_data_readiness', label: 'Asset-data readiness', unit: '0–100 index', timeBasis: 'evidence-based composite', ownerRole: 'data_owner', scope: 'scenario', start: 43, target: 75, min: 0, max: 100, direction: 'higher-is-better' },
     { key: 'cash_commitment', label: 'Cumulative programme capital committed', unit: '₹ Cr', timeBasis: 'immediate cumulative', ownerRole: 'cfo', scope: 'scenario', start: 0, target: 5, min: 0, max: 5.5, direction: 'lower-is-better', currency: 'INR_Cr' },
   ],
+  windowOne: {
+    id: 'PF-W1',
+    quarterRange: [1, 3],
+    boardQuestion: 'Which evidence-building priority should receive capacity in Q1–Q3?',
+    headlineSignals: [
+      { label: 'Reliability', value: 'Unplanned downtime 12.0%', target: 'target ≤7.0%', tone: 'risk' },
+      { label: 'Quality', value: 'Escaped defects 1,240 PPM', target: 'internal escalation >1,000', tone: 'risk' },
+      { label: 'Workforce', value: 'Readiness 52/100', target: 'target ≥70', tone: 'risk' },
+    ],
+    monitoredContext: 'Energy intensity is 15% above the prior baseline; it is monitored context, not a fourth Q1 choice.',
+    laterPriorities: ['Energy optimisation', 'Demand forecasting', 'Supply-chain risk monitoring'],
+    priorities: [
+      {
+        id: 'maintenance', displayName: 'Predictive Maintenance',
+        problem: 'Downtime is 12.0%; Line M-4 creates 31% of stoppage minutes.',
+        whyNow: 'Reliability pressure is concentrated on a line where a safe, planned intervention window is scarce.',
+        knownFacts: ['38% of in-scope critical assets have six months of usable sensor history.', '44% of in-scope failure codes are structured; M-4 vibration data is irregular.'],
+        researchQuestions: ['Can selected M-4 failure modes be detected early enough for a named safe maintenance window?', 'Is a named asset-data owner and read-only access available?', 'Is protected technician review/disposition capacity available?'],
+        boundary: 'Research evaluates evidence only. It does not deploy alerts or reduce downtime.',
+        owner: 'Maintenance lead with CIO/data owner', costInrCr: 0.25,
+        capacity: { data_engineering: 1, governance_assurance: 1 }, evidenceIds: ['PF-E01', 'PF-E02'], signalQuarter: 2,
+        deferral: 'M-4 remains exposed; review at the end of Q3, or earlier after a material failure or new asset-data/ownership evidence changes the case.',
+        terms: ['Structured failure codes = repair records grouped into usable cause categories.'],
+      },
+      {
+        id: 'quality', displayName: 'Visual Quality Inspection',
+        problem: 'Escaped defects are 1,240 PPM; first-pass yield is 91.2%.',
+        whyNow: 'OEM containment requires a traceable human decision within 24 hours of a confirmed escape.',
+        knownFacts: ['Two inspection-heavy lines produce 46% of reported scrap cost.', 'Early Q1 OEM excerpts are available; the full brief arrives in Q2.'],
+        researchQuestions: ['Are selected Q-2 defects visually observable and repeatable?', 'Can labels, lighting/camera conditions, and a representative sample be used?', 'Can the Quality owner trace override, rework, release, and containment?'],
+        boundary: 'Research evaluates capture, labels, and traceability. It does not lower defects or release product.',
+        owner: 'Quality head', costInrCr: 0.20,
+        capacity: { data_engineering: 1, plant_integration: 1, governance_assurance: 1 }, evidenceIds: ['PF-E01', 'PF-E05'], signalQuarter: 2,
+        deferral: 'Quality/OEM exposure remains; review at the end of Q3, or earlier when the full Q2 brief or a material escape changes the evidence.',
+        terms: ['Traceability = the record linking a flagged unit to its review and disposition.'],
+      },
+      {
+        id: 'knowledge', displayName: 'Technician Knowledge Assistant',
+        problem: 'Workforce readiness is 52/100; 18% of senior technicians are retirement-eligible.',
+        whyNow: 'Continuity risk is rising, but knowledge capture must be safe, reviewable, and bounded to one workflow.',
+        knownFacts: ['Only 1.5 trainer-days per plant per quarter are protected for workflow change.', 'Technician representatives require review time, safe boundaries, and a correction route.'],
+        researchQuestions: ['Is there a bounded knowledge set for one shift workflow?', 'Can a technician review panel and protected review time be named?', 'Are safety, intellectual-property, provenance, withdrawal, and escalation controls usable?'],
+        boundary: 'Research evaluates a safe knowledge boundary. It does not predict departures or improve readiness yet.',
+        owner: 'Maintenance lead with technician representative', costInrCr: 0.18,
+        capacity: { data_engineering: 1, frontline_change: 1, governance_assurance: 1 }, evidenceIds: ['PF-E04', 'PF-E07'], signalQuarter: 2,
+        deferral: 'Continuity exposure remains; review at the end of Q3, or earlier when protected review capacity or a material workflow/retirement trigger changes the evidence.',
+        terms: ['Retirement eligibility is not a prediction of actual departure.'],
+      },
+    ],
+  },
   reportedMetrics: [
     { key: 'critical_asset_sensor_coverage', label: 'Critical asset sensor coverage', unit: '%', timeBasis: 'quarterly gate review', ownerRole: 'data_owner', scope: 'scenario', start: 38, min: 0, max: 100 },
     { key: 'structured_failure_code_coverage', label: 'Structured failure-code coverage', unit: '%', timeBasis: 'quarterly gate review', ownerRole: 'maintenance_lead', scope: 'scenario', start: 44, min: 0, max: 100 },
@@ -45,12 +95,12 @@ export const projectFactoryV3Pack: V3ScenarioPack = {
     { id: 'PF-E07', title: 'Governance and accountable-use brief', sourceType: 'expert-calibrated synthetic', sourceStatus: 'provisional', claimStatus: 'supported for control boundaries; insufficient for local validity', authorRole: 'CIO/CISO/data owner', version: '0.1', availableFrom: 'Q1', informs: ['maintenance', 'quality', 'demand', 'energy', 'knowledge', 'supply'] },
   ],
   initiatives: [
-    initiative('maintenance', 'Predictive maintenance for critical assets', 'Maintenance lead', ['PF-E01', 'PF-E02', 'PF-E03', 'PF-E04', 'PF-E07'], [], 'asset_data_readiness', { data_engineering: { research: 2, pilot: 2, scale: 3 }, plant_integration: { research: 1, pilot: 2, scale: 2 }, frontline_change: { pilot: 2, scale: 2 }, governance_assurance: { pilot: 1, scale: 2 } }),
-    initiative('quality', 'AI visual quality inspection', 'Quality head', ['PF-E01', 'PF-E03', 'PF-E05', 'PF-E07'], ['maintenance'], 'first_pass_yield', { data_engineering: { research: 2, pilot: 2, scale: 2 }, plant_integration: { pilot: 2, scale: 2 }, frontline_change: { pilot: 2, scale: 2 }, governance_assurance: { pilot: 1, scale: 2 } }),
-    initiative('demand', 'Demand forecasting and inventory alignment', 'Supply-chain planning lead', ['PF-E01', 'PF-E03', 'PF-E05', 'PF-E06', 'PF-E07'], [], 'schedule_adherence', { data_engineering: { research: 1, pilot: 2, scale: 2 }, plant_integration: { pilot: 1, scale: 1 }, frontline_change: { pilot: 1, scale: 1 }, governance_assurance: { pilot: 1, scale: 1 } }),
-    initiative('energy', 'Energy optimisation for production operations', 'Energy and operations manager', ['PF-E01', 'PF-E02', 'PF-E03', 'PF-E06', 'PF-E07'], [], 'energy_intensity_index', { data_engineering: { research: 1, pilot: 2, scale: 2 }, plant_integration: { pilot: 2, scale: 2 }, frontline_change: { pilot: 1, scale: 1 }, governance_assurance: { pilot: 1, scale: 1 } }),
-    initiative('knowledge', 'Technician knowledge assistant', 'Maintenance lead', ['PF-E02', 'PF-E04', 'PF-E07'], ['maintenance'], 'workforce_readiness', { data_engineering: { research: 1, pilot: 1, scale: 1 }, plant_integration: { pilot: 1, scale: 1 }, frontline_change: { pilot: 2, scale: 2 }, governance_assurance: { pilot: 2, scale: 2 } }),
-    initiative('supply', 'Supply-chain risk monitoring', 'Procurement and supply-chain lead', ['PF-E01', 'PF-E03', 'PF-E05', 'PF-E06', 'PF-E07'], ['demand'], 'schedule_adherence', { data_engineering: { research: 2, pilot: 2, scale: 2 }, plant_integration: { pilot: 1, scale: 1 }, frontline_change: { pilot: 1, scale: 1 }, governance_assurance: { pilot: 1, scale: 2 } }),
+    initiative('maintenance', 'Predictive maintenance for critical assets', 'Maintenance lead', ['PF-E01', 'PF-E02', 'PF-E03', 'PF-E04', 'PF-E07'], [], 'asset_data_readiness', { data_engineering: { research: 1, pilot: 2, scale: 3 }, plant_integration: { pilot: 2, scale: 2 }, frontline_change: { pilot: 2, scale: 2 }, governance_assurance: { research: 1, pilot: 1, scale: 2 } }, 0.25),
+    initiative('quality', 'AI visual quality inspection', 'Quality head', ['PF-E01', 'PF-E03', 'PF-E05', 'PF-E07'], ['maintenance'], 'first_pass_yield', { data_engineering: { research: 1, pilot: 2, scale: 2 }, plant_integration: { research: 1, pilot: 2, scale: 2 }, frontline_change: { pilot: 2, scale: 2 }, governance_assurance: { research: 1, pilot: 1, scale: 2 } }, 0.20),
+    initiative('demand', 'Demand forecasting and inventory alignment', 'Supply-chain planning lead', ['PF-E01', 'PF-E03', 'PF-E05', 'PF-E06', 'PF-E07'], [], 'schedule_adherence', { data_engineering: { research: 1, pilot: 2, scale: 2 }, plant_integration: { pilot: 1, scale: 1 }, frontline_change: { pilot: 1, scale: 1 }, governance_assurance: { research: 1, pilot: 1, scale: 1 } }, 0.15),
+    initiative('energy', 'Energy optimisation for production operations', 'Energy and operations manager', ['PF-E01', 'PF-E02', 'PF-E03', 'PF-E06', 'PF-E07'], [], 'energy_intensity_index', { data_engineering: { research: 1, pilot: 2, scale: 2 }, plant_integration: { research: 1, pilot: 2, scale: 2 }, frontline_change: { pilot: 1, scale: 1 }, governance_assurance: { pilot: 1, scale: 1 } }, 0.20),
+    initiative('knowledge', 'Technician knowledge assistant', 'Maintenance lead', ['PF-E02', 'PF-E04', 'PF-E07'], ['maintenance'], 'workforce_readiness', { data_engineering: { research: 1, pilot: 1, scale: 1 }, plant_integration: { pilot: 1, scale: 1 }, frontline_change: { research: 1, pilot: 2, scale: 2 }, governance_assurance: { research: 1, pilot: 2, scale: 2 } }, 0.18),
+    initiative('supply', 'Supply-chain risk monitoring', 'Procurement and supply-chain lead', ['PF-E01', 'PF-E03', 'PF-E05', 'PF-E06', 'PF-E07'], ['demand'], 'schedule_adherence', { data_engineering: { research: 2, pilot: 2, scale: 2 }, plant_integration: { pilot: 1, scale: 1 }, frontline_change: { pilot: 1, scale: 1 }, governance_assurance: { research: 1, pilot: 1, scale: 2 } }, 0.18),
   ],
   stakeholders: [
     { id: 'cfo', role: 'CFO transformation sponsor', priorities: ['realised operating value', 'cash discipline', 'credible downside'], redLines: ['uncontrolled capital overrun', 'scale without owner/evidence'], influence: 'high', signals: ['cash_commitment', 'capacity'] },
@@ -79,8 +129,8 @@ export const projectFactoryV3Pack: V3ScenarioPack = {
   report: { changes: [{ metric: 'unplanned_downtime_share', ruleId: 'CR-PF-01', evidenceIds: ['PF-E02', 'PF-E04'] }, { metric: 'first_pass_yield', ruleId: 'CR-PF-02', evidenceIds: ['PF-E01', 'PF-E05'] }, { metric: 'workforce_readiness', ruleId: 'CR-PF-03', evidenceIds: ['PF-E04', 'PF-E07'] }] },
 };
 
-function initiative(id: string, valueHypothesis: string, ownerRole: string, evidenceRequired: string[], dependencies: string[], valueMetric: string, capacityRequired: Record<string, Record<string, number>>) {
-  return { id, valueHypothesis, ownerRole, evidenceRequired, dependencies, valueMetric, capacityRequired, costInrCr: { researchCapital: 0.25, pilotCapital: 0.7, scaleCapital: 1.45, quarterlyRunCost: 0.18, changeAssuranceEffort: 0.12 }, lifecycle: { allowedTransitions: ['deferred to research', 'research to pilot', 'pilot to scale', 'scale to sustain', 'pilot to pause', 'scale to pause', 'pause to research', 'pilot to stop', 'scale to stop', 'sustain to stop'] } };
+function initiative(id: string, valueHypothesis: string, ownerRole: string, evidenceRequired: string[], dependencies: string[], valueMetric: string, capacityRequired: Record<string, Record<string, number>>, researchCapital = 0.25) {
+  return { id, valueHypothesis, ownerRole, evidenceRequired, dependencies, valueMetric, capacityRequired, costInrCr: { researchCapital, pilotCapital: 0.7, scaleCapital: 1.45, quarterlyRunCost: 0.18, changeAssuranceEffort: 0.12 }, lifecycle: { allowedTransitions: ['deferred to research', 'research to pilot', 'pilot to scale', 'scale to sustain', 'pilot to pause', 'scale to pause', 'pause to research', 'pilot to stop', 'scale to stop', 'sustain to stop'] } };
 }
 
 function gate(id: string, appliesTo: string[], ownerRole: string, requiredEvidence: string[], conditions: string[], onFailure: string) {

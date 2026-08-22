@@ -13,28 +13,64 @@ async function startProjectFactoryV3(page) {
   for (let index = 0; index < 5; index += 1) await page.getByTestId(`baseline-${index}-3`).click();
   await page.getByRole('button', { name: 'Enter the boardroom' }).click();
   await page.getByRole('button', { name: 'Begin campaign' }).click();
-  await expect(page.getByTestId('campaign-quarter')).toContainText('Quarter 1');
+  await expect(page.getByTestId('v3-window-shell')).toBeVisible();
+  await expect(page.getByTestId('campaign-quarter')).toContainText('Window 1');
 }
 
-test('opt-in Project Factory V3 exposes evidence, plan, and sidecar tabs', async ({ page }) => {
+test('V3 opens with a focused Window 1 Orient state', async ({ page }) => {
   await startProjectFactoryV3(page);
 
-  await expect(page.getByRole('heading', { name: 'Inspect before you commit' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'maintenance' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Decision sidecar' })).toBeVisible();
-
-  const sidecar = page.getByRole('complementary', { name: 'V3 analytics' });
-  await expect(sidecar).toBeVisible();
-  for (const label of ['Dashboard', 'Ledger', 'Metrics', 'Evidence', 'Governance']) {
-    await expect(sidecar.getByRole('tab', { name: label })).toBeVisible();
-  }
-  await sidecar.getByRole('tab', { name: 'Evidence' }).click();
-  await expect(sidecar.getByText('Asset-data readiness assessment')).toBeVisible();
-  await sidecar.getByRole('tab', { name: 'Metrics' }).click();
-  await expect(sidecar.getByText(/Owner:/).first()).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Which evidence-building priority should receive capacity in Q1–Q3?' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Review three priorities' })).toBeVisible();
+  await expect(page.getByRole('complementary', { name: 'V3 analytics' })).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Inspect before you commit' })).toHaveCount(0);
+  await expect(page.getByText('Capacity legend:')).toBeVisible();
 });
 
-test('Standard mode does not mount the V3 sidecar or evidence room', async ({ page }) => {
+test('V3 Compare presents exactly three bounded research priorities', async ({ page }) => {
+  await startProjectFactoryV3(page);
+  await page.getByRole('button', { name: 'Review three priorities' }).click();
+
+  const group = page.getByRole('radiogroup', { name: 'Window 1 Research priorities' });
+  await expect(group.getByRole('radio')).toHaveCount(3);
+  await expect(group.getByText('Predictive Maintenance')).toBeVisible();
+  await expect(group.getByText('Visual Quality Inspection')).toBeVisible();
+  await expect(group.getByText('Technician Knowledge Assistant')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Continue with Predictive Maintenance' })).toBeVisible();
+  await expect(page.getByText(/Only Research is available in Window 1/)).toBeVisible();
+});
+
+test('V3 Commit records research and shows a no-operating-benefit outcome', async ({ page }) => {
+  await startProjectFactoryV3(page);
+  await page.getByRole('button', { name: 'Review three priorities' }).click();
+  await page.getByRole('button', { name: 'Continue with Predictive Maintenance' }).click();
+  await expect(page.getByRole('heading', { name: 'Predictive Maintenance' })).toBeVisible();
+  await page.getByRole('button', { name: 'Confirm research' }).click();
+
+  await expect(page.getByRole('heading', { name: 'Research authorised' })).toBeVisible();
+  await expect(page.getByText(/Operating metrics did not improve/)).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Reflect on outcome' })).toBeVisible();
+
+  const persisted = await page.evaluate(() => JSON.parse(localStorage.getItem('ai-investment-game')).state);
+  expect(persisted.v3State.initiatives.maintenance.lifecycle).toBe('research');
+  expect(persisted.v3State.ledger).toHaveLength(1);
+  expect(persisted.v3State.budget.spent).toBeCloseTo(0.25);
+});
+
+test('V3 completes the reflection handoff without exposing the active-play sidecar', async ({ page }) => {
+  await startProjectFactoryV3(page);
+  await page.getByRole('button', { name: 'Review three priorities' }).click();
+  await page.getByRole('button', { name: 'Continue with Predictive Maintenance' }).click();
+  await page.getByRole('button', { name: 'Confirm research' }).click();
+  await page.getByRole('button', { name: 'Reflect on outcome' }).click();
+  await page.getByLabel('Window 1 reflection').fill('Require usable history and a named technician disposition owner.');
+  await page.getByRole('button', { name: 'Save and continue' }).click();
+  await expect(page.getByRole('heading', { name: 'Your Research decision is carried forward.' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Enter Window 2' })).toBeVisible();
+  await expect(page.getByRole('complementary', { name: 'V3 analytics' })).toHaveCount(0);
+});
+
+test('Standard mode remains on the legacy path without the V3 shell', async ({ page }) => {
   await page.goto('/');
   await page.evaluate(() => localStorage.clear());
   await page.reload();
@@ -43,22 +79,6 @@ test('Standard mode does not mount the V3 sidecar or evidence room', async ({ pa
   for (let index = 0; index < 5; index += 1) await page.getByTestId(`baseline-${index}-3`).click();
   await page.getByRole('button', { name: 'Enter the boardroom' }).click();
   await page.getByRole('button', { name: 'Begin campaign' }).click();
-  await expect(page.getByTestId('campaign-quarter')).toContainText('Quarter 1');
-  await expect(page.getByRole('complementary', { name: 'V3 analytics' })).toHaveCount(0);
-  await expect(page.getByRole('heading', { name: 'Inspect before you commit' })).toHaveCount(0);
-});
-
-test('V3 decision loop records cited evidence and learner prediction in the ledger', async ({ page }) => {
-  await startProjectFactoryV3(page);
-  await page.locator('article').filter({ hasText: 'Asset-data readiness assessment' }).getByRole('button', { name: 'Cite in decision' }).click();
-  await page.getByLabel('Decision rationale').fill('Start with a bounded research cycle to validate asset data before a pilot.');
-  await page.getByLabel('Decision prediction').fill('Asset-data readiness should improve after the research cycle.');
-  await page.getByLabel('Key assumption').fill('The maintenance team can provide protected review time.');
-  await page.getByRole('button', { name: 'deferred to research' }).click();
-  await expect(page.getByText('V3 decision recorded. Review the evidence and outcome before the next board window.').first()).toBeVisible();
-  await page.getByRole('button', { name: 'Continue to next quarter' }).click();
-  const sidecar = page.getByRole('complementary', { name: 'V3 analytics' });
-  await sidecar.getByRole('tab', { name: 'Ledger' }).click();
-  await expect(sidecar.getByText('Start with a bounded research cycle to validate asset data before a pilot.')).toBeVisible();
-  await expect(sidecar.getByText('PF-E02')).toBeVisible();
+  await expect(page.getByTestId('v3-window-shell')).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Choose initiatives' })).toBeVisible();
 });

@@ -22,9 +22,7 @@ import {
   readPersistedGameState,
 } from "../lib/game/persistence";
 import { buildAdvisorSystemPrompt } from "../lib/llm/advisorPrompt";
-import V3EvidenceRoom from "./V3EvidenceRoom";
-import V3InitiativePlan from "./V3InitiativePlan";
-import V3AnalyticsSidecar from "./V3AnalyticsSidecar";
+import V3WindowShell from "./V3WindowShell";
 
 function compactNumber(value: number): number {
   return Number.isFinite(value) ? Number(value.toFixed(2)) : 0;
@@ -47,7 +45,6 @@ export default function Game() {
   const [scenarioId, setScenarioId] = useState("projectFactory");
   const [currencyMode, setCurrencyMode] = useState<CurrencyMode>("$");
   const [debug, setDebug] = useState(false);
-  const [v3CitedEvidence, setV3CitedEvidence] = useState<string[]>([]);
   useEffect(() => {
     setDebug(
       process.env.NODE_ENV !== "production" &&
@@ -200,24 +197,20 @@ export default function Game() {
     setScreen("setup");
   };
   const v3Scenario = s.scenarioMode ? getScenario(s.scenarioId) : undefined;
-  const v3InitiativeId = s.selected[0] || Object.keys(s.v3State?.initiatives || {})[0];
-  const confirmV3Plan = (action: string, record: { rationale: string; prediction: string; assumption: string }) => {
-    if (!v3Scenario?.v3 || !v3InitiativeId) return;
-    const target = action.split(/\s+to\s+|→/).pop()?.trim() as "deferred" | "research" | "pilot" | "scale" | "sustain" | "pause" | "stop" | undefined;
-    if (!target) return;
-    const profile = v3Scenario.v3.initiatives?.find((item) => item.id === v3InitiativeId);
-    const capacity = profile?.capacityRequired?.[target] || profile?.capacityRequired?.research || {};
-    const costs = profile?.costInrCr;
-    const cost = target === 'research' ? costs?.researchCapital : target === 'pilot' ? costs?.pilotCapital : target === 'scale' ? costs?.scaleCapital : 0;
-    const gateIds = s.v3State?.initiatives[v3InitiativeId]?.gateIds || [];
-    store.confirmV3Decisions([{ initiativeId: v3InitiativeId, lifecycle: target, cost, capacity, gateIds }], {
-      id: `window-${s.q}-${v3InitiativeId}`,
+  const commitV3Window = ({ initiativeId, prediction, note, evidenceIds }: { initiativeId: string; prediction: string; note: string; evidenceIds: string[] }) => {
+    if (!v3Scenario?.v3) return { accepted: false, errors: [{ code: "v3-pack-required", message: "The V3 pack is unavailable." }], metrics: {}, value: [] };
+    const profile = v3Scenario.v3.initiatives?.find((item) => item.id === initiativeId);
+    const capacity = profile?.capacityRequired?.research || {};
+    const cost = profile?.costInrCr?.researchCapital || 0;
+    const gateIds = s.v3State?.initiatives[initiativeId]?.gateIds || [];
+    return store.confirmV3Decisions([{ initiativeId, lifecycle: "research", cost, capacity, gateIds }], {
+      id: `window-${s.q}-${initiativeId}`,
       quarter: s.q,
-      initiativeIds: [v3InitiativeId],
-      rationale: record.rationale,
-      prediction: record.prediction,
-      assumption: record.assumption,
-      evidenceIds: v3CitedEvidence,
+      initiativeIds: [initiativeId],
+      rationale: note || `Commission research to test the ${initiativeId} operating question.`,
+      prediction,
+      assumption: note || "The declared research findings will be available before the next Pilot decision.",
+      evidenceIds,
       gateIds,
     });
   };
@@ -276,6 +269,14 @@ export default function Game() {
     );
   if (screen === "done")
     return <GameDoneScreen state={s} onPlayAgain={reset} />;
+  if (v3Scenario?.v3 && s.v3State)
+    return <V3WindowShell
+      state={s}
+      pack={v3Scenario.v3}
+      onCommit={commitV3Window}
+      onNextWindow={(nextQuarter) => store.advanceV3Window(nextQuarter)}
+      onReset={reset}
+    />;
   return (
     <main className="game-shell min-h-screen bg-mist">
       <NextQuarterGuidance
@@ -326,21 +327,6 @@ export default function Game() {
         onConfirm={confirm}
         onReset={reset}
       />
-      {v3Scenario?.v3 && s.v3State && (
-        <>
-        <section aria-label="V3 operating evidence" className="mx-auto w-full max-w-[1500px] px-5 pb-5"><div className="rounded-3xl border border-gold/30 bg-gold/5 p-5"><p className="text-xs font-bold uppercase tracking-[.2em] text-gold">Operating evidence · quarter {s.v3State.currentQuarter}</p><div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">{(v3Scenario.v3.metrics || []).slice(0, 5).map((metric) => { const value = (s as any).scenarioState?.metrics?.[metric.key] ?? metric.start ?? 0; return <div key={metric.key} className="rounded-xl border border-ink/8 bg-white p-3"><p className="text-[10px] font-bold uppercase tracking-wider text-ink/45">{metric.label}</p><p className="mt-1 text-lg font-bold">{Number(value).toFixed(1)} <span className="text-xs font-normal text-ink/45">/ {metric.target ?? '—'} {metric.unit}</span></p><p className="mt-1 text-[11px] text-ink/55">Owner: {metric.ownerRole || 'unassigned'}</p></div>; })}</div></div></section>
-        <section className="mx-auto grid w-full max-w-[1500px] gap-5 px-5 pb-28 lg:grid-cols-[1fr_1fr_360px]">
-          <V3EvidenceRoom pack={v3Scenario.v3} selectedIds={v3CitedEvidence} onCite={(item) => setV3CitedEvidence((current) => current.includes(item.id) ? current.filter((id) => id !== item.id) : [...current, item.id])} />
-          {v3InitiativeId && <V3InitiativePlan
-            pack={v3Scenario.v3}
-            initiativeId={v3InitiativeId}
-            currentState={s.v3State.initiatives[v3InitiativeId]?.lifecycle}
-            onConfirm={confirmV3Plan}
-          />}
-          <V3AnalyticsSidecar state={s as any} pack={v3Scenario.v3} />
-        </section>
-        </>
-      )}
       <GameResultsModal
         state={s}
         onRespond={respond}
