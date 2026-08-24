@@ -1,202 +1,155 @@
-import { evaluateSynergies } from './generator';
-import { resolveQuarter, type QuarterDecision } from './engine';
-import { calculatePortfolioDynamics } from './effectResolver';
-import type { InitiativeState } from './initiativeState';
-import type { Allocation, GameState, ScenarioState } from './state';
+import { resolveQuarter } from './engine';
+import type { Allocation, GameState } from './state';
 import { getScenario } from '../scenarios/registry';
 
 export type StrategyPreviewDecision = {
   selected: string[];
   alloc: Allocation;
-  deploymentAmount?: number;
-};
-
-export type StrategyPreviewSpend = {
-  initiativeSpend: number;
   deploymentAmount: number;
-  reserveAfterDeployment: number;
-  campaignRemaining: number;
-  provenance: 'engine-preview-estimate';
 };
 
-export type StrategyPreviewPlan = {
-  decision: StrategyPreviewDecision;
-  metrics: Partial<GameState>;
-  initiativeStates: Record<string, InitiativeState>;
-  scenarioState?: ScenarioState;
-  spend: StrategyPreviewSpend;
+export type StrategyPreviewMetric = {
+  key: string;
+  label: string;
+  current: number;
+  alternative: number;
+  delta: number;
+  unit: string;
+  direction?: 'higher-is-better' | 'lower-is-better';
 };
 
 export type StrategyPreview = {
-  current: StrategyPreviewPlan;
-  alternative: StrategyPreviewPlan;
+  current: {
+    selected: string[];
+    deploymentAmount: number;
+    spend: number;
+    metrics: Record<string, number>;
+    scenarioMetrics: Record<string, number>;
+    scenarioProgress: Record<string, number>;
+  };
+  alternative: {
+    selected: string[];
+    deploymentAmount: number;
+    spend: { deploymentAmount: number; amount: number; provenance: string };
+    metrics: Record<string, number>;
+    scenarioMetrics: Record<string, number>;
+    scenarioProgress: Record<string, number>;
+    scenarioState?: GameState['scenarioState'];
+    initiativeStates?: GameState['initiativeStates'];
+    decision?: { selected: string[]; alloc: Allocation };
+  };
   deltas: Record<string, number>;
-  tradeoffs: string[];
   uncoveredPressures: string[];
+  metricDeltas: StrategyPreviewMetric[];
+  improves: StrategyPreviewMetric[];
+  worsens: StrategyPreviewMetric[];
+  uncovered: string[];
+  tradeoffs: string[];
   learningInsight: string;
-  /** Convenient aliases for consumers that only need the comparison values. */
-  currentMetrics: Partial<GameState>;
-  alternativeMetrics: Partial<GameState>;
+  valid: boolean;
+  warning?: string;
 };
 
-const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+const nativeMetrics: Array<[string, string, string, 'higher-is-better' | 'lower-is-better']> = [
+  ['roi', 'ROI', '%', 'higher-is-better'],
+  ['revenue', 'Revenue uplift', '%', 'higher-is-better'],
+  ['efficiency', 'Efficiency', '%', 'higher-is-better'],
+  ['adoption', 'Adoption', '%', 'higher-is-better'],
+  ['risk', 'Risk exposure', '%', 'lower-is-better'],
+  ['data', 'Data readiness', '%', 'higher-is-better'],
+  ['satisfaction', 'Satisfaction', '%', 'higher-is-better'],
+];
 
-function clone<T>(value: T): T {
-  return JSON.parse(JSON.stringify(value)) as T;
+function finite(value: unknown, fallback = 0): number {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : fallback;
 }
 
-function numericMetrics(state: GameState, scenarioState?: ScenarioState): Record<string, number> {
-  const metrics: Record<string, number> = {};
-  const source = { ...state, ...(scenarioState?.metrics || {}) } as Record<string, unknown>;
-  for (const [key, value] of Object.entries(source)) {
-    if (typeof value === 'number' && Number.isFinite(value)) metrics[key] = value;
-  }
-  return metrics;
+function selectedCost(state: GameState, selected: string[]): number {
+  return selected.reduce((sum, id) => {
+    const item = state.initiativeStates?.[id];
+    return sum + finite(item?.currentCost ?? item?.baseCost ?? item?.cost);
+  }, 0);
 }
 
-function normalizeDecision(state: GameState, decision: StrategyPreviewDecision): StrategyPreviewDecision {
-  const available = new Set(Object.keys(state.initiativeStates || {}));
-  const selected = Array.from(new Set(decision.selected || []))
-    .filter((id) => available.has(id))
-    .slice(0, 3);
-  return { selected, alloc: { ...state.alloc, ...decision.alloc }, deploymentAmount: decision.deploymentAmount };
+function stateScenarioMetrics(state: GameState): Record<string, number> {
+  return Object.fromEntries(Object.entries(state.scenarioState?.metrics || {}).map(([key, value]) => [key, finite(value)]));
 }
 
-function latestDecision(state: GameState): StrategyPreviewDecision {
-  const latest = state.history.at(-1);
-  return {
-    selected: state.selected.length ? [...state.selected] : [...(latest?.selectedIds || [])],
-    alloc: { ...(latest?.allocation || state.alloc) },
-    deploymentAmount: state.lastQuarterDeployment || state.deploymentAmount,
-  };
+function stateScenarioProgress(state: GameState): Record<string, number> {
+  return Object.fromEntries(Object.entries(state.scenarioState?.progress || {}).map(([key, value]) => [key, finite(value)]));
 }
 
-function planSpend(state: GameState, decision: StrategyPreviewDecision, states: Record<string, InitiativeState>): StrategyPreviewSpend {
+function normalizeSelection(state: GameState, selected: string[]): string[] {
+  return Array.from(new Set(selected)).filter((id) => Boolean(state.initiativeStates?.[id])).slice(0, 3);
+}
+
+export function previewStrategy(state: GameState, decisionOrSelected: StrategyPreviewDecision | string[], legacyAlloc?: Allocation, legacyDeployment?: number): StrategyPreview {
+  const decision: StrategyPreviewDecision = Array.isArray(decisionOrSelected)
+    ? { selected: decisionOrSelected, alloc: legacyAlloc || state.alloc, deploymentAmount: legacyDeployment ?? state.deploymentAmount }
+    : decisionOrSelected;
+  const selected = normalizeSelection(state, decision.selected || []);
+  const currentSelected = normalizeSelection(state, state.selected || []);
+  const currentSpend = selectedCost(state, currentSelected);
+  const alternativeSpend = selectedCost(state, selected);
+  const campaignRemaining = finite(state.campaignBudgetRemaining, finite(state.campaignBudget, state.quarterlyBudget * 12));
+  const deploymentAmount = Math.max(0, Math.min(finite(decision.deploymentAmount), campaignRemaining));
+  const currentDeployment = Math.max(0, Math.min(finite(state.deploymentAmount), campaignRemaining));
+  const alternativeResolution = resolveQuarter(state, { selected, alloc: decision.alloc || state.alloc });
+  const currentMetrics = Object.fromEntries(nativeMetrics.map(([key]) => [key, finite(state[key as keyof GameState])]));
+  const alternativeMetrics = Object.fromEntries(nativeMetrics.map(([key]) => [key, finite(alternativeResolution.metrics[key as keyof typeof alternativeResolution.metrics], currentMetrics[key])]));
+  const currentScenario = stateScenarioMetrics(state);
+  const alternativeScenario = Object.fromEntries(Object.entries(alternativeResolution.scenarioState?.metrics || {}).map(([key, value]) => [key, finite(value)]));
+  const currentProgress = stateScenarioProgress(state);
+  const alternativeProgress = Object.fromEntries(Object.entries(alternativeResolution.scenarioState?.progress || {}).map(([key, value]) => [key, finite(value)]));
   const scenario = state.scenarioMode ? getScenario(state.scenarioId) : undefined;
-  const synergies = evaluateSynergies(decision.selected, states, scenario?.synergies);
-  const costReduction = Math.min(0.15, synergies.reduce((sum, item) => sum + item.costReduction, 0));
-  const initiativeSpend = decision.selected.reduce((sum, id) => {
-    const item = states[id];
-    return sum + Number(item?.baseCost ?? item?.cost ?? item?.currentCost ?? 0);
-  }, 0) * (1 - costReduction);
-  const campaignRemaining = Number(state.campaignBudgetRemaining ?? state.campaignBudget ?? 0);
-  const requestedDeployment = Number(decision.deploymentAmount ?? state.deploymentAmount ?? state.quarterlyBudget);
-  const deploymentAmount = clamp(
-    Number.isFinite(requestedDeployment) ? requestedDeployment : state.quarterlyBudget,
-    0,
-    Math.max(0, campaignRemaining),
-  );
-  return {
-    initiativeSpend: Number(initiativeSpend.toFixed(2)),
-    deploymentAmount: Number(deploymentAmount.toFixed(2)),
-    reserveAfterDeployment: Number(Math.max(0, campaignRemaining - deploymentAmount).toFixed(2)),
-    campaignRemaining,
-    provenance: 'engine-preview-estimate',
-  };
-}
 
-function previewPlan(state: GameState, decision: StrategyPreviewDecision): StrategyPreviewPlan {
-  const normalized = normalizeDecision(state, decision);
-  const quarterDecision: QuarterDecision = { selected: normalized.selected, alloc: normalized.alloc };
-  const result = resolveQuarter(clone(state), quarterDecision);
-  return {
-    decision: normalized,
-    metrics: clone(result.metrics),
-    initiativeStates: clone(result.initiativeStates),
-    scenarioState: clone(result.scenarioState),
-    spend: planSpend(state, normalized, result.initiativeStates),
-  };
-}
-
-function deltaMetrics(current: StrategyPreviewPlan, alternative: StrategyPreviewPlan): Record<string, number> {
-  const keys = new Set([
-    ...Object.keys(numericMetrics({ ...({} as GameState), ...current.metrics }, current.scenarioState)),
-    ...Object.keys(numericMetrics({ ...({} as GameState), ...alternative.metrics }, alternative.scenarioState)),
-  ]);
-  const deltas: Record<string, number> = {};
-  for (const key of Array.from(keys)) {
-    const before = Number(current.scenarioState?.metrics?.[key] ?? current.metrics[key as keyof GameState] ?? 0);
-    const after = Number(alternative.scenarioState?.metrics?.[key] ?? alternative.metrics[key as keyof GameState] ?? 0);
-    if (Number.isFinite(before) && Number.isFinite(after)) deltas[key] = Number((after - before).toFixed(2));
+  const metricDeltas: StrategyPreviewMetric[] = nativeMetrics.map(([key, label, unit, direction]) => ({
+    key, label, unit, direction,
+    current: currentMetrics[key],
+    alternative: alternativeMetrics[key],
+    delta: alternativeMetrics[key] - currentMetrics[key],
+  }));
+  if (scenario) {
+    for (const definition of scenario.progress) {
+      const current = finite(currentScenario[definition.key], definition.start);
+      const alternative = finite(alternativeScenario[definition.key], current);
+      metricDeltas.push({ key: definition.key, label: definition.label, unit: definition.unit, direction: definition.direction, current, alternative, delta: alternative - current });
+    }
   }
-  deltas.initiativeSpend = Number((alternative.spend.initiativeSpend - current.spend.initiativeSpend).toFixed(2));
-  deltas.deploymentAmount = Number((alternative.spend.deploymentAmount - current.spend.deploymentAmount).toFixed(2));
-  return deltas;
-}
 
-function buildUncoveredPressures(state: GameState, plan: StrategyPreviewPlan): string[] {
-  const scenario = state.scenarioMode ? getScenario(state.scenarioId) : undefined;
-  if (!scenario) return [];
-  return scenario.progress
-    .filter((definition) => {
-      const value = Number(plan.scenarioState?.metrics?.[definition.key] ?? definition.start);
-      const moved = definition.direction === 'higher-is-better' ? value - definition.start : definition.start - value;
-      const progress = moved / Math.max(1, Math.abs(definition.target - definition.start));
-      return progress < 0.75;
-    })
-    .map((definition) => definition.label);
-}
-
-function buildTradeoffs(state: GameState, current: StrategyPreviewPlan, alternative: StrategyPreviewPlan, deltas: Record<string, number>): string[] {
+  const improves = metricDeltas.filter((item) => item.direction === 'lower-is-better' ? item.delta < -0.05 : item.delta > 0.05);
+  const worsens = metricDeltas.filter((item) => item.direction === 'lower-is-better' ? item.delta > 0.05 : item.delta < -0.05);
+  const covered = new Set(selected);
+  const uncovered = scenario
+    ? scenario.progress.filter((definition) => !Object.values(state.initiativeStates || {}).some((initiative) => covered.has(initiative.id) && initiative.scenarioMetadata?.primaryMetric === definition.key)).map((definition) => definition.label)
+    : [];
   const tradeoffs: string[] = [];
-  const countDelta = alternative.decision.selected.length - current.decision.selected.length;
-  if (countDelta < 0) tradeoffs.push(`Deeper focus on ${alternative.decision.selected.length} initiative${alternative.decision.selected.length === 1 ? '' : 's'} leaves more pressures uncovered.`);
-  if (countDelta > 0) tradeoffs.push(`Broader coverage adds coordination pressure across ${alternative.decision.selected.length} initiatives.`);
-  if (deltas.risk > 0.1) tradeoffs.push(`Risk rises by ${deltas.risk.toFixed(1)} points; strengthen governance before scaling.`);
-  if (deltas.risk < -0.1) tradeoffs.push(`Risk falls by ${Math.abs(deltas.risk).toFixed(1)} points, but this may trade off near-term growth.`);
-  if (deltas.adoption < -0.1) tradeoffs.push(`Adoption is lower by ${Math.abs(deltas.adoption).toFixed(1)} points in this alternative.`);
-  if (alternative.spend.reserveAfterDeployment < current.spend.reserveAfterDeployment - 0.01) tradeoffs.push('This plan uses more of the available reserve this quarter.');
-  if (!tradeoffs.length) tradeoffs.push(`The alternative keeps the same ${state.scenarioMode ? 'scenario' : 'operating'} posture while changing the allocation emphasis.`);
-  return tradeoffs;
-}
+  if (selected.length === 0) tradeoffs.push('No initiative receives focus; this preserves optionality but leaves the operating pressures uncovered.');
+  if (selected.length === 1) tradeoffs.push('Deep focus can build one capability faster, but concentrates risk and leaves other pressures uncovered.');
+  if (selected.length === 2) tradeoffs.push('Two initiatives balance depth and coverage, but still compete for shared people, data, and governance capacity.');
+  if (selected.length === 3) tradeoffs.push('Three initiatives broaden coverage, but increase coordination and adoption demands.');
+  if (deploymentAmount < currentDeployment) tradeoffs.push('The alternative preserves more budget this quarter, so its benefits may arrive more slowly.');
+  if (deploymentAmount > currentDeployment) tradeoffs.push('The alternative deploys more capital now, reducing reserve for later quarters and crises.');
+  if (uncovered.length) tradeoffs.push(`Uncovered pressure: ${uncovered.slice(0, 2).join(' and ')}.`);
 
-function learningInsight(state: GameState, alternative: StrategyPreviewPlan, deltas: Record<string, number>, uncovered: string[]): string {
-  const posture = calculatePortfolioDynamics(alternative.decision.selected.length, Object.keys(state.initiativeStates || {}).length).portfolioPosture;
-  const postureText = posture === 'deep-focus' ? 'a deep-focus bet' : posture === 'focused-balance' ? 'a focused balance' : posture === 'portfolio-breadth' ? 'broad portfolio coverage' : 'a deliberate pause';
-  const leading = Object.entries(deltas)
-    .filter(([key, value]) => !['initiativeSpend', 'deploymentAmount'].includes(key) && Math.abs(value) > 0.1)
-    .sort(([, a], [, b]) => Math.abs(b) - Math.abs(a))[0];
-  const outcome = leading ? `${leading[0]} moves ${leading[1] >= 0 ? 'up' : 'down'} by ${Math.abs(leading[1]).toFixed(1)} points` : 'the measured metrics remain broadly unchanged';
-  return `This is ${postureText}: ${outcome}. ${uncovered.length ? `It still leaves ${uncovered.slice(0, 2).join(' and ')} to work on.` : 'It keeps the main pressures covered.'}`;
-}
+  const bestImprovement = improves[0];
+  const posture = selected.length === 0 ? 'pause' : selected.length === 1 ? 'deep-focus' : selected.length === 2 ? 'focused-balance' : 'portfolio-breadth';
+  const learningInsight = bestImprovement
+    ? `${posture}: ${bestImprovement.label} moves ${bestImprovement.delta >= 0 ? '+' : ''}${bestImprovement.delta.toFixed(1)}${bestImprovement.unit}. Compare that gain with the ${worsens[0]?.label || 'trade-off'} before applying the draft.`
+    : `${posture}: this alternative does not improve a measured outcome yet; it may still be useful as a reserve, sequencing, or risk-control experiment.`;
+  const valid = selected.length <= 3 && alternativeSpend <= deploymentAmount + 1e-9 && alternativeSpend <= campaignRemaining + 1e-9;
+  const warning = alternativeSpend > deploymentAmount + 1e-9
+    ? `This portfolio costs ${alternativeSpend.toFixed(2)} but only ${deploymentAmount.toFixed(2)} is deployed. Increase deployment or choose fewer initiatives.`
+    : alternativeSpend > campaignRemaining + 1e-9 ? 'This portfolio exceeds the remaining campaign purse.' : undefined;
 
-/**
- * Previews an alternative quarter without mutating the live campaign.
- * Both sides of the comparison use the same resolveQuarter contract as play.
- */
-export function previewStrategy(
-  state: GameState,
-  alternative: StrategyPreviewDecision,
-): StrategyPreview;
-export function previewStrategy(
-  state: GameState,
-  selected: string[],
-  alloc: Allocation,
-  deploymentAmount?: number,
-): StrategyPreview;
-export function previewStrategy(
-  state: GameState,
-  alternativeOrSelected: StrategyPreviewDecision | string[],
-  alloc?: Allocation,
-  deploymentAmount?: number,
-): StrategyPreview {
-  const alternative = Array.isArray(alternativeOrSelected)
-    ? { selected: alternativeOrSelected, alloc: alloc || state.alloc, deploymentAmount }
-    : alternativeOrSelected;
-  const current = previewPlan(state, latestDecision(state));
-  const next = previewPlan(state, alternative);
-  const deltas = deltaMetrics(current, next);
-  const uncoveredPressures = buildUncoveredPressures(state, next);
+  const deltas: Record<string, number> = Object.fromEntries(metricDeltas.map((item) => [item.key, item.delta]));
+  deltas.initiativeSpend = alternativeSpend - currentSpend;
+  deltas.deployment = deploymentAmount - currentDeployment;
+  const alternativeScenarioState = alternativeResolution.scenarioState || (scenario ? { metrics: alternativeScenario, progress: alternativeProgress, flags: {} } : undefined);
   return {
-    current,
-    alternative: next,
-    deltas,
-    tradeoffs: buildTradeoffs(state, current, next, deltas),
-    uncoveredPressures,
-    learningInsight: learningInsight(state, next, deltas, uncoveredPressures),
-    currentMetrics: current.metrics,
-    alternativeMetrics: next.metrics,
+    current: { selected: currentSelected, deploymentAmount: currentDeployment, spend: currentSpend, metrics: currentMetrics, scenarioMetrics: currentScenario, scenarioProgress: currentProgress },
+    alternative: { selected, deploymentAmount, spend: { deploymentAmount, amount: alternativeSpend, provenance: 'engine-preview' }, metrics: alternativeMetrics, scenarioMetrics: alternativeScenario, scenarioProgress: alternativeProgress, scenarioState: alternativeScenarioState, initiativeStates: alternativeResolution.initiativeStates, decision: { selected, alloc: decision.alloc || state.alloc } },
+    deltas, uncoveredPressures: uncovered, metricDeltas, improves, worsens, uncovered, tradeoffs, learningInsight, valid, warning,
   };
 }
-
-export const previewQuarter = previewStrategy;

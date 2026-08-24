@@ -433,6 +433,17 @@ test("V2 approved recommendation becomes actionable next-quarter guidance", asyn
   expect(after.selected).not.toEqual(before.selected);
 });
 
+test("strategy simulator previews the active scenario without advancing the campaign", async ({ page }) => {
+  await startCampaign(page, profiles.balanced);
+  await page.getByRole("button", { name: "Open analytics" }).click();
+  await page.getByRole("button", { name: "Open Strategy Simulator" }).click();
+  await expect(page.getByRole("heading", { name: "Explore before you commit" })).toBeVisible();
+  await expect(page.getByText("Decision comparison")).toBeVisible();
+  await expect(page.getByText("What improves")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Apply as next-quarter draft" })).toBeVisible();
+  await expect(page.getByTestId("campaign-quarter")).toContainText("Quarter 1");
+});
+
 test("Standard mode keeps scenario-only UI and initiative IDs absent", async ({
   page,
 }) => {
