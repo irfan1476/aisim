@@ -135,3 +135,55 @@ The following boundaries are deliberate or remain outside this release:
 ## Release takeaway
 
 Branch1 Version 2 is not simply a larger feature set. It establishes a clearer educational contract: **the learner’s choices create a record, the record explains the outcome, and the next run becomes a deliberate experiment.**
+
+---
+
+## V2 continuation update — 2026-08-24
+
+This addendum records the post-release V2 work currently present in the working tree. It is intentionally not a release declaration: the changes remain uncommitted and require final browser validation before they are committed or deployed.
+
+### Learner-facing UX now implemented locally
+
+- Quarter Coach and Decision Preview can be collapsed, keeping the decision window focused on the live evidence.
+- The old static portfolio-choice summary is replaced by live decision impact: selected depth, spend, reserve, concentration, affected pressure and neglected pressure.
+- Initiative cards show evolving values and movement from campaign baseline.
+- The UI offers a **60% deployment suggestion** as an editable starting pace. It is guidance, not a minimum, maximum or forced spend rule.
+- Scenario challenges are presented as dynamic **Critical**, **Watch**, **Recovering** or **Controlled** states, with current value, movement from start and contextual explanation.
+- The Analytics Dashboard uses the latest completed quarter for spend evidence after a quarter transition; it does not treat an unresolved current quarter as a zero-outcome quarter.
+- Strategy DNA is positioned as strategic decision-pattern interpretation. Initiative Evolution is the measured ledger for funding, maturity, neglect, risk and spend.
+- Modelled analytics and proxies are labelled so learners can distinguish recorded outcomes from interpretation.
+
+### Four-scenario documentation boundary
+
+| Scenario pack | Domain-native evidence | Dynamic pressures learners should see | Content status |
+| --- | --- | --- | --- |
+| Project Factory 2030 | Maintenance reliability, quality, demand, energy and workforce/knowledge signals | Asset reliability, quality, demand volatility, energy cost and capability continuity | Provisional synthetic learning content |
+| BankNext Transformation | Fraud pressure, credit approval time, compliance readiness, customer trust and digital adoption | Fraud, competitive speed, regulatory evidence and responsible growth | Provisional synthetic learning content |
+| Care360 Health Network | Patient wait time, clinician burnout, patient safety, privacy trust and care access | Access surges, workforce pressure, safety signals and privacy review | Provisional synthetic learning content |
+| FutureReady University | Student persistence, engagement, faculty workload, employability readiness and academic governance | Student engagement, faculty resistance, competition and consent/data governance | Provisional synthetic learning content |
+
+The engine remains generic: scenario packs declare metrics, initiatives, effects, synergies, crises and context; the core quarter loop does not contain a separate hard-coded game for each domain.
+
+### Release status for this continuation
+
+- **Implemented locally:** yes, across the V2 UX and analytics workstreams.
+- **Evidence reported by workstreams:** type-check, automated tests, production compilation and diff checks passed for the relevant tracks; the reported suite was 65/65.
+- **Still required:** one clean full test/build run from the reconciled tree, browser walkthrough of all four scenarios, review of provisional domain values and targets, final diff review, commit and push.
+- **Not done in this continuation:** no commit, push, merge, Vercel deployment or V3 modification.
+
+## V2 continuation — decision-window and analytics UX
+
+**Status:** implemented in the current V2 working tree; pending final review and release validation.
+
+The latest V2 refinement keeps the same learning contract while making the decision window easier to read and the sidecar more trustworthy:
+
+- Quarter Coach and Decision Preview are collapsible, so guidance is available without dominating the decision surface.
+- The former static portfolio summary is replaced by live decision impact: selected depth, initiative spend, reserve, pressure, neglected coverage and likely trade-offs.
+- **60% is a suggested starting pace in the UI**, not a rule. Learners can edit deployment and retain the freedom to spend less or carry reserve forward.
+- Initiative cards show current evolved values and movement from campaign baseline.
+- Scenario challenges use live Critical, Watch, Recovering and Controlled states with scenario-native values and explanations.
+- Strategy DNA focuses on decision patterns, while Initiative Evolution owns measured initiative history.
+- Dashboard and Diagnostics prefer the latest completed-quarter evidence when the next decision window has not yet produced new results.
+- Modelled forecasts, framework interpretations and heuristic indicators are labelled as modelled proxies rather than observed business telemetry.
+
+These changes are not yet a new production release. The current working tree still requires the manual four-scenario walkthrough, browser assertions, provisional content review, final diff review and explicit commit/deployment approval.

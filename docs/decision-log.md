@@ -157,3 +157,16 @@ Status: implemented locally on `feature/scenario-generic-pipeline`; validation p
 - Added a structured Learn-tab retrospective covering the decision, observed scenario movement, causal evidence, spend, approvals and the next-quarter question.
 - **Validation evidence:** `npm run type-check` passed; `npm test` passed all 35 tests; `npm run build` passed on 2026-08-22.
 - **Remaining decision:** review whether the next analytics slice should prioritise full decision-ledger DNA, uncertainty bands, governance-gate narratives, or browser-level tab assertions. No commit, push, merge or deployment was performed as part of this workstream.
+
+## 2026-08-24 — V2 decision-window and evidence-led analytics refinement
+
+Status: implemented in the V2 working tree; pending release validation
+
+- **Objective:** continue V2 from the weekend baseline without changing V3, while making the decision window more compact, scenario feedback more active, and analytics more honest about evidence versus interpretation.
+- **Scope inspected:** the four scenario packs, current V2 release notes, analytics audit, pre-production checklist, and the existing V2 decision-window implementation.
+- **Implemented in the working tree:** collapsible Quarter Coach and Decision Preview; live decision-impact evidence; evolved initiative values with baseline movement; dynamic scenario challenge states; latest-completed-quarter spend/Diagnostics fallback; separate Strategy DNA and Initiative Evolution responsibilities; and modelled-proxy labelling.
+- **Agreed semantics:** 60% is a suggested UI deployment pace only. It is not a minimum, a required quarterly spend, or a restriction on learner choice. Flexible budgets and 0–3 initiative choices remain part of V2.
+- **Evidence rule:** measured snapshots and scenario-native values remain primary. Forecasts, framework views, heuristic KPI cards and inferred patterns are interpretations and must be labelled as modelled proxies.
+- **Compatibility constraint:** Standard Mode and all four scenario packs remain on the generic V2 engine. No scenario-name branching, V3 edits, new branch, commit, push or deployment is part of this documentation task.
+- **Known risks:** the four packs still contain provisional domain values and targets; browser-level coverage and manual playthroughs remain outstanding; uncertainty bands and deeper governance-gate narratives remain future V2 depth work.
+- **Next decision:** after manual and browser validation, decide whether this V2 working-tree change is ready to commit and release. Until then, these notes are a record of implementation status, not production approval.

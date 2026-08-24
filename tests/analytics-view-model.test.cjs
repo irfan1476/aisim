@@ -110,6 +110,10 @@ test('analytics view model uses scenario metrics, history, budget, and target fo
   assert.equal(forecast.length, 2);
   assert.deepEqual(forecast.map((point) => point.quarter), [3, 4]);
   assert.ok(Number.isFinite(forecast[0].values.studentPersistence));
+  assert.equal(forecast[0].provenance, 'directional-model');
+  assert.ok(forecast[0].ranges.studentPersistence.low <= forecast[0].values.studentPersistence);
+  assert.ok(forecast[0].ranges.studentPersistence.high >= forecast[0].values.studentPersistence);
+  assert.equal(forecast[0].confidence, 'low');
 });
 
 test('analytics metrics expose provenance so learners can distinguish fact from interpretation', () => {

@@ -20,6 +20,47 @@ The central finding is that the simulation has two valid metric layers:
 
 The engine can update both layers. Analytics must not silently substitute native portfolio proxies for the active scenario’s domain outcomes.
 
+## V2 continuation update — 2026-08-24
+
+The latest V2 UX pass tightens the sidecar around evidence and decision usefulness. This section supersedes older “next slice” wording where the items below are now implemented locally, while preserving the remaining validation items at the end of this document.
+
+### What is now visible and why
+
+| Sidecar area | V2 role | Evidence rule |
+| --- | --- | --- |
+| Dashboard | Current operating state, latest completed-quarter evidence, scenario bottleneck and campaign spend | Show recorded outcomes first; unresolved current-quarter spend is not displayed as a completed zero outcome |
+| Trends | Movement over time and explicitly labelled projections | Historical values are measured; projections are modelled estimates and should remain labelled |
+| Diagnostics | What is weak, what changed, what is at risk and what to inspect next | Prefer the latest completed quarter when the current decision window has no result |
+| Strategy DNA | Recurring decision pattern: focus breadth, concentration, capability emphasis, governance posture and adaptation | Interpretation is modelled from the decision ledger and must not be presented as a psychological diagnosis |
+| Initiative Evolution | Per-initiative measured ledger | Show funding, spend, maturity, neglect, risk and baseline variance only when the record supports it |
+| History | Historical truth and causal evidence | Do not recompute past snapshots from evolved current initiative state |
+| Frameworks | Optional management lenses | Framework scores are interpretive/modelled proxies unless directly grounded in recorded scenario evidence |
+
+The sidecar should therefore answer four questions before displaying secondary indicators: **What changed? What is at risk? Where did value appear? What should I inspect next?** Duplicate scorecards, generic ROI/risk ratios and framework-only proxy cards should be demoted or retained only in the full report/export.
+
+### Scenario-native coverage review
+
+All four packs use the same analytics boundary but different domain metrics. The active scenario catalog is the source for labels, units, direction, targets, progress and bottleneck selection. Native portfolio metrics remain supporting signals rather than substitutes for domain outcomes.
+
+- Project Factory: operational reliability, quality, demand, energy and capability outcomes.
+- BankNext: fraud pressure, approval speed, compliance readiness, trust and adoption.
+- Care360: access/waiting, workforce burden, safety, privacy/trust and care access.
+- FutureReady: persistence, engagement, faculty workload, employability and academic governance.
+
+The correct visual treatment is dynamic status and movement, not a static challenge paragraph. Challenge urgency should be derived from current progress and movement toward the declared target, using Critical, Watch, Recovering or Controlled as a learner-readable status vocabulary.
+
+### Provenance and provisional-value policy
+
+Every visible analytic should be classified as one of:
+
+- **Measured:** captured in a completed-quarter snapshot or persisted decision record.
+- **Derived:** calculated directly from measured state, such as spend totals or target progress.
+- **Scenario-defined:** authored domain content such as a target, crisis effect or initiative relationship.
+- **Modelled proxy:** a teaching estimate, forecast, framework lens or heuristic interpretation.
+- **Unavailable:** no evidence exists yet; do not display a fabricated zero.
+
+The four scenario packs currently contain expert-calibrated synthetic values for educational use. Their budgets, starts, targets, crisis effects, initiative returns, risks, delays and synergy strengths are **provisional**, not claims about industry benchmarks. Domain review should test whether the relative ordering, causal direction, timing and trade-offs are believable before external or high-stakes use.
+
 ## Evidence inspected
 
 - `components/AnalyticsHub.tsx`
@@ -202,3 +243,36 @@ The engine should not branch on these names. Different logic belongs in serializ
 ## Release constraint
 
 The current branch contains the completed Analytics V2 wiring and correction pass, including last-quarter budget evidence, cumulative per-initiative spend, history ledger, causal diagnostics fallback, recommendation-approval persistence, authored framework contributions, scenario-native forecasting, modelled-proxy labels and separate DNA/Evolution navigation. It is safe to review because Standard mode remains covered and the scenario engine remains generic. Remaining realism work is concentrated in full decision-ledger DNA, uncertainty bands, governance-gate causality, unit-aware presentation polish and browser-level tab assertions. No commit or deployment is implied by this document update.
+
+## V2 continuation audit — decision-window UX and evidence-led sidecar
+
+**Status:** implemented in the current V2 working tree; pending final review and release validation.
+
+| Area | Current behaviour | Learning purpose |
+| --- | --- | --- |
+| Quarter Coach | Collapsible; shows live bottleneck, pressure, reserve, selected depth, spend and “Why this now?” guidance | Lets the learner inspect context without losing the decision surface |
+| Decision Preview | Collapsible; retains spend, budget, concentration, neglect and synergy evidence | Makes the proposed decision auditable before commitment |
+| Initiative cards | Show evolved ROI/data and movement from baseline | Connects investment history to changing capability |
+| Deployment | 60% appears as a suggested starting pace only | Teaches pacing and optionality without imposing fixed spend |
+| Scenario challenges | Status, urgency, metric movement and explanation update from scenario state | Makes the operating environment responsive rather than static |
+
+### Evidence hierarchy
+
+1. **Measured evidence:** completed-quarter snapshots, spend, allocations, initiative history and scenario metric values.
+2. **Calculated evidence:** bounded progress, deltas, concentration, reserve and derived portfolio signals.
+3. **Scenario-authored context:** targets, challenge definitions, gates, crisis content and initiative relationships.
+4. **Modelled proxy:** forecasts, framework interpretations, heuristic KPI cards and inferred strategic patterns.
+
+The current refinement labels modelled proxy content and routes initiative-level history to Initiative Evolution while keeping Strategy DNA focused on strategic behaviour. It does not claim that provisional scenario values are external industry benchmarks.
+
+### Cross-scenario release review
+
+Before release, manually verify the same rules for Project Factory, BankNext, Care360 and FutureReady: scenario-native labels and units; latest completed-quarter spend after advancing; Diagnostics fallback; distinct DNA/Evolution tabs; 0–3 initiative choices; editable 60% suggestion; and modelled-proxy labels.
+
+### Updated remaining action list
+
+- [ ] Complete browser-level assertions for the refined decision window and all analytics tabs.
+- [ ] Run one manual 12-quarter playthrough for each scenario.
+- [ ] Review provisional metric bounds, targets, crisis severity and synergy balance with domain reviewers.
+- [ ] Add uncertainty bands and stronger governance-gate causal narratives after the current UX pass is accepted.
+- [ ] Complete final V2 diff/release review before any commit or deployment.

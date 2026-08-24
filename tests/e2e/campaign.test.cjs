@@ -325,6 +325,114 @@ test("scenario mode shows domain challenges, scenario initiatives, and a three-b
   ).toHaveAttribute("data-selected", "false");
 });
 
+test("V2 decision coach and preview are independently collapsible", async ({
+  page,
+}) => {
+  await startCampaign(page, profiles.balanced);
+  const coach = page.getByTestId("decision-coach");
+  const preview = page.getByTestId("decision-preview");
+
+  await expect(coach).not.toHaveAttribute("open", "");
+  await expect(preview).not.toHaveAttribute("open", "");
+  await coach.locator(":scope > summary").click();
+  await expect(coach).toHaveAttribute("open", "");
+  await expect(coach).toContainText("Live decision impact");
+  await preview.locator(":scope > summary").click();
+  await expect(preview).toHaveAttribute("open", "");
+  await expect(preview).toContainText("Concentration risk");
+  await coach.locator(":scope > summary").click();
+  await expect(coach).not.toHaveAttribute("open", "");
+  await expect(preview).toHaveAttribute("open", "");
+});
+
+test("V2 scenario challenges expose live status and update after a quarter", async ({
+  page,
+}) => {
+  await startScenarioCampaign(page, "bankNext");
+  const initial = await persistedState(page);
+  const challengePanel = page.locator("section").filter({ hasText: "Operating constraints" }).first();
+  await expect(challengePanel).toContainText(/Critical|Watch|Recovering|Controlled/);
+  await expect(challengePanel).toContainText("Now");
+
+  await resolveQuarter(page, {
+    ...profiles.balanced,
+    selected: ["fraudDetection", "creditRiskAssessment", "complianceMonitoring"],
+  });
+  const after = await persistedState(page);
+  expect(Object.keys(after.scenarioState.metrics).some((key) =>
+    after.scenarioState.metrics[key] !== initial.scenarioState.metrics[key],
+  )).toBe(true);
+  await expect(page.locator("section").filter({ hasText: "Operating constraints" }).first())
+    .toContainText(/Critical|Watch|Recovering|Controlled/);
+});
+
+test("V2 analytics uses latest completed-quarter spend and separates DNA from evolution", async ({
+  page,
+}) => {
+  await startScenarioCampaign(page, "bankNext");
+  await resolveQuarter(page, {
+    ...profiles.balanced,
+    selected: ["fraudDetection", "creditRiskAssessment", "complianceMonitoring"],
+  });
+  const completed = await persistedState(page);
+  const q1Spend = Number(completed.history[0].metrics.spent || 0);
+  expect(completed.q).toBe(2);
+  expect(q1Spend).toBeGreaterThan(0);
+
+  await page.getByRole("button", { name: "Open analytics" }).click();
+  const analytics = page.getByRole("dialog", { name: "Insights and analytics" });
+  await expect(analytics).toContainText("Q1 outcome recorded");
+  await expect(analytics).toContainText("last completed quarter");
+  await expect(analytics).not.toContainText("$0.00M last completed quarter");
+  await expect(analytics).toContainText(`$${q1Spend.toFixed(2)}M`);
+
+  await analytics.getByRole("button", { name: "Diagnostics" }).click();
+  await expect(analytics).toContainText("Decision → consequence");
+  await expect(analytics).toContainText("Latest completed quarter · Q1");
+  await expect(analytics).toContainText("Next actions");
+  await expect(analytics).not.toContainText("No recommendation has been generated for the current state.");
+
+  await analytics.getByRole("button", { name: "DNA" }).click();
+  await expect(analytics).toContainText("Strategy DNA");
+  await expect(analytics).not.toContainText("Initiative evolution & spend");
+  await analytics.getByRole("button", { name: "Evolution" }).click();
+  await expect(analytics).toContainText("Initiative evolution & spend");
+  await expect(analytics).toContainText("Strategy DNA is the separate interpretation");
+});
+
+test("V2 approved recommendation becomes actionable next-quarter guidance", async ({
+  page,
+}) => {
+  await startCampaign(page, profiles.balanced);
+  await chooseInitiatives(page, ["maintenance", "quality", "energy"]);
+  await setAllocation(page, {
+    infra: 30,
+    data: 25,
+    people: 10,
+    mlops: 15,
+    compliance: 10,
+    innovation: 10,
+  });
+  await page.getByRole("button", { name: "Confirm decisions" }).click();
+  const results = page.getByTestId("quarter-results");
+  const approve = results.getByRole("button", { name: "Approve recommendation" }).first();
+  await expect(approve).toBeVisible();
+  await approve.click();
+  await expect(results.getByRole("button", { name: /Approved for next decision/ })).toBeVisible();
+  await results.getByRole("button", { name: /Continue to next quarter/ }).click();
+
+  const guidance = page.getByText("Next-quarter guidance").first();
+  await expect(guidance).toBeVisible();
+  const before = await persistedState(page);
+  await page.getByRole("button", { name: /Apply suggestion/ }).last().click();
+  const after = await persistedState(page);
+  expect(after.q).toBe(2);
+  expect(after.nextQuarterGuidance).toBeNull();
+  expect(after.selected.length).toBeGreaterThanOrEqual(1);
+  expect(after.selected.length).toBeLessThanOrEqual(3);
+  expect(after.selected).not.toEqual(before.selected);
+});
+
 test("Standard mode keeps scenario-only UI and initiative IDs absent", async ({
   page,
 }) => {

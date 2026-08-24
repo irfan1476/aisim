@@ -85,33 +85,29 @@ export default function DecisionPreview({ state, initiatives }: Props) {
   const kpiNames = affectedProgress.map((metric) => metric.label);
 
   return (
-    <section
-      aria-labelledby="decision-preview-title"
-      className={`mb-5 rounded-3xl border p-5 ${posture.tone}`}
-      data-testid="decision-preview"
-      data-selected-count={selected.length}
-      data-portfolio-posture={posture.label.toLowerCase().replaceAll(" ", "-")}
-      data-breadth={selected.length / 3}
-      data-concentration-risk={concentration.toLowerCase()}
-    >
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <p className="text-[11px] font-bold uppercase tracking-[.2em] text-[#57606a]">Decision preview</p>
-          <div className="mt-1 flex items-center gap-2">
-            <h2 id="decision-preview-title" className="text-xl font-bold text-[#1f2328]">
-              {posture.label}
-            </h2>
-            <span className="rounded-full border border-black/10 bg-white/70 px-2 py-0.5 text-xs font-bold text-[#57606a]">
-              {selected.length} / 3
-            </span>
-          </div>
-          <p className="mt-1 max-w-2xl text-sm text-[#57606a]">{posture.description}</p>
-        </div>
-        <div className="rounded-2xl border border-black/10 bg-white/75 px-4 py-3 text-right">
-          <p className="flex items-center justify-end gap-1 text-[11px] font-bold uppercase tracking-wider text-[#57606a]"><Wallet size={13} /> Expected spend</p>
-          <p className="mt-1 text-lg font-bold text-[#1f2328]">{formatBudget(expectedSpend, state.currencyMode)}</p>
-        </div>
-      </div>
+    <details className={`group mb-5 rounded-3xl border ${posture.tone}`} data-testid="decision-preview">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-5">
+        <span>
+          <span className="text-[11px] font-bold uppercase tracking-[.2em] text-[#57606a]">Decision preview</span>
+          <span className="mt-1 flex items-center gap-2 text-xl font-bold text-[#1f2328]">
+            {posture.label}
+            <span className="rounded-full border border-black/10 bg-white/70 px-2 py-0.5 text-xs">{selected.length} / 3</span>
+          </span>
+          <span className="mt-1 block text-sm text-[#57606a]">{posture.description}</span>
+        </span>
+        <span className="flex shrink-0 items-center gap-3 text-right">
+          <span><span className="flex items-center justify-end gap-1 text-[11px] font-bold uppercase tracking-wider text-[#57606a]"><Wallet size={13} /> Expected spend</span><b className="mt-1 block text-lg text-[#1f2328]">{formatBudget(expectedSpend, state.currencyMode)}</b></span>
+          <span className="rounded-full bg-white/70 p-2"><ArrowUpRight size={15} className="transition group-open:rotate-90" /></span>
+        </span>
+      </summary>
+      <section
+        aria-labelledby="decision-preview-title"
+        className="border-t border-black/10 p-5 pt-4"
+        data-selected-count={selected.length}
+        data-portfolio-posture={posture.label.toLowerCase().replaceAll(" ", "-")}
+        data-breadth={selected.length / 3}
+        data-concentration-risk={concentration.toLowerCase()}
+      >
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <PreviewStat label="Budget after decision" value={formatBudget(budgetAfter, state.currencyMode)} />
@@ -130,7 +126,8 @@ export default function DecisionPreview({ state, initiatives }: Props) {
         <CheckCircle2 size={14} className="mt-0.5 shrink-0 text-[#1a7f37]" />
         <p><strong>Preview model:</strong> the quarter engine calculates the actual result after confirmation. Selecting fewer initiatives increases depth, but leaves more capabilities exposed to neglect. Scenario challenge links and synergies are <strong>scenario-defined mappings</strong>, not measured outcomes.</p>
       </div>
-    </section>
+      </section>
+    </details>
   );
 }
 

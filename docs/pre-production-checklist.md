@@ -125,6 +125,47 @@ The final report should continue reading completed-quarter snapshots rather than
 - [ ] Final browser smoke test on production-like environment
 - [ ] Vercel environment variables and GitHub deployment checks verified
 
+## V2 continuation checklist — current working-tree changes
+
+The following refinements are present in the current V2 working tree and must be validated before release:
+
+- [x] Quarter Coach is collapsible and shows live decision impact.
+- [x] Decision Preview is collapsible and shows spend, reserve, concentration, neglect and synergy evidence.
+- [x] Initiative cards expose evolved values and baseline movement.
+- [x] 60% deployment is a suggested UI pace, not a mandatory spend rule.
+- [x] Scenario challenges show dynamic Critical, Watch, Recovering or Controlled states.
+- [x] Dashboard spend uses the live decision or latest completed quarter rather than an unexplained zero.
+- [x] Diagnostics falls back to the latest completed-quarter recommendation and causal evidence.
+- [x] Strategy DNA and Initiative Evolution have distinct analytical responsibilities.
+- [x] Modelled proxy analytics are labelled.
+- [ ] Manually play all four scenarios through the updated decision window.
+- [ ] Verify one-, two- and three-initiative choices and partial deployment in each scenario.
+- [ ] Verify scenario-native units, challenge urgency and latest-quarter spend in each scenario.
+- [ ] Run browser assertions for coach, preview, challenge states, Dashboard, Diagnostics, DNA and Evolution.
+- [ ] Review provisional scenario targets, crisis severity and synergy balance with domain reviewers.
+- [ ] Review the final V2 diff and explicitly approve commit/push/deployment.
+
+This checklist records working-tree implementation status only. It does not authorise a commit, merge, push or production deployment.
+
+## Documentation update — 2026-08-24
+
+This documentation pass is restricted to V2 release notes, analytics audit and this checklist. No application code, tests, V3 files or branches were changed, and no commit was created.
+
+### Four-scenario manual review matrix
+
+| Scenario | Confirm in the browser | Domain values to review |
+| --- | --- | --- |
+| Project Factory 2030 | Challenge status changes after funding, neglect and crisis decisions; spend uses the latest completed quarter | Reliability, quality, demand, energy and capability targets/effects |
+| BankNext Transformation | Fraud, approval, compliance, trust and adoption remain visible as scenario-native metrics | Approval-time direction, fraud pressure severity, compliance target and responsible-growth trade-offs |
+| Care360 Health Network | Access and workforce pressures update without hiding safety or privacy signals | Wait-time/burnout direction, safety and privacy thresholds, crisis costs |
+| FutureReady University | Engagement and workload movement is distinct from governance and employability evidence | Persistence/engagement targets, workload direction, governance threshold and adoption trade-offs |
+
+For every pack, repeat the following learner paths: select one initiative, select two, select three, select none, deploy below the suggested pace, use the 60% suggestion and edit it, carry reserve forward, resolve a crisis, advance to the next quarter, inspect Dashboard and Diagnostics, then compare History and Initiative Evolution. The result should show the choice as evidence, not merely change a headline score.
+
+### Release status
+
+The V2 implementation tracks are present locally and workstream checks have reported type-check, automated tests, production compilation and diff validation, including a reported 65/65 test run. The branch is not yet a clean release candidate because the working tree contains uncommitted V2 code changes and local/generated artifacts. The release gate remains: reconcile the diff, complete one clean full run, perform the four-scenario browser walkthrough, review provisional values with domain reviewers, then obtain explicit approval before commit, push or deployment.
+
 ## Recommendation
 
-Do not deploy the current branch as the final production release until the recommendation-application blocker is resolved and a production-like browser smoke test confirms the next-quarter flow. The rest of the reviewed architecture is suitable for a controlled staging deployment, subject to the provisional content review and advisor hardening noted above.
+Do not deploy the current branch as the final production release until the updated decision-window flow passes the manual four-scenario walkthrough and browser smoke test, the provisional content is reviewed, and the final V2 diff is approved. Documentation updates do not change that release gate.

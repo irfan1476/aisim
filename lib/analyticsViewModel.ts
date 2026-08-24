@@ -17,6 +17,8 @@ export type AnalyticsMetric = {
   source: 'scenario' | 'native';
   status: 'measured' | 'derived';
   provenance: 'measured' | 'derived';
+  confidence: 'high' | 'medium' | 'low';
+  sourceDetail: string;
 };
 
 export type InitiativeSpend = { id: string; name: string; amount: number };
@@ -132,10 +134,17 @@ export function portfolioDecisionProfile(state: GameState): PortfolioDecisionPro
 }
 
 export function metricProvenance(metric: AnalyticsMetric): 'measured outcome' | 'scenario-defined effect' | 'modelled proxy' {
-  if (metric.status === 'measured' && metric.source === 'scenario') return 'measured outcome';
-  if (metric.status === 'measured') return 'measured outcome';
+  if (metric.provenance === 'measured') return 'measured outcome';
   return 'modelled proxy';
 }
+
+export type ForecastPoint = {
+  quarter: number;
+  values: Record<string, number>;
+  ranges: Record<string, { low: number; high: number }>;
+  provenance: 'directional-model';
+  confidence: 'medium' | 'low';
+};
 
 const nativeDefinitions: ScenarioProgressDefinition[] = [
   { key: 'roi', label: 'ROI', unit: '%', start: 0, target: 35, min: 0, max: 100, direction: 'higher-is-better' },
@@ -162,6 +171,8 @@ function definitionForNative(definition: ScenarioProgressDefinition, state: Game
     source: 'native',
     status: 'measured',
     provenance: 'derived',
+    confidence: 'medium',
+    sourceDetail: 'Native operating metric; target progress is calculated from the standard-mode baseline.',
   };
 }
 
@@ -180,6 +191,8 @@ export function analyticsMetrics(state: GameState): AnalyticsMetric[] {
       source: 'scenario',
       status: 'measured',
       provenance: 'measured',
+      confidence: 'high',
+      sourceDetail: `Recorded ${scenario.name} outcome; progress is calculated against this scenario's declared baseline and target.`,
     };
   });
 }
@@ -237,8 +250,9 @@ export function lowestScenarioMetric(state: GameState) {
   }, undefined);
 }
 
-export function scenarioForecast(state: GameState, quarters = 3) {
+export function scenarioForecast(state: GameState, quarters = 3): ForecastPoint[] {
   const metrics = analyticsMetrics(state).filter((metric) => metric.source === 'scenario');
+  const history = state.history || [];
   return Array.from({ length: quarters }, (_, index) => {
     const quarter = state.q + index + 1;
     const values = Object.fromEntries(metrics.map((metric) => {
@@ -252,6 +266,25 @@ export function scenarioForecast(state: GameState, quarters = 3) {
         : previous + (momentum * 0.35) + towardTarget;
       return [metric.key, Math.max(metric.min, Math.min(metric.max, next))];
     }));
-    return { quarter, values };
+    const ranges = Object.fromEntries(metrics.map((metric) => {
+      const series = analyticsHistory(state, metric).map((point) => point.value);
+      const changes = series.slice(1).map((value, changeIndex) => value - series[changeIndex]);
+      const volatility = changes.length > 1
+        ? Math.sqrt(changes.reduce((sum, change) => sum + Math.pow(change - changes.reduce((a, b) => a + b, 0) / changes.length, 2), 0) / changes.length)
+        : Math.max(1, Math.abs(metric.target - metric.start) * 0.04);
+      const spread = Math.min(Math.abs(metric.max - metric.min) * 0.2, Math.max(1, volatility) * (index + 1) * 1.25);
+      const value = values[metric.key];
+      return [metric.key, {
+        low: Math.max(metric.min, value - spread),
+        high: Math.min(metric.max, value + spread),
+      }];
+    }));
+    return {
+      quarter,
+      values,
+      ranges,
+      provenance: 'directional-model',
+      confidence: history.length >= 3 ? 'medium' : 'low',
+    };
   });
 }

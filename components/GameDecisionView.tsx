@@ -17,7 +17,7 @@ import BoardAdvisor from "./BoardAdvisor";
 import type { GameInitiative, GameViewState, Metric } from "./gameViewTypes";
 import { formatBudget, formatCurrency } from "../lib/currency";
 import { getScenario } from "../lib/scenarios/registry";
-import type { ScenarioProgressDefinition } from "../lib/scenarios/types";
+import ScenarioProgress from "./ScenarioProgress";
 
 interface Props {
   state: GameViewState;
@@ -177,6 +177,10 @@ export default function GameDecisionView({
                   (key) => key.split(":").includes(initiative.id),
                 );
                 const baselineTitle = `Campaign baseline: $${Number((live as any).baseCost ?? initiative.cost).toFixed(2)}M · ROI ${Number((live as any).baseRoi ?? initiative.roi).toFixed(0)}% · Data ${Number((live as any).baseData ?? initiative.data).toFixed(1)}/5 · Risk ${baseRiskScore.toFixed(0)}/100`;
+                const currentRoi = Number((live as any).currentRoi ?? (live as any).roi ?? initiative.roi);
+                const currentData = Number((live as any).currentData ?? (live as any).data ?? initiative.data);
+                const baseRoi = Number((live as any).baseRoi ?? initiative.roi);
+                const baseData = Number((live as any).baseData ?? initiative.data);
                 return (
                   <button
                     key={initiative.id}
@@ -215,13 +219,15 @@ export default function GameDecisionView({
                       </span>
                       <span>
                         <b className="block text-emerald">
-                          {Number(initiative.roi).toFixed(0)}%
+                          {currentRoi.toFixed(0)}%
+                          {currentRoi === baseRoi ? "" : ` ${currentRoi > baseRoi ? "↑" : "↓"}${Math.abs(currentRoi - baseRoi).toFixed(0)}`}
                         </b>
                         <small className="text-ink/40">current ROI</small>
                       </span>
                       <span>
                         <b className="block text-ink">
-                          {Number(initiative.data).toFixed(1)}/5
+                          {currentData.toFixed(1)}/5
+                          {currentData === baseData ? "" : ` ${currentData > baseData ? "↑" : "↓"}${Math.abs(currentData - baseData).toFixed(1)}`}
                         </b>
                         <small className="text-ink/40">data ready</small>
                       </span>
@@ -290,7 +296,7 @@ export default function GameDecisionView({
                 <label key={key} className="block">
                   <div className="mb-2 flex justify-between text-xs font-bold">
                     <span className="capitalize">
-                      {key === "mlops" ? "MLOps & maintenance" : key}
+                      {key === "mlops" ? "Ops & Maintenance" : key}
                     </span>
                     <span className="text-ink/45">
                       {value}% · {formatCurrency((value / 100) * (state.deploymentAmount || 0), state.currencyMode)}
@@ -314,12 +320,13 @@ export default function GameDecisionView({
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-xs font-bold uppercase tracking-wider text-ink/55">Deploy this quarter</p>
-                  <p className="mt-1 text-xs leading-5 text-ink/55">The quarterly pace is a guide, not a target. Keep a reserve or deploy up to two suggested paces when timing matters.</p>
+                  <p className="mt-1 text-xs leading-5 text-ink/55">The quarterly pace is a guide, not a target. A 60% starting pace preserves room to learn before committing the full reserve.</p>
                 </div>
                 <b className="text-sm text-ink">{formatBudget(state.deploymentAmount || 0, state.currencyMode)}</b>
               </div>
               <input data-testid="deployment-amount" aria-label="Deploy this quarter" type="range" min="0" max={Math.max(0, state.quarterlyDeploymentCap || state.quarterlyBudget || 0)} step="0.1" value={Math.min(state.deploymentAmount || 0, state.quarterlyDeploymentCap || state.quarterlyBudget || 0)} onChange={(event) => onDeploymentChange(Number(event.target.value))} className="mt-4 w-full accent-[#D4AF37]" />
-              <div className="mt-2 flex justify-between text-[11px] text-ink/45"><span>Reserve all</span><span>Suggested pace: {formatBudget(state.quarterlyBudget || 0, state.currencyMode)}</span><span>Cap: {formatBudget(state.quarterlyDeploymentCap || 0, state.currencyMode)}</span></div>
+              <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-[11px] text-ink/45"><span>Reserve all</span><span>Suggested starting pace (60%): {formatBudget((state.quarterlyBudget || 0) * 0.6, state.currencyMode)}</span><span>Cap: {formatBudget(state.quarterlyDeploymentCap || 0, state.currencyMode)}</span></div>
+              <button type="button" onClick={() => onDeploymentChange(Number(((state.quarterlyBudget || 0) * 0.6).toFixed(1)))} className="mt-3 rounded-lg border border-gold/40 bg-white/70 px-3 py-2 text-[11px] font-bold text-ink hover:bg-white">Use 60% suggestion</button>
               <p className="mt-2 text-[11px] text-ink/45">Unused campaign capital carries forward. Selected initiatives still need to fit within this deployment amount.</p>
             </div>
             {total !== 100 && (
@@ -389,51 +396,4 @@ export default function GameDecisionView({
       <AnalyticsHub state={state} initiatives={initiatives} />
     </>
   );
-}
-
-function ScenarioProgress({ state }: { state: GameViewState }) {
-  const scenario = getScenario(state.scenarioId);
-  if (!scenario) return null;
-  const liveScenarioMetrics = (
-    state as GameViewState & { scenarioState?: { metrics?: Record<string, number> } }
-  ).scenarioState?.metrics;
-  const progressValue = (item: ScenarioProgressDefinition) =>
-    Number(
-      liveScenarioMetrics?.[item.key] ??
-        state.scenarioStartingMetrics?.[item.key] ??
-        item.start,
-    );
-  const progressScore = (item: ScenarioProgressDefinition) => {
-    const value = progressValue(item);
-    const delta =
-      item.direction === "higher-is-better"
-        ? value - item.start
-        : item.start - value;
-    return Math.min(
-      100,
-      Math.max(0, (delta / Math.max(1, Math.abs(item.target - item.start))) * 100),
-    );
-  };
-  const formatValue = (value: number, unit: string) =>
-    `${Number.isInteger(value) ? value : value.toFixed(1)} ${unit}`;
-  const overall = scenario.progress.length
-    ? scenario.progress.reduce((sum, item) => sum + progressScore(item), 0) /
-      scenario.progress.length
-    : 0;
-  return <section className="mb-5 rounded-3xl border border-[#54aeff]/35 bg-[#ddf4ff] p-5">
-    <div className="flex flex-wrap items-baseline justify-between gap-2">
-      <div><p className="text-xs font-bold uppercase tracking-[.2em] text-[#0969da]">Scenario progress</p><h2 className="mt-1 text-lg font-bold">{scenario.name}</h2></div>
-      <span className="text-sm font-bold text-[#0969da]">{Math.round(overall)}% overall</span>
-    </div>
-    <div className="mt-4 rounded-2xl border border-[#54aeff]/25 bg-white/75 p-4">
-      <p className="text-xs font-bold uppercase tracking-[.16em] text-[#57606a]">Operating constraints</p>
-      <div className="mt-3 grid gap-3 sm:grid-cols-2">
-        {scenario.challenges.map((challenge) => <div key={challenge.id} className="rounded-xl border border-[#d0d7de] bg-white p-3"><div className="flex items-center justify-between gap-2 text-sm font-bold"><span>{challenge.label}</span><span className="text-[#cf222e]">{challenge.severity}</span></div><p className="mt-1 text-xs leading-5 text-[#57606a]">{challenge.description}</p></div>)}
-      </div>
-    </div>
-    <div className="mt-4 grid gap-3 sm:grid-cols-2">
-      {scenario.progress.map((item) => { const value = progressValue(item); const score = progressScore(item); const starting = formatValue(item.start, item.unit); return <div key={item.key} className="rounded-xl border border-[#54aeff]/25 bg-white/75 p-3"><div className="flex items-start justify-between gap-3 text-xs font-bold"><span>{item.label}</span><span className="text-right text-[#0969da]">{formatValue(value, item.unit)}</span></div><div className="mt-2 h-2 rounded-full bg-[#d0d7de]"><div className="h-full rounded-full bg-[#0969da]" style={{ width: `${score}%` }} /></div><div className="mt-2 flex justify-between gap-2 text-[11px] text-[#57606a]"><span>{Math.round(score)}% toward target</span><span>Start {starting}</span></div></div>; })}
-    </div>
-    <p className="mt-3 text-xs text-[#57606a]">This challenge responds to your funding, operating maturity, and crisis choices.</p>
-  </section>;
 }
