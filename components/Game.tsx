@@ -47,10 +47,12 @@ export default function Game({ resume = false }: { resume?: boolean }) {
   const [isAsking, setIsAsking] = useState(false);
   const [assessment, setAssessment] = useState<number[]>([]);
   const [experimental, setExperimental] = useState(false);
-  const [scenarioMode, setScenarioMode] = useState(false);
+  // Make the richer, domain-specific experience discoverable on a fresh run.
+  // Standard mode remains available as an explicit choice in the setup screen.
+  const [scenarioMode, setScenarioMode] = useState(true);
   const [scenarioId, setScenarioId] = useState("projectFactory");
   const [currencyMode, setCurrencyMode] = useState<CurrencyMode>("$");
-  const [campaignBudget, setCampaignBudget] = useState(120);
+  const [campaignBudget, setCampaignBudget] = useState(60);
   const [debug, setDebug] = useState(false);
   useEffect(() => {
     setDebug(

@@ -1,6 +1,7 @@
 import { SlidersHorizontal, Wallet } from "lucide-react";
 import { formatBudget, formatCurrency } from "../lib/currency";
 import { calculateCapitalPlan, calculateCapitalRunway } from "../lib/game/capital";
+import { fundingIntensityFor } from "../lib/game/effectResolver";
 import { deploymentCapacity } from "../lib/game/state";
 import type { GameViewState } from "./gameViewTypes";
 
@@ -40,6 +41,12 @@ export default function OperatingSystemControls({
   const suggestedDeployment = Math.min(capacity.maximumDeployment, capacity.basePace * 0.6);
   const plan = calculateCapitalPlan(state, state.selected, minimumInitiativeCost, deployment);
   const runway = calculateCapitalRunway(state, deployment);
+  const deliveryIntensity = fundingIntensityFor(plan.deliveryCapital, plan.initiativeMinimum);
+  const additionalMaturityCredit = plan.initiativeMinimum > 0
+    ? Math.min(1, Math.max(0, plan.deliveryCapital / plan.initiativeMinimum - 1))
+    : 0;
+  const releasePlan = (amount: number) =>
+    onDeploymentChange(Number(Math.min(capacity.maximumDeployment, Math.max(0, amount)).toFixed(1)));
 
   return (
     <section className={`rounded-2xl border border-[#d0d7de] bg-[#f6f8fa] ${compact ? "p-3" : "p-4"}`} aria-label="Balance the operating system">
@@ -86,15 +93,37 @@ export default function OperatingSystemControls({
           </div>
           <b className="shrink-0 text-sm text-[#24292f]">{formatBudget(deployment, state.currencyMode)}</b>
         </div>
+        <div className="mt-3 flex flex-wrap items-end justify-between gap-3">
+          <label className="block">
+            <span className="block text-[10px] font-bold uppercase tracking-[.12em] text-[#57606a]">Capital to release</span>
+            <div className="mt-1 flex items-center overflow-hidden rounded-lg border border-[#9bc9a7] bg-white focus-within:ring-2 focus-within:ring-[#1a7f37]">
+              <span className="border-r border-[#d0d7de] px-2 py-2 text-xs font-bold text-[#57606a]">{state.currencyMode === "₹" ? "₹ Cr" : "$M"}</span>
+              <input
+                data-testid="deployment-amount"
+                aria-label="Capital to release this quarter"
+                type="number"
+                inputMode="decimal"
+                min="0"
+                max={Math.max(0, capacity.maximumDeployment)}
+                step="0.1"
+                value={Number(deployment.toFixed(2))}
+                onChange={(event) => releasePlan(Number(event.target.value))}
+                className="w-24 bg-transparent px-2 py-2 text-sm font-bold text-[#24292f] outline-none"
+              />
+            </div>
+          </label>
+          <p className="max-w-[18rem] text-right text-[10px] leading-4 text-[#57606a]">
+            Available now: <b className="text-[#24292f]">{formatBudget(capacity.maximumDeployment, state.currencyMode)}</b>. This is a release decision, not a quarterly cap.
+          </p>
+        </div>
         <input
-          data-testid="deployment-amount"
-          aria-label="Deploy this quarter"
+          aria-label="Capital release slider"
           type="range"
           min="0"
           max={Math.max(0, capacity.maximumDeployment)}
           step="0.1"
           value={deployment}
-          onChange={(event) => onDeploymentChange(Number(event.target.value))}
+          onChange={(event) => releasePlan(Number(event.target.value))}
           className="mt-3 w-full cursor-ew-resize accent-[#1a7f37]"
         />
         <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-[10px] text-[#57606a]">
@@ -105,7 +134,16 @@ export default function OperatingSystemControls({
           <span>Recommended pace: {formatBudget(capacity.recommendedAuthority, state.currencyMode)}</span>
           <span className="font-bold text-[#24292f]">Available reserve: {formatBudget(capacity.maximumDeployment, state.currencyMode)}</span>
         </div>
-        <button type="button" onClick={() => onDeploymentChange(Number(suggestedDeployment.toFixed(1)))} className="mt-3 rounded-lg border border-[#9bc9a7] bg-white px-2.5 py-1.5 text-[10px] font-bold text-[#17351f] transition hover:bg-[#e8f4eb]">Use 60% suggestion</button>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <button type="button" onClick={() => releasePlan(plan.requiredCapital)} className="rounded-lg border border-[#1a7f37] bg-white px-2.5 py-1.5 text-[10px] font-bold text-[#17351f] transition hover:bg-[#e8f4eb]">Fund selected plan · {formatBudget(plan.requiredCapital, state.currencyMode)}</button>
+          <button type="button" onClick={() => releasePlan(suggestedDeployment)} className="rounded-lg border border-[#9bc9a7] bg-white px-2.5 py-1.5 text-[10px] font-bold text-[#17351f] transition hover:bg-[#e8f4eb]">Use suggested pace · {formatBudget(suggestedDeployment, state.currencyMode)}</button>
+          <button type="button" onClick={() => releasePlan(capacity.maximumDeployment)} className="rounded-lg border border-[#d0d7de] bg-white px-2.5 py-1.5 text-[10px] font-bold text-[#57606a] transition hover:bg-[#f6f8fa]">Release full reserve</button>
+        </div>
+        {plan.accelerationSpend > 0 && plan.initiativeMinimum > 0 && state.selected.length > 0 && (
+          <div className="mt-3 rounded-lg border border-[#9bc9a7] bg-white px-3 py-2 text-[10px] leading-4 text-[#57606a]">
+            <b className="text-[#176b36]">Scale-up is active.</b> {formatBudget(plan.accelerationSpend, state.currencyMode)} above the floor is distributed across the selected work. It raises this quarter&apos;s delivery intensity to <b className="text-[#24292f]">{deliveryIntensity.toFixed(2)}×</b> and earns up to <b className="text-[#24292f]">{additionalMaturityCredit.toFixed(1)} extra maturity credit</b> per selected initiative; later-quarter capability and risk effects compound from that faster maturity.
+          </div>
+        )}
         <p className={`mt-2 text-[10px] leading-4 ${runway.depletionQuarter ? "text-[#9a6700]" : "text-[#1a7f37]"}`}>{runway.message}</p>
       </div>
       {total !== 100 && <p className="mt-3 rounded-lg bg-[#edf0ee] px-3 py-2 text-[11px] font-bold text-[#303832]">Rebalance to exactly 100% before confirming this quarter.</p>}

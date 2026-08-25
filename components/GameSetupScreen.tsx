@@ -49,7 +49,7 @@ export default function GameSetupScreen({
             <div className="flex items-center gap-3 text-gold"><Factory size={20} /><span className="text-xs font-bold uppercase tracking-widest">How the campaign works</span></div>
             <p className="mt-5 text-xl leading-8">Allocate. Observe. Reflect. Adapt.</p>
             <p className="mt-3 text-sm leading-6 text-white/60">Across twelve quarters, fund up to three bets, respond to pressure, and learn how capability, risk, and adoption move together.</p>
-            <div className="mt-7 grid grid-cols-3 gap-2 border-t border-white/10 pt-5">{[['12', 'quarters'], ['3', 'bets / quarter'], ['1', 'board verdict']].map(([value, label]) => <div key={label}><b className="text-lg">{value}</b><p className="mt-1 text-[11px] leading-4 text-white/45">{label}</p></div>)}</div>
+            <div className="mt-7 grid grid-cols-3 gap-2 border-t border-white/10 pt-5">{[['12', 'quarters'], ['0–3', 'bets / quarter'], ['1', 'board verdict']].map(([value, label]) => <div key={label}><b className="text-lg">{value}</b><p className="mt-1 text-[11px] leading-4 text-white/45">{label}</p></div>)}</div>
           </aside>
 
           <div className="rounded-3xl border border-ink/10 bg-white p-6 shadow-sm sm:p-8">
@@ -60,17 +60,17 @@ export default function GameSetupScreen({
                 <input id="player-name" value={name} onChange={(event) => onNameChange(event.target.value)} placeholder="e.g. Priya Sharma" className="mt-2 w-full rounded-xl border border-ink/10 bg-mist px-4 py-3 outline-none focus:border-gold" />
                 <label className="mt-5 flex items-center gap-3 rounded-xl bg-mist p-3 text-sm"><input type="checkbox" checked={experimental} onChange={(event) => onExperimentalChange(event.target.checked)} className="accent-[#D4AF37]" /><span><b>Experimental mode</b><small className="block text-ink/50">Practice hypotheses with softened consequences.</small></span></label>
                 <div className="mt-6 rounded-xl border border-ink/8 bg-mist/60 p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
+                  <div className="flex min-w-0 items-start justify-between gap-3">
+                    <div className="min-w-0">
                       <p className="text-xs font-bold uppercase tracking-widest text-ink/45">Campaign purse</p>
                       <p className="mt-1 text-sm text-ink/60">One finite budget across all 12 quarters.</p>
                     </div>
-                    <b className="whitespace-nowrap text-lg text-ink">{formatPurse(campaignBudget)}</b>
+                    <b className="max-w-[45%] shrink-0 break-words text-right text-lg leading-6 text-ink sm:max-w-none sm:whitespace-nowrap">{formatPurse(campaignBudget)}</b>
                   </div>
                   <input aria-label="Total campaign budget" type="range" min={campaignBudgetMin} max={campaignBudgetMax} step="12" value={campaignBudget} onChange={(event) => onCampaignBudgetChange(Number(event.target.value))} className="mt-4 w-full accent-[#D4AF37]" />
-                  <div className="mt-3 grid grid-cols-3 gap-2 text-[10px] leading-4 text-ink/50">
+                  <div className="mt-3 grid min-w-0 grid-cols-3 gap-2 text-[10px] leading-4 text-ink/50">
                     <span><b className="block uppercase tracking-wide text-ink/40">Minimum purse</b>{formatPurse(campaignBudgetMin)}</span>
-                    <span className="text-center"><b className="block uppercase tracking-wide text-ink/40">Suggested pace</b><strong className="whitespace-nowrap text-ink/70">{formatPurse(suggestedQuarterlyPace)} / qtr</strong></span>
+                    <span className="min-w-0 text-center"><b className="block uppercase tracking-wide text-ink/40">Suggested pace</b><strong className="block break-words text-ink/70">{formatPurse(suggestedQuarterlyPace)} / qtr</strong></span>
                     <span className="text-right"><b className="block uppercase tracking-wide text-ink/40">Maximum purse</b>{formatPurse(campaignBudgetMax)}</span>
                   </div>
                 </div>
