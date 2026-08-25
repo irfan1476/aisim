@@ -218,6 +218,7 @@ test("board advisor answers distinct suggested questions without an LLM", async 
   );
   await startCampaign(page, profiles.balanced);
 
+  await page.getByRole("button", { name: "Open board advisor" }).click();
   const advisor = page.getByTestId("board-advisor");
   const questions = advisor.locator("button").filter({ hasText: /\?/ });
   await expect(questions).toHaveCount(3);

@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import type { GameInitiative, GameViewState } from "./gameViewTypes";
 import { formatBudget } from "../lib/currency";
 import { getScenario } from "../lib/scenarios/registry";
+import { deploymentCapacity } from "../lib/game/state";
 
 type Props = {
   state: GameViewState;
@@ -61,6 +62,8 @@ export default function DecisionPreview({ state, initiatives }: Props) {
     state.campaignBudgetRemaining ?? state.campaignBudget ?? state.quarterlyBudget * 12,
   );
   const budgetAfter = Math.max(0, campaignRemaining - expectedSpend);
+  const capacity = deploymentCapacity(state.campaignBudget, campaignRemaining, state.quarterlyBudget, state.q, state.spent);
+  const plannedDeployment = Math.min(Number(state.deploymentAmount || 0), capacity.maximumDeployment);
   const unfunded = initiatives.filter((initiative) => !selectedIds.includes(initiative.id));
   const posture = postureFor(selected.length);
   const affectedChallenges = scenario
@@ -85,7 +88,7 @@ export default function DecisionPreview({ state, initiatives }: Props) {
   const kpiNames = affectedProgress.map((metric) => metric.label);
 
   return (
-    <details className={`group mb-5 rounded-3xl border ${posture.tone}`} data-testid="decision-preview">
+    <details open className={`group h-full rounded-3xl border ${posture.tone}`} data-testid="decision-preview">
       <summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-5">
         <span>
           <span className="text-[11px] font-bold uppercase tracking-[.2em] text-[#57606a]">Decision preview</span>
@@ -96,7 +99,7 @@ export default function DecisionPreview({ state, initiatives }: Props) {
           <span className="mt-1 block text-sm text-[#57606a]">{posture.description}</span>
         </span>
         <span className="flex shrink-0 items-center gap-3 text-right">
-          <span><span className="flex items-center justify-end gap-1 text-[11px] font-bold uppercase tracking-wider text-[#57606a]"><Wallet size={13} /> Expected spend</span><b className="mt-1 block text-lg text-[#1f2328]">{formatBudget(expectedSpend, state.currencyMode)}</b></span>
+          <span><span className="flex items-center justify-end gap-1 text-[11px] font-bold uppercase tracking-wider text-[#57606a]"><Wallet size={13} /> Selected portfolio</span><b className="mt-1 block text-lg text-[#1f2328]">{formatBudget(expectedSpend, state.currencyMode)}</b><small className="mt-0.5 block text-[10px] text-[#57606a]">Plan {formatBudget(plannedDeployment, state.currencyMode)} · max {formatBudget(capacity.maximumDeployment, state.currencyMode)}</small></span>
           <span className="rounded-full bg-white/70 p-2"><ArrowUpRight size={15} className="transition group-open:rotate-90" /></span>
         </span>
       </summary>

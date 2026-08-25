@@ -27,6 +27,7 @@ Module._resolveFilename = function resolveTypeScriptImports(request, parent, isM
 };
 
 const { buildBoardAdvisorBrief, answerBoardAdvisorQuestion } = require('../lib/game/boardAdvisor.ts');
+const { deriveOperatingModelAdvisory } = require('../lib/game/operatingModelAdvisory.ts');
 
 function context(overrides = {}) {
   return {
@@ -107,4 +108,30 @@ test('scenario answers only surface recorded scenario relationships', () => {
   assert.match(answer, /Fraud detection/i);
   assert.match(answer, /Compliance monitoring/i);
   assert.match(answer, /Compliance readiness/);
+});
+
+test('operating-model advisory is deterministic, evidence-led, and does not mutate campaign state', () => {
+  const current = context({
+    alloc: { infra: 20, data: 10, mlops: 5, people: 12, compliance: 8, innovation: 5 },
+    initiativeStates: {
+      fraud: { quartersFunded: 2, quartersSinceLastFund: 0 },
+      credit: { quartersFunded: 0, quartersSinceLastFund: 2 },
+    },
+  });
+  const before = structuredClone(current);
+  const first = deriveOperatingModelAdvisory(current);
+  const second = deriveOperatingModelAdvisory(current);
+
+  assert.deepEqual(first, second);
+  assert.deepEqual(current, before);
+  assert.equal(first.lens, 'architectural-flexibility');
+  assert.match(first.evidence, /Data readiness is 48%/);
+  assert.match(first.decisionPrompt, /dependency/i);
+});
+
+test('board advisor can explain the operating-model lens from current evidence', () => {
+  const answer = answerBoardAdvisorQuestion(context(), 'CTO', 'How does the operating model help us learn?');
+  assert.match(answer, /Architectural flexibility/);
+  assert.match(answer, /advisory interpretation/i);
+  assert.match(answer, /Evidence\n[\s\S]*Trade-off\n[\s\S]*Next check/);
 });

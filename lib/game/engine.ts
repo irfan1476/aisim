@@ -7,9 +7,9 @@ import type { GameState, QuarterSnapshot } from "./state";
 import { normalizeGameState } from "./persistence";
 import { evaluateSynergies } from "./generator";
 import { getScenario } from "../scenarios/registry";
-import { applyScenarioEffects, calculatePortfolioDynamics, calculateStandardEffects } from "./effectResolver";
+import { applyScenarioEffects, calculatePortfolioDynamics, calculateStandardEffects, fundingIntensityFor } from "./effectResolver";
 
-export type QuarterDecision = { selected: string[]; alloc: GameState["alloc"] };
+export type QuarterDecision = { selected: string[]; alloc: GameState["alloc"]; deploymentAmount?: number; continuityAllocations?: Record<string, number> };
 
 export function hydrateGameState(state: GameState): GameState {
   return normalizeGameState(state);
@@ -28,11 +28,21 @@ export function resolveQuarter(
   const selected = decision.selected
     .filter((id, index, ids) => Boolean(current.initiativeStates[id]) && ids.indexOf(id) === index)
     .slice(0, 3);
+  const minimumPortfolioCost = selected.reduce(
+    (sum, id) => sum + Number(current.initiativeStates[id]?.currentCost ?? current.initiativeStates[id]?.baseCost ?? 0),
+    0,
+  );
+  const fundingIntensity = decision.deploymentAmount === undefined
+    ? 1
+    : fundingIntensityFor(decision.deploymentAmount, minimumPortfolioCost);
+  const investmentMultiplier = decision.deploymentAmount === undefined || !minimumPortfolioCost
+    ? 1
+    : Math.max(0, Number(decision.deploymentAmount) || 0) / minimumPortfolioCost;
   const evolved = updateInitiativeStates(
     current.initiativeStates,
     selected,
     decision.alloc,
-    { adoption: current.adoption },
+    { adoption: current.adoption, fundingIntensity, investmentMultiplier, continuityAllocations: decision.continuityAllocations },
   );
   const chosen = selected.map((id) => evolved[id]).filter(Boolean);
   const scenario = current.scenarioMode ? getScenario(current.scenarioId) : undefined;
@@ -56,6 +66,7 @@ export function resolveQuarter(
     synergyRiskReduction,
     synergyAdoption,
     synergyCostReduction,
+    fundingIntensity,
   });
   const scenarioState = scenario
     ? applyScenarioEffects(
@@ -68,6 +79,7 @@ export function resolveQuarter(
         decision.alloc,
         current.adoption,
         synergies,
+        fundingIntensity,
       )
     : current.scenarioState;
   const resolvedMetrics = scenario
@@ -90,6 +102,7 @@ export function resolveQuarter(
     initiativeStates: JSON.parse(JSON.stringify(evolved)),
     scenarioState: JSON.parse(JSON.stringify(scenarioState)),
     synergiesDiscovered: synergies.map((effect) => effect.key),
+    fundingIntensity,
   };
   return { metrics: resolvedMetrics, initiativeStates: evolved, scenarioState, snapshot };
 }

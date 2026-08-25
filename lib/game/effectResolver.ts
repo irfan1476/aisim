@@ -8,6 +8,23 @@ import type { SynergyEffect } from './generator';
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
+/**
+ * Extra capital is allocated pro rata across the selected portfolio. It speeds
+ * delivery but with deliberately bounded diminishing returns: twice the
+ * baseline funding is not twice the next-quarter outcome.
+ */
+export function fundingIntensityFor(deploymentAmount: number | undefined, minimumPortfolioCost: number): number {
+  const minimum = Math.max(0, Number(minimumPortfolioCost) || 0);
+  const deployed = Math.max(0, Number(deploymentAmount) || 0);
+  if (!minimum || deployed <= minimum) return 1;
+  const surplusRatio = deployed / minimum - 1;
+  return Number((1 + Math.min(0.35, Math.log1p(surplusRatio) * 0.22)).toFixed(3));
+}
+
+function deliveryMultiplier(fundingIntensity = 1): number {
+  return 1 + Math.max(0, Math.min(0.35, fundingIntensity - 1)) * 0.7;
+}
+
 export function calculatePortfolioDynamics(
   selectedCount: number,
   availableInitiatives: number,
@@ -43,6 +60,7 @@ export type StandardEffectInputs = {
   synergyRiskReduction: number;
   synergyAdoption: number;
   synergyCostReduction: number;
+  fundingIntensity?: number;
 };
 
 /**
@@ -56,6 +74,7 @@ export function calculateStandardEffects(
   chosen: InitiativeState[],
   inputs: StandardEffectInputs,
 ): Partial<GameState> {
+  const fundingMultiplier = deliveryMultiplier(inputs.fundingIntensity);
   const portfolio = calculatePortfolioDynamics(
     chosen.length,
     3,
@@ -79,16 +98,16 @@ export function calculateStandardEffects(
   const adoptionGain = (0.8 + allocation.people / 10 + (chosen.some((item) => item.id === 'knowledge') ? 2.5 : 0) + inputs.synergyAdoption) * adoptionHeadroom * teamReadiness;
   const technicalLeverage = 0.7 + (allocation.infra + allocation.mlops) / 100;
   const efficiencyGain = chosen.reduce((sum, item) => sum + (item.id === 'energy' ? 7 : item.id === 'maintenance' ? 6 : 3), 0) * 0.3 * technicalLeverage;
-  const riskChange = portfolioRiskPressure * 0.55 - governanceRelief * (0.5 + current.risk / 60) - inputs.synergyRiskReduction;
+  const riskChange = portfolioRiskPressure * 0.55 - governanceRelief * (0.5 + current.risk / 60) - inputs.synergyRiskReduction - (fundingMultiplier - 1) * 2;
   return {
-    roi: Math.min(99, current.roi + (((chosen.reduce((sum, item) => sum + item.currentRoi, 0) / 100) * factor / 2) * inputs.synergyMultiplier * portfolioEffect)),
-    revenue: Math.min(60, current.revenue + chosen.reduce((sum, item) => sum + (item.id === 'demand' ? 3 : ['quality', 'supply'].includes(item.id) ? 2 : 1), 0) * (0.9 + portfolio.breadth * 0.1)),
-    efficiency: Math.min(95, current.efficiency + efficiencyGain * portfolioEffect),
-    adoption: Math.min(98, current.adoption + adoptionGain * (0.9 + portfolio.breadth * 0.1)),
+    roi: Math.min(99, current.roi + (((chosen.reduce((sum, item) => sum + item.currentRoi, 0) / 100) * factor / 2) * inputs.synergyMultiplier * portfolioEffect * fundingMultiplier)),
+    revenue: Math.min(60, current.revenue + chosen.reduce((sum, item) => sum + (item.id === 'demand' ? 3 : ['quality', 'supply'].includes(item.id) ? 2 : 1), 0) * (0.9 + portfolio.breadth * 0.1) * fundingMultiplier),
+    efficiency: Math.min(95, current.efficiency + efficiencyGain * portfolioEffect * fundingMultiplier),
+    adoption: Math.min(98, current.adoption + adoptionGain * (0.9 + portfolio.breadth * 0.1) * fundingMultiplier),
     risk: Math.max(5, Math.min(95, current.risk + riskChange + portfolioRisk)),
-    data: Math.min(98, current.data + allocation.data / 10 + (chosen.some((item) => item.id === 'demand') ? 3 : 0)),
-    satisfaction: Math.min(98, current.satisfaction + allocation.people / 5 + (chosen.some((item) => item.id === 'knowledge') ? 5 : 0)),
-    literacy: Math.min(98, current.literacy + allocation.people / 4),
+    data: Math.min(98, current.data + (allocation.data / 10 + (chosen.some((item) => item.id === 'demand') ? 3 : 0)) * fundingMultiplier),
+    satisfaction: Math.min(98, current.satisfaction + (allocation.people / 5 + (chosen.some((item) => item.id === 'knowledge') ? 5 : 0)) * fundingMultiplier),
+    literacy: Math.min(98, current.literacy + allocation.people / 4 * fundingMultiplier),
     // The learner's budget commitment is the initiative's fixed campaign
     // cost. Evolution may change the operating cost displayed on the card,
     // but it must not silently rewrite the financial rules of the campaign.
@@ -104,6 +123,7 @@ export function applyScenarioEffects(
   allocation: Allocation,
   adoption: number,
   synergies: SynergyEffect[] = [],
+  fundingIntensity = 1,
 ): ScenarioState {
   const metrics = { ...previous.metrics };
   const readiness = allocationToReadiness(allocation);
@@ -117,6 +137,7 @@ export function applyScenarioEffects(
   );
   const coordinationFactor = 1 - portfolio.coordinationPressure / 100;
   const portfolioEffect = portfolio.focusMultiplier * coordinationFactor;
+  const fundingMultiplier = deliveryMultiplier(fundingIntensity);
 
   selected.forEach((id) => {
     const state = states[id];
@@ -126,7 +147,7 @@ export function applyScenarioEffects(
     if (!definition) return;
     const readinessFactor = 0.55 + readiness.data * 0.2 + readiness.people * 0.15 + readiness.governance * 0.1;
     const diminishingReturns = 1 / (1 + Math.max(0, state.quartersFunded - 1) * 0.08);
-    const effect = metadata.baseEffect * maturityReadiness(state.maturityLevel) * readinessFactor * adoptionFactor * diminishingReturns * synergyMultiplier * portfolioEffect;
+    const effect = metadata.baseEffect * maturityReadiness(state.maturityLevel) * readinessFactor * adoptionFactor * diminishingReturns * synergyMultiplier * portfolioEffect * fundingMultiplier;
     metrics[metadata.primaryMetric] = clamp((metrics[metadata.primaryMetric] ?? definition.start) + effect, definition.min, definition.max);
   });
 

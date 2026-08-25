@@ -1,4 +1,5 @@
 import { getScenario } from '../scenarios/registry';
+import { deriveOperatingModelAdvisory } from './operatingModelAdvisory';
 
 export type BoardPersona = 'CFO' | 'CTO' | 'CHRO' | 'RISK';
 
@@ -71,6 +72,15 @@ export function answerBoardAdvisorQuestion(
   const bottleneckProgress = scenarioProgress
     ? Number(context.scenarioProgress?.[scenarioProgress.key] ?? 0)
     : undefined;
+  const operatingModel = deriveOperatingModelAdvisory(context);
+
+  if (has('operating model', 'operating', 'learning', 'flexibility', 'exploration', 'evolution')) {
+    return structured(
+      `${operatingModel.evidence} This is the current ${operatingModel.label} reading of the recorded campaign state.`,
+      'This is an advisory interpretation, not a new rule or a forecast. The portfolio, budget, and operating allocation remain the learner’s decision.',
+      operatingModel.decisionPrompt,
+    );
+  }
 
   if (has('reserve', 'budget', 'release', 'spend', 'capital', 'purse')) {
     return structured(
@@ -218,6 +228,7 @@ export function buildBoardAdvisorBrief(
   const remaining = Number(context.campaignBudgetRemaining || 0);
   const pace = Number(context.quarterlyBudget || 0);
   const reserveRatio = remaining > 0 ? remaining / Math.max(remaining + context.spent, 1) : 0;
+  const operatingModel = deriveOperatingModelAdvisory(context);
 
   const lens: Record<BoardPersona, string> = {
     CFO: deployment <= 0
@@ -274,7 +285,7 @@ export function buildBoardAdvisorBrief(
     headline: deployment <= 0
       ? 'The room is waiting for a deliberate investment thesis.'
       : `The operating system is responding to a ${posture} decision.`,
-    lens: lens[persona],
+    lens: `${lens[persona]} ${operatingModel.decisionPrompt}`,
     evidence,
     tradeoffs,
     suggestedQuestions,

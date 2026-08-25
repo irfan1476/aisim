@@ -9,12 +9,22 @@ export const LEGACY_GAME_STORAGE_KEY = 'ai-investment-save';
 export const WHAT_IF_STORAGE_KEY = 'ai-whatif-applied';
 export const LEADERBOARD_STORAGE_KEY = 'ai_simulation_leaderboard';
 export const LEGACY_MIGRATION_KEY = 'ai-investment-legacy-migrated';
-export const GAME_PERSISTENCE_VERSION = 5;
+export const CAMPAIGN_CHECKPOINTS_STORAGE_KEY = 'ai-investment-campaign-checkpoints';
+export const GAME_PERSISTENCE_VERSION = 6;
+
+export type CampaignCheckpoint = {
+  id: string;
+  label: string;
+  createdAt: string;
+  q: number;
+  state: GameState;
+};
 
 export type WhatIfDraft = {
   name?: string;
   selected: string[];
   alloc: Allocation;
+  deploymentAmount?: number;
   projection?: Record<string, unknown>;
   quarter?: number;
 };
@@ -94,8 +104,10 @@ function normalizeInitiativeStates(value: unknown, fallback: Record<string, Init
       currentCost: numberOr(saved.currentCost, base.currentCost),
       currentHuman: numberOr(saved.currentHuman, base.currentHuman),
       quartersFunded: numberOr(saved.quartersFunded, base.quartersFunded),
+      maturityCredits: numberOr(saved.maturityCredits, numberOr(saved.quartersFunded, base.maturityCredits)),
       quartersSinceLastFund: numberOr(saved.quartersSinceLastFund, base.quartersSinceLastFund),
       totalInvestment: numberOr(saved.totalInvestment, base.totalInvestment),
+      continuityInvestment: numberOr(saved.continuityInvestment, base.continuityInvestment),
       dataInvestment: numberOr(saved.dataInvestment, base.dataInvestment),
       governanceInvestment: numberOr(saved.governanceInvestment, base.governanceInvestment),
       trainingInvestment: numberOr(saved.trainingInvestment, base.trainingInvestment),
@@ -156,7 +168,16 @@ function normalizeSnapshot(
   if (Array.isArray(value.approvedRecommendations)) snapshot.approvedRecommendations = stringArrayOr(value.approvedRecommendations, []);
   if (value.deployedAmount !== undefined) snapshot.deployedAmount = Math.max(0, numberOr(value.deployedAmount, 0));
   if (value.fixedInitiativeSpend !== undefined) snapshot.fixedInitiativeSpend = Math.max(0, numberOr(value.fixedInitiativeSpend, snapshot.deployedAmount || 0));
-  if (value.budgetProvenance === 'campaign-purse-with-two-quarter-cap') snapshot.budgetProvenance = value.budgetProvenance;
+  if (value.maintenanceSpend !== undefined) snapshot.maintenanceSpend = Math.max(0, numberOr(value.maintenanceSpend, 0));
+  if (value.accelerationSpend !== undefined) snapshot.accelerationSpend = Math.max(0, numberOr(value.accelerationSpend, 0));
+  if (value.crisisResponseSpend !== undefined) snapshot.crisisResponseSpend = Math.max(0, numberOr(value.crisisResponseSpend, 0));
+  if (value.remainingReserve !== undefined) snapshot.remainingReserve = Math.max(0, numberOr(value.remainingReserve, 0));
+  if (value.fundingIntensity !== undefined) snapshot.fundingIntensity = Math.max(1, numberOr(value.fundingIntensity, 1));
+  if (
+    value.budgetProvenance === 'campaign-purse-with-two-quarter-cap'
+    || value.budgetProvenance === 'campaign-purse-with-carry-forward-cap'
+    || value.budgetProvenance === 'campaign-purse-with-guided-acceleration'
+  ) snapshot.budgetProvenance = value.budgetProvenance;
   return snapshot;
 }
 
@@ -227,11 +248,14 @@ export function normalizeGameState(value: unknown): GameState {
   next.campaignBudget = numberOr(source.campaignBudget, legacyCampaignBudget);
   next.campaignBudgetRemaining = numberOr(source.campaignBudgetRemaining, Math.max(0, next.campaignBudget - next.spent));
   next.scenarioBudgetRemaining = numberOr(source.scenarioBudgetRemaining, next.quarterlyBudget);
-  next.quarterlyDeploymentCap = quarterlyDeploymentCap(next.campaignBudgetRemaining, next.quarterlyBudget);
+  next.quarterlyDeploymentCap = quarterlyDeploymentCap(next.campaignBudget, next.campaignBudgetRemaining, next.quarterlyBudget, next.q, next.spent);
   next.deploymentAmount = normalizeDeploymentAmount(
     source.deploymentAmount === undefined ? undefined : numberOr(source.deploymentAmount, next.quarterlyBudget),
+    next.campaignBudget,
     next.campaignBudgetRemaining,
     next.quarterlyBudget,
+    next.q,
+    next.spent,
   );
   next.lastQuarterDeployment = Math.max(0, numberOr(source.lastQuarterDeployment, next.history.at(-1)?.deployedAmount ?? 0));
   next.scenarioStartingMetrics = isRecord(source.scenarioStartingMetrics) ? Object.fromEntries(Object.entries(source.scenarioStartingMetrics).filter(([, item]) => typeof item === 'number' && Number.isFinite(item))) as Record<string, number> : undefined;
@@ -285,6 +309,7 @@ export function normalizeWhatIfDraft(value: unknown): WhatIfDraft | null {
     name: typeof value.name === 'string' ? value.name : undefined,
     selected,
     alloc: normalizeAllocation(value.alloc, defaults.alloc),
+    deploymentAmount: typeof value.deploymentAmount === 'number' && Number.isFinite(value.deploymentAmount) ? Math.max(0, value.deploymentAmount) : undefined,
     projection: isRecord(value.projection) ? value.projection : undefined,
     quarter: typeof value.quarter === 'number' && Number.isFinite(value.quarter) ? value.quarter : undefined,
   };
@@ -320,6 +345,7 @@ export function clearPersistedGameData(): void {
   window.localStorage.removeItem(WHAT_IF_STORAGE_KEY);
   window.localStorage.removeItem(LEADERBOARD_STORAGE_KEY);
   window.localStorage.removeItem(LEGACY_MIGRATION_KEY);
+  window.localStorage.removeItem(CAMPAIGN_CHECKPOINTS_STORAGE_KEY);
 }
 
 export function clearPersistedCampaign(): void {
@@ -327,6 +353,63 @@ export function clearPersistedCampaign(): void {
   window.localStorage.removeItem(GAME_STORAGE_KEY);
   window.localStorage.removeItem(LEGACY_GAME_STORAGE_KEY);
   window.localStorage.removeItem(WHAT_IF_STORAGE_KEY);
+  window.localStorage.removeItem(CAMPAIGN_CHECKPOINTS_STORAGE_KEY);
+}
+
+function checkpointState(state: unknown): GameState {
+  return normalizeGameState(JSON.parse(JSON.stringify(state ?? {})));
+}
+
+export function readCampaignCheckpoints(): CampaignCheckpoint[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = window.localStorage.getItem(CAMPAIGN_CHECKPOINTS_STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .filter((item): item is Record<string, unknown> => isRecord(item) && isRecord(item.state))
+      .map((item) => ({
+        id: typeof item.id === 'string' ? item.id : `checkpoint-${Date.now()}`,
+        label: typeof item.label === 'string' ? item.label : 'Campaign checkpoint',
+        createdAt: typeof item.createdAt === 'string' ? item.createdAt : new Date(0).toISOString(),
+        q: Math.max(1, Math.round(numberOr(item.q, 1))),
+        state: checkpointState(item.state),
+      }))
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  } catch {
+    return [];
+  }
+}
+
+export function saveCampaignCheckpoint(state: GameState, label = `Quarter ${state.q} decision point`): CampaignCheckpoint | null {
+  if (typeof window === 'undefined') return null;
+  const snapshot = checkpointState(state);
+  const checkpoint: CampaignCheckpoint = {
+    id: `${snapshot.runMetadata.runId}-q${snapshot.q}-${Date.now()}`,
+    label,
+    createdAt: new Date().toISOString(),
+    q: snapshot.q,
+    state: snapshot,
+  };
+  const existing = readCampaignCheckpoints().filter((item) => !(
+    item.state.runMetadata.runId === snapshot.runMetadata.runId
+    && item.q === snapshot.q
+    && item.label === label
+  ));
+  window.localStorage.setItem(
+    CAMPAIGN_CHECKPOINTS_STORAGE_KEY,
+    JSON.stringify([checkpoint, ...existing].slice(0, 18)),
+  );
+  return checkpoint;
+}
+
+export function readLatestViableCampaignCheckpoint(state: GameState): CampaignCheckpoint | null {
+  return readCampaignCheckpoints().find((checkpoint) => (
+    checkpoint.state.runMetadata.runId === state.runMetadata.runId
+    && checkpoint.q < state.q
+    && checkpoint.state.stage === 'decide'
+    && checkpoint.state.campaignBudgetRemaining > 0
+  )) || null;
 }
 
 export function readWhatIfDraft(): WhatIfDraft | null {

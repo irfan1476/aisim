@@ -1,47 +1,178 @@
-import { Activity, AlertTriangle, CheckCircle2, ShieldAlert } from 'lucide-react';
+import { Activity, AlertTriangle, CheckCircle2, ShieldAlert, TrendingDown, TrendingUp } from 'lucide-react';
 import type { ScenarioDefinition } from '../lib/scenarios/types';
 import { presentScenarioChallenge } from '../lib/scenarios/progress';
 
 type Props = {
   scenario: ScenarioDefinition;
   metrics?: Record<string, number>;
+  history?: unknown[];
 };
 
 const tone = {
-  red: { border: 'border-[#cf222e]/25', bg: 'bg-[#fff1f2]', icon: 'text-[#cf222e]', badge: 'bg-[#cf222e]/10 text-[#cf222e]' },
-  amber: { border: 'border-[#bf8700]/25', bg: 'bg-[#fff8c5]', icon: 'text-[#9a6700]', badge: 'bg-[#fff8c5] text-[#9a6700]' },
-  blue: { border: 'border-[#54aeff]/30', bg: 'bg-[#ddf4ff]', icon: 'text-[#0969da]', badge: 'bg-[#ddf4ff] text-[#0969da]' },
-  green: { border: 'border-[#1a7f37]/25', bg: 'bg-[#dafbe1]', icon: 'text-[#1a7f37]', badge: 'bg-[#dafbe1] text-[#1a7f37]' },
+  red: { accent: 'border-l-[#cf222e]', icon: 'text-[#cf222e] bg-[#fff1f2]', badge: 'text-[#cf222e] bg-[#fff1f2]', line: '#cf222e' },
+  amber: { accent: 'border-l-[#bf8700]', icon: 'text-[#9a6700] bg-[#fff8c5]', badge: 'text-[#9a6700] bg-[#fff8c5]', line: '#bf8700' },
+  blue: { accent: 'border-l-[#0969da]', icon: 'text-[#0969da] bg-[#ddf4ff]', badge: 'text-[#0969da] bg-[#ddf4ff]', line: '#0969da' },
+  green: { accent: 'border-l-[#1a7f37]', icon: 'text-[#1a7f37] bg-[#dafbe1]', badge: 'text-[#1a7f37] bg-[#dafbe1]', line: '#1a7f37' },
 } as const;
 
 function valueLabel(value: number, unit: string) {
   return `${Number.isInteger(value) ? value : value.toFixed(1)} ${unit}`;
 }
 
-export default function ScenarioPreview({ scenario, metrics }: Props) {
+function clampPosition(value: number, min: number, max: number) {
+  return Math.min(1, Math.max(0, (value - min) / Math.max(1, max - min)));
+}
+
+function Gauge({
+  current,
+  target,
+  min,
+  max,
+  direction,
+  unit,
+  label,
+}: {
+  current: number;
+  target: number;
+  min: number;
+  max: number;
+  direction: 'higher-is-better' | 'lower-is-better';
+  unit: string;
+  label: string;
+}) {
+  const currentPosition = clampPosition(current, min, max);
+  const targetPosition = clampPosition(target, min, max);
+  const targetAngle = -90 + targetPosition * 180;
+  const currentAngle = Math.PI - currentPosition * Math.PI;
+  const currentX = 100 + 76 * Math.cos(currentAngle);
+  const currentY = 102 - 76 * Math.sin(currentAngle);
+  const rangeColours = direction === 'lower-is-better'
+    ? ['#1a7f37', '#9a6700', '#cf222e']
+    : ['#cf222e', '#9a6700', '#1a7f37'];
+
+  return (
+    <div
+      className="mt-3 rounded-xl border border-[#d0d7de] bg-[#f6f8fa] px-2 pt-1"
+      role="img"
+      aria-label={`${label}: ${valueLabel(current, unit)} current. Target ${valueLabel(target, unit)}. ${direction === 'lower-is-better' ? 'Lower is better.' : 'Higher is better.'}`}
+    >
+      <svg viewBox="0 0 200 116" className="h-[112px] w-full overflow-visible" aria-hidden="true">
+        <path d="M 24 102 A 76 76 0 0 1 176 102" fill="none" stroke="#d8dee4" strokeWidth="14" strokeLinecap="butt" />
+        {rangeColours.map((colour, index) => (
+          <path
+            key={colour}
+            d="M 24 102 A 76 76 0 0 1 176 102"
+            fill="none"
+            pathLength="100"
+            stroke={colour}
+            strokeWidth="14"
+            strokeDasharray="31 69"
+            strokeDashoffset={-index * 34}
+            strokeLinecap="butt"
+            opacity="0.9"
+          />
+        ))}
+        <line
+          x1="100"
+          y1="13"
+          x2="100"
+          y2="35"
+          stroke="#24292f"
+          strokeWidth="3"
+          strokeLinecap="round"
+          transform={`rotate(${targetAngle} 100 102)`}
+        />
+        <circle cx={currentX} cy={currentY} r="6" fill="#24292f" stroke="#ffffff" strokeWidth="3" />
+        <text x="100" y="73" textAnchor="middle" className="fill-[#24292f] text-[26px] font-bold">
+          {Number.isInteger(current) ? current : current.toFixed(1)}
+        </text>
+        <text x="100" y="92" textAnchor="middle" className="fill-[#57606a] text-[11px] font-semibold">
+          {unit}
+        </text>
+      </svg>
+      <div className="-mt-1 flex items-center justify-between gap-2 px-1 pb-2 text-[10px] font-bold uppercase tracking-wide">
+        <span className="text-[#57606a]">Current marker</span>
+        <span className="text-[#24292f]">Target · {valueLabel(target, unit)}</span>
+      </div>
+    </div>
+  );
+}
+
+function trendPoints(values: number[]) {
+  const width = 84;
+  const height = 24;
+  const safe = values.length > 1 ? values : [values[0] || 0, values[0] || 0];
+  const min = Math.min(...safe);
+  const max = Math.max(...safe);
+  return safe.map((value, index) => {
+    const x = (index * width) / Math.max(1, safe.length - 1);
+    const y = height - 3 - ((value - min) / Math.max(1, max - min)) * (height - 6);
+    return `${x},${y}`;
+  }).join(' ');
+}
+
+function historyFor(history: unknown[] | undefined, key: string, start: number, current: number) {
+  const values = (history || [])
+    .map((entry: any) => Number(entry?.scenarioState?.metrics?.[key]))
+    .filter((value) => Number.isFinite(value));
+  return [start, ...values.slice(-4), current];
+}
+
+export default function ScenarioPreview({ scenario, metrics, history }: Props) {
   return (
     <div className="mt-3 grid gap-3 sm:grid-cols-2">
       {scenario.challenges.map((challenge) => {
         const item = presentScenarioChallenge(challenge, metrics, scenario);
         const colors = tone[item.tone];
         const Icon = item.tone === 'red' ? ShieldAlert : item.tone === 'green' ? CheckCircle2 : item.tone === 'amber' ? AlertTriangle : Activity;
+        const definition = scenario.progress.find((progress) => progress.key === challenge.metric);
+        const unit = definition?.unit || 'index';
+        const min = definition?.min ?? 0;
+        const max = definition?.max ?? 100;
+        const trend = historyFor(history, challenge.metric, item.start, item.current);
+        const improving = challenge.direction === 'higher-is-better' ? item.delta >= 0 : item.delta <= 0;
+        const TrendIcon = improving ? TrendingUp : TrendingDown;
+
         return (
-          <div key={challenge.id} className={`rounded-xl border p-3 ${colors.border} ${colors.bg}`}>
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex min-w-0 items-start gap-2">
-                <Icon size={15} className={`mt-0.5 shrink-0 ${colors.icon}`} />
-                <span className="text-sm font-bold text-ink">{challenge.label}</span>
+          <article key={challenge.id} title={`${challenge.label}: ${item.label}. ${item.explanation}`} className={`rounded-xl border border-[#d0d7de] border-l-4 bg-white p-3 ${colors.accent}`}>
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex min-w-0 items-center gap-2">
+                <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${colors.icon}`}><Icon size={15} aria-hidden="true" /></span>
+                <span className="min-w-0 break-words text-sm font-bold leading-5 text-ink">{challenge.label}</span>
               </div>
               <span className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-bold uppercase tracking-wide ${colors.badge}`}>
                 {item.label}
               </span>
             </div>
-            <p className="mt-2 text-xs leading-5 text-ink/60">{item.explanation}</p>
-            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-[11px] font-semibold text-ink/55">
-              <span>Now {valueLabel(item.current, scenario.progress.find((progress) => progress.key === challenge.metric)?.unit || 'index')}</span>
-              <span>{item.deltaLabel} vs start</span>
+
+            <div className="mt-3 grid grid-cols-[1fr_auto] items-end gap-3">
+              <div>
+                <span className="block text-[10px] font-bold uppercase tracking-widest text-ink/45">Current</span>
+                <b className="text-xl text-ink">{valueLabel(item.current, unit)}</b>
+              </div>
+              <div className="text-right">
+                <span className="block text-[10px] font-bold uppercase tracking-widest text-ink/45">Target</span>
+                <b className="text-sm text-ink/65">{valueLabel(item.target, unit)}</b>
+              </div>
             </div>
-          </div>
+
+            <Gauge
+              current={item.current}
+              target={item.target}
+              min={min}
+              max={max}
+              direction={challenge.direction}
+              unit={unit}
+              label={challenge.label}
+            />
+
+            <div className="mt-3 flex items-center justify-between gap-3 border-t border-[#d8dee4] pt-2">
+              <span className="flex items-center gap-1 text-[10px] font-semibold text-ink/55"><TrendIcon size={12} className={improving ? 'text-[#1a7f37]' : 'text-[#cf222e]'} />{item.deltaLabel} vs start</span>
+              <svg viewBox="0 0 84 24" className="h-6 w-20" role="img" aria-label={`${challenge.label} historical trend`}>
+                <polyline points={trendPoints(trend)} fill="none" stroke={colors.line} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+          </article>
         );
       })}
     </div>

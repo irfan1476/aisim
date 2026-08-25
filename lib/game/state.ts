@@ -62,7 +62,12 @@ export type QuarterSnapshot = {
   portfolioBreadth?: number;
   deployedAmount?: number;
   fixedInitiativeSpend?: number;
-  budgetProvenance?: 'campaign-purse-with-two-quarter-cap';
+  maintenanceSpend?: number;
+  accelerationSpend?: number;
+  crisisResponseSpend?: number;
+  remainingReserve?: number;
+  fundingIntensity?: number;
+  budgetProvenance?: 'campaign-purse-with-two-quarter-cap' | 'campaign-purse-with-carry-forward-cap' | 'campaign-purse-with-guided-acceleration';
 };
 export type GameState = {
   q: number; stage: 'decide' | 'results' | 'done'; selected: string[]; alloc: Allocation;
@@ -83,22 +88,67 @@ export function initialGameState(generation?: InitiativeGeneration, options: Sce
   const startingMetrics = { ...standardMetrics, ...(options.startingMetrics || {}) };
   const quarterlyBudget = options.quarterlyBudget ?? 10;
   const campaignBudget = options.campaignBudget ?? quarterlyBudget * 12;
-  const deploymentCap = Math.min(campaignBudget, quarterlyBudget * 2);
-  const runMetadata: RunMetadata = { runId: `run-${initiativeGeneration.seed}-${options.scenarioId || 'standard'}`, seed: initiativeGeneration.seed, scenarioId: options.scenarioId, rulesVersion: '2.0' };
-  return { q: 1, stage: 'decide', selected: ['demand', 'energy'], selectedCount: 2, portfolioPosture: 'focused-balance', portfolioBreadth: 2 / 3, concentrationRisk: 3, alloc: options.defaultAllocation || standardAllocation, roi: 0, revenue: 0, efficiency: startingMetrics.efficiency ?? 8, adoption: startingMetrics.adoption ?? 38, risk: 36, data: startingMetrics.data ?? 54, satisfaction: startingMetrics.satisfaction ?? 61, literacy: 35, turnover: 14, compliance: 62, innovation: 42, spent: 0, score: 0, history: [], initiativeStates: initializeInitiativeStates(generateInitiatives(initiativeGeneration)), achievements: [], crisis: null, feedback: 'The board is watching for a balanced portfolio. You have room to build momentum.', initiativeGeneration, userReflections: {}, scenarioMode: Boolean(options.scenarioMode), scenarioId: options.scenarioId, currencyMode: options.currencyMode || '$', quarterlyBudget, campaignBudget, campaignBudgetRemaining: campaignBudget, scenarioBudgetRemaining: quarterlyBudget, deploymentAmount: Math.min(quarterlyBudget, deploymentCap), quarterlyDeploymentCap: deploymentCap, lastQuarterDeployment: 0, scenarioStartingMetrics: options.scenarioStartingMetrics, scenarioProgress: options.scenarioProgress, scenarioState: { metrics: { ...(options.scenarioStartingMetrics || {}) }, progress: { ...(options.scenarioProgress || {}) }, flags: {} }, quarterlyCrisisCost: 0, scenarioOverspend: 0, scenarioBonus: 0, causalChain: [], proactiveRecommendations: [], approvedRecommendations: [], discoveredSynergies: [], nextQuarterGuidance: null, baseline: [], experimental: false, runMetadata };
+  const deploymentCap = quarterlyDeploymentCap(campaignBudget, campaignBudget, quarterlyBudget, 1, 0);
+  const runMetadata: RunMetadata = { runId: `run-${initiativeGeneration.seed}-${options.scenarioId || 'standard'}`, seed: initiativeGeneration.seed, scenarioId: options.scenarioId, rulesVersion: '2.1' };
+  return { q: 1, stage: 'decide', selected: ['demand', 'energy'], selectedCount: 2, portfolioPosture: 'focused-balance', portfolioBreadth: 2 / 3, concentrationRisk: 3, alloc: options.defaultAllocation || standardAllocation, roi: 0, revenue: 0, efficiency: startingMetrics.efficiency ?? 8, adoption: startingMetrics.adoption ?? 38, risk: 36, data: startingMetrics.data ?? 54, satisfaction: startingMetrics.satisfaction ?? 61, literacy: 35, turnover: 14, compliance: 62, innovation: 42, spent: 0, score: 0, history: [], initiativeStates: initializeInitiativeStates(generateInitiatives(initiativeGeneration)), achievements: [], crisis: null, feedback: 'The board is watching for a balanced portfolio. You have room to build momentum.', initiativeGeneration, userReflections: {}, scenarioMode: Boolean(options.scenarioMode), scenarioId: options.scenarioId, currencyMode: options.currencyMode || '$', quarterlyBudget, campaignBudget, campaignBudgetRemaining: campaignBudget, scenarioBudgetRemaining: quarterlyBudget, deploymentAmount: Math.min(quarterlyBudget * 0.6, deploymentCap), quarterlyDeploymentCap: deploymentCap, lastQuarterDeployment: 0, scenarioStartingMetrics: options.scenarioStartingMetrics, scenarioProgress: options.scenarioProgress, scenarioState: { metrics: { ...(options.scenarioStartingMetrics || {}) }, progress: { ...(options.scenarioProgress || {}) }, flags: {} }, quarterlyCrisisCost: 0, scenarioOverspend: 0, scenarioBonus: 0, causalChain: [], proactiveRecommendations: [], approvedRecommendations: [], discoveredSynergies: [], nextQuarterGuidance: null, baseline: [], experimental: false, runMetadata };
 }
 
-/** The learner can keep a reserve, but no quarter can deploy more than two
- * suggested paces. This keeps timing meaningful without making the purse
- * unusable after a cautious quarter. */
-export function quarterlyDeploymentCap(campaignRemaining: number, suggestedPace: number): number {
-  const remaining = Math.max(0, Number(campaignRemaining) || 0);
+export type DeploymentCapacity = {
+  campaignBudget: number;
+  campaignRemaining: number;
+  basePace: number;
+  carriedAuthority: number;
+  /** A planning reference: base pace plus unused pace from earlier quarters. */
+  recommendedAuthority: number;
+  /** A soft reserve recommendation, never a release restriction. */
+  recommendedReserve: number;
+  /** Kept for saved-state and UI compatibility; it is now the available reserve. */
+  hardCap: number;
+  maximumDeployment: number;
+};
+
+/**
+ * The base pace is a planning reference, not a release gate. Learners can
+ * accelerate in any quarter as long as the campaign has cash left and no more
+ * than the campaign reserve. This preserves a real choice between early
+ * acceleration and holding reserve; the recommended pace is visible guidance,
+ * never a hard release gate.
+ */
+export function deploymentCapacity(
+  campaignBudget: number,
+  campaignRemaining: number,
+  suggestedPace: number,
+  q = 1,
+  spent = 0,
+): DeploymentCapacity {
   const pace = Math.max(0, Number(suggestedPace) || 0);
-  return Math.min(remaining, pace * 2);
+  const total = Math.max(pace * 12, Number(campaignBudget) || 0);
+  const remaining = Math.max(0, Number(campaignRemaining) || 0);
+  const currentQuarter = Math.max(1, Math.round(Number(q) || 1));
+  const completedQuarters = currentQuarter - 1;
+  const priorSpend = Math.max(0, Number(spent) || 0);
+  const carriedAuthority = Math.max(0, completedQuarters * pace - priorSpend);
+  const recommendedAuthority = Math.min(remaining, Math.max(0, pace + carriedAuthority));
+  const recommendedReserve = Math.min(remaining, Math.max(0, pace * 2));
+  const maximumDeployment = remaining;
+  return {
+    campaignBudget: total,
+    campaignRemaining: remaining,
+    basePace: pace,
+    carriedAuthority,
+    recommendedAuthority,
+    recommendedReserve,
+    hardCap: maximumDeployment,
+    maximumDeployment,
+  };
 }
 
-export function normalizeDeploymentAmount(value: number | undefined, campaignRemaining: number, suggestedPace: number): number {
-  const cap = quarterlyDeploymentCap(campaignRemaining, suggestedPace);
-  const requested = value === undefined || !Number.isFinite(value) ? suggestedPace : value;
+export function quarterlyDeploymentCap(campaignBudget: number, campaignRemaining: number, suggestedPace: number, q = 1, spent = 0): number {
+  return deploymentCapacity(campaignBudget, campaignRemaining, suggestedPace, q, spent).maximumDeployment;
+}
+
+export function normalizeDeploymentAmount(value: number | undefined, campaignBudget: number, campaignRemaining: number, suggestedPace: number, q = 1, spent = 0): number {
+  const cap = quarterlyDeploymentCap(campaignBudget, campaignRemaining, suggestedPace, q, spent);
+  const requested = value === undefined || !Number.isFinite(value) ? suggestedPace * 0.6 : value;
   return Math.min(cap, Math.max(0, Number(requested) || 0));
 }

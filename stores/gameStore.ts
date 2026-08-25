@@ -11,6 +11,7 @@ import { generateProactiveRecommendations } from '../lib/game/recommendations';
 import { resolveQuarter, deriveScore } from '../lib/game/engine';
 import { describeSynergies } from '../lib/game/generator';
 import { scenarioInitiativesToStates } from '../lib/game/initiativeAdapter';
+import { calculateCapitalPlan } from '../lib/game/capital';
 import {
   clearPersistedCampaign,
   clearPersistedGameData,
@@ -22,6 +23,8 @@ import {
   readLegacyGameState,
   removeLegacySaveAfterMigration,
   removeWhatIfDraft,
+  readLatestViableCampaignCheckpoint,
+  saveCampaignCheckpoint,
   type WhatIfDraft,
   WHAT_IF_STORAGE_KEY,
   writeWhatIfDraft,
@@ -39,6 +42,7 @@ type GameStore = GameState & {
   resetCampaign: () => void;
   resetAllData: () => void;
   resetGame: () => void;
+  saveCampaign: () => void;
   applyWhatIfDraft: (draft: WhatIfDraft) => void;
   saveWhatIfDraft: (draft: WhatIfDraft) => void;
   clearWhatIfDraft: () => void;
@@ -48,6 +52,7 @@ type GameStore = GameState & {
   saveReflection: (reflection: Partial<GameState['userReflections']>) => void;
   loadGame: (state: unknown) => void;
   initializeScenario: (scenarioId: string, campaignBudget?: number) => void;
+  restoreLatestViableCheckpoint: () => boolean;
 };
 
 const browserStorage: StateStorage = {
@@ -123,17 +128,21 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
 
   startGame: () => {
     clearPersistedCampaign();
-    set(initialGameState());
+    const next = initialGameState();
+    set(next);
+    saveCampaignCheckpoint(next, 'Quarter 1 decision point');
   },
 
-  initializeScenario: (scenarioId, campaignBudgetOverride) => set((state) => {
+  initializeScenario: (scenarioId, campaignBudgetOverride) => {
+    let nextState: GameState | null = null;
+    set((state) => {
     const scenario = getScenario(scenarioId);
     if (!scenario) return state;
     const campaignBudget = Number.isFinite(campaignBudgetOverride) && Number(campaignBudgetOverride) > 0
       ? Number(campaignBudgetOverride)
       : scenario.startingState.budget * 12;
     const quarterlyBudget = campaignBudget / 12;
-    const deploymentCap = quarterlyDeploymentCap(campaignBudget, quarterlyBudget);
+    const deploymentCap = quarterlyDeploymentCap(campaignBudget, campaignBudget, quarterlyBudget, 1, 0);
     const startingMetrics = { ...scenario.startingState.startingMetrics };
     const nativeMetrics = {
       efficiency: startingMetrics.efficiency ?? state.efficiency,
@@ -142,7 +151,7 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
       satisfaction: startingMetrics.satisfaction ?? state.satisfaction,
     };
     const progress = Object.fromEntries(scenario.progress.map((item) => [item.key, 0]));
-    return {
+    nextState = {
       ...state,
       scenarioMode: true,
       scenarioId: scenario.id,
@@ -150,7 +159,7 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
       campaignBudget,
       campaignBudgetRemaining: campaignBudget,
       scenarioBudgetRemaining: quarterlyBudget,
-      deploymentAmount: Math.min(quarterlyBudget, deploymentCap),
+      deploymentAmount: Math.min(quarterlyBudget * 0.6, deploymentCap),
       quarterlyDeploymentCap: deploymentCap,
       lastQuarterDeployment: 0,
       scenarioStartingMetrics: startingMetrics,
@@ -162,39 +171,53 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
       initiativeStates: scenario.initiatives ? scenarioInitiativesToStates(scenario.initiatives) : state.initiativeStates,
       ...nativeMetrics,
     };
-  }),
+    return nextState;
+    });
+    if (nextState) saveCampaignCheckpoint(nextState, 'Quarter 1 decision point');
+  },
 
   selectInitiatives: (ids) => set({ selected: Array.from(new Set(ids)).slice(0, 3) }),
 
   updateAllocation: (key, value) => set((state) => ({ alloc: { ...state.alloc, [key]: value } })),
 
   setDeploymentAmount: (amount) => set((state) => ({
-    deploymentAmount: normalizeDeploymentAmount(amount, state.campaignBudgetRemaining, state.quarterlyBudget),
+    deploymentAmount: normalizeDeploymentAmount(amount, state.campaignBudget, state.campaignBudgetRemaining, state.quarterlyBudget, state.q, state.spent),
   })),
 
   confirmDecisions: () => {
     const state = normalizeGameState(get());
-    const result = resolveQuarter(state, { selected: state.selected, alloc: state.alloc });
     const scenario = state.scenarioMode ? getScenario(state.scenarioId) : undefined;
-    const discovery = describeSynergies(state.selected, result.initiativeStates, scenario?.synergies);
+    const discovery = describeSynergies(state.selected, state.initiativeStates, scenario?.synergies);
     const synergyCostReduction = Math.min(0.15, discovery?.effects.reduce((sum, effect) => sum + effect.costReduction, 0) || 0);
     const selectedCost = state.selected.reduce((sum, id) => {
-      const initiative = result.initiativeStates[id];
-      return sum + Number(initiative?.baseCost ?? initiative?.cost ?? initiative?.currentCost ?? 0);
+      const initiative = state.initiativeStates[id];
+      return sum + Number(initiative?.currentCost ?? initiative?.baseCost ?? initiative?.cost ?? 0);
     }, 0) * (1 - synergyCostReduction);
     const campaignRemaining = Number(state.campaignBudgetRemaining ?? state.campaignBudget ?? state.quarterlyBudget * 12);
-    const deploymentCap = quarterlyDeploymentCap(campaignRemaining, state.quarterlyBudget);
-    const deploymentAmount = normalizeDeploymentAmount(state.deploymentAmount, campaignRemaining, state.quarterlyBudget);
-    if (selectedCost > deploymentAmount + 1e-9) {
-      set({ feedback: `This portfolio costs ${selectedCost.toFixed(2)} but only ${deploymentAmount.toFixed(2)} is deployed this quarter. Increase deployment, choose fewer initiatives, or keep the reserve.` });
+    const deploymentCap = quarterlyDeploymentCap(state.campaignBudget, campaignRemaining, state.quarterlyBudget, state.q, state.spent);
+    const deploymentAmount = normalizeDeploymentAmount(state.deploymentAmount, state.campaignBudget, campaignRemaining, state.quarterlyBudget, state.q, state.spent);
+    const capitalPlan = calculateCapitalPlan(state, state.selected, selectedCost, deploymentAmount);
+    if (state.selected.length > 0 && capitalPlan.requiredCapital > deploymentAmount + 1e-9) {
+      set({ feedback: `This portfolio needs ${capitalPlan.requiredCapital.toFixed(2)} this quarter: ${selectedCost.toFixed(2)} for the initiatives and ${capitalPlan.maintenanceSpend.toFixed(2)} to continue existing work. You have released ${deploymentAmount.toFixed(2)}. Increase deployment, choose fewer initiatives, or keep the reserve.` });
       return;
     }
-    const overspend = state.scenarioMode ? Math.max(0, selectedCost - state.quarterlyBudget) : 0;
-    const purseOverrun = state.scenarioMode ? Math.max(0, selectedCost - campaignRemaining) : 0;
-    const overspendRisk = state.scenarioMode && state.quarterlyBudget > 0
-      ? Math.min(25, (overspend / state.quarterlyBudget) * 10 + (purseOverrun > 0 ? 10 : 0))
-      : 0;
-    const adjustedMetrics = { ...result.metrics, risk: Math.min(95, Number(result.metrics.risk ?? state.risk) + overspendRisk) };
+    const actualDeployment = state.selected.length ? deploymentAmount : 0;
+    // Continuity spend keeps existing work viable; only delivery capital can
+    // accelerate the newly selected initiatives in the quarter engine.
+    const deliveryCapital = state.selected.length ? capitalPlan.deliveryCapital : 0;
+    const result = resolveQuarter(state, {
+      selected: state.selected,
+      alloc: state.alloc,
+      deploymentAmount: deliveryCapital,
+      continuityAllocations: state.selected.length ? capitalPlan.continuityAllocations : undefined,
+    });
+    const overspend = capitalPlan.accelerationSpend;
+    const overspendRisk = 0;
+    const adjustedMetrics = {
+      ...result.metrics,
+      spent: state.spent + actualDeployment,
+      risk: Math.min(95, Number(result.metrics.risk ?? state.risk) + overspendRisk),
+    };
     const resolvedState = { ...state, ...adjustedMetrics, initiativeStates: result.initiativeStates, scenarioState: result.scenarioState };
     const newlyDiscovered = discovery?.effects.map(effect => effect.key) || [];
     const discoveredSynergies = Array.from(new Set([...state.discoveredSynergies, ...newlyDiscovered]));
@@ -210,7 +233,7 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
       : state.q % 3 === 0 && crisisRoll(state.initiativeGeneration.seed, state.q) < crisisProbability
         ? generateCrisis(state.initiativeGeneration.seed + state.q)
         : null;
-    const nextCausalChain = causalChain(resolvedState, state.selected);
+    const nextCausalChain = causalChain(state, state.selected, result.initiativeStates, deliveryCapital);
     const nextRecommendations = generateProactiveRecommendations(resolvedState);
     set({
       ...resolvedState,
@@ -223,12 +246,12 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
       portfolioBreadth: result.snapshot.breadth ?? 0,
       concentrationRisk: result.snapshot.concentrationRisk ?? 0,
       scenarioOverspend: overspend,
-      campaignBudgetRemaining: Math.max(0, campaignRemaining - selectedCost),
+      campaignBudgetRemaining: Math.max(0, campaignRemaining - actualDeployment),
       deploymentAmount,
-      quarterlyDeploymentCap: deploymentCap,
-      lastQuarterDeployment: selectedCost,
+      quarterlyDeploymentCap: quarterlyDeploymentCap(state.campaignBudget, Math.max(0, campaignRemaining - actualDeployment), state.quarterlyBudget, state.q, state.spent + actualDeployment),
+      lastQuarterDeployment: actualDeployment,
       scenarioBudgetRemaining: state.scenarioMode
-        ? Math.max(0, state.quarterlyBudget - selectedCost)
+        ? Math.max(0, state.quarterlyBudget - actualDeployment)
         : state.scenarioBudgetRemaining,
       scenarioBonus,
       stage: 'results',
@@ -236,8 +259,23 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
       causalChain: nextCausalChain,
       proactiveRecommendations: nextRecommendations,
       discoveredSynergies,
-      feedback: discovery?.message || `Quarter ${state.q} resolved. Your portfolio is now showing the consequences of this allocation.`,
-      history: [...state.history, { ...result.snapshot, deployedAmount: selectedCost, fixedInitiativeSpend: selectedCost, budgetProvenance: 'campaign-purse-with-two-quarter-cap', metrics: adjustedMetrics, crisis: nextCrisis, causalChain: nextCausalChain, recommendations: nextRecommendations }],
+      feedback: discovery?.message || (state.selected.length === 0
+        ? `Quarter ${state.q} resolved with no new funding. Reserve was preserved; previously funded initiatives will now be tested by neglect dynamics.`
+        : `Quarter ${state.q} resolved. ${capitalPlan.accelerationSpend > 0 ? `Scale-up capital increased delivery intensity to ${result.snapshot.fundingIntensity?.toFixed(2)}×.` : 'Your portfolio is now showing the consequences of this allocation.'}`),
+      history: [...state.history, {
+        ...result.snapshot,
+        deployedAmount: actualDeployment,
+        fixedInitiativeSpend: selectedCost,
+        maintenanceSpend: state.selected.length ? capitalPlan.maintenanceSpend : 0,
+        accelerationSpend: state.selected.length ? capitalPlan.accelerationSpend : 0,
+        crisisResponseSpend: state.quarterlyCrisisCost,
+        remainingReserve: Math.max(0, campaignRemaining - actualDeployment),
+        budgetProvenance: 'campaign-purse-with-guided-acceleration',
+        metrics: adjustedMetrics,
+        crisis: nextCrisis,
+        causalChain: nextCausalChain,
+        recommendations: nextRecommendations,
+      }],
     });
   },
 
@@ -259,16 +297,43 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
         }
       }
     }
+    const crisisCausalItem = {
+      name: 'Crisis response',
+      explanation: cost > 0
+        ? `The chosen response changed this quarter's operating outcome and used ${cost.toFixed(2)} of campaign capital.`
+        : 'The chosen response changed this quarter\'s operating outcome without an additional capital charge.',
+      effects: Object.entries(impact).map(([key, delta]) => {
+        const definition = scenario?.progress.find((item) => item.key === key);
+        const improves = definition
+          ? (definition.direction === 'higher-is-better' ? Number(delta) >= 0 : Number(delta) <= 0)
+          : key === 'risk' ? Number(delta) <= 0 : Number(delta) >= 0;
+        return {
+          metric: definition?.label || key,
+          delta: Number(delta),
+          color: improves ? 'emerald' : 'crimson',
+          unit: definition?.unit,
+          explanation: 'Recorded impact of the crisis response selected by the learner.',
+        };
+      }),
+    };
+    const nextCausalChain = [...(state.causalChain || []), crisisCausalItem];
     const next = {
       ...state,
       ...nativeImpact,
       spent: state.spent + cost,
       campaignBudgetRemaining: Math.max(0, Number(state.campaignBudgetRemaining ?? state.campaignBudget ?? state.quarterlyBudget * 12) - cost),
       scenarioBudgetRemaining: state.scenarioMode ? Math.max(0, state.scenarioBudgetRemaining - cost) : state.scenarioBudgetRemaining,
-      quarterlyDeploymentCap: quarterlyDeploymentCap(Math.max(0, Number(state.campaignBudgetRemaining ?? state.campaignBudget ?? state.quarterlyBudget * 12) - cost), state.quarterlyBudget),
+      quarterlyDeploymentCap: quarterlyDeploymentCap(
+        state.campaignBudget,
+        Math.max(0, Number(state.campaignBudgetRemaining ?? state.campaignBudget ?? state.quarterlyBudget * 12) - cost),
+        state.quarterlyBudget,
+        state.q,
+        state.spent + cost,
+      ),
       quarterlyCrisisCost: state.quarterlyCrisisCost + cost,
       crisis: null,
       stage: 'results' as const,
+      causalChain: nextCausalChain,
       ...(scenarioMetrics ? { scenarioState: { ...state.scenarioState, metrics: scenarioMetrics } } : {}),
     };
     const nextScenarioState = scenarioMetrics && scenario
@@ -279,6 +344,7 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
           ...next.history[next.history.length - 1],
           scenarioState: nextScenarioState,
           crisisResponse: impact,
+          causalChain: nextCausalChain,
           metrics: { ...next.history[next.history.length - 1].metrics, spent: next.spent },
         }]
       : next.history;
@@ -293,32 +359,38 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
   advanceQuarter: () => {
     const state = normalizeGameState(get());
     if (state.q >= 12) return set({ stage: 'done' });
-    set({
+    const next = {
       q: state.q + 1,
-      stage: 'decide',
+      stage: 'decide' as const,
       selected: [],
       crisis: null,
       causalChain: [],
       proactiveRecommendations: [],
       quarterlyCrisisCost: 0,
       scenarioBudgetRemaining: state.scenarioBudgetRemaining === undefined ? state.quarterlyBudget : state.quarterlyBudget,
-      quarterlyDeploymentCap: quarterlyDeploymentCap(state.campaignBudgetRemaining, state.quarterlyBudget),
-      deploymentAmount: Math.min(state.quarterlyBudget, quarterlyDeploymentCap(state.campaignBudgetRemaining, state.quarterlyBudget)),
+      quarterlyDeploymentCap: quarterlyDeploymentCap(state.campaignBudget, state.campaignBudgetRemaining, state.quarterlyBudget, state.q + 1, state.spent),
+      deploymentAmount: Math.min(state.quarterlyBudget * 0.6, quarterlyDeploymentCap(state.campaignBudget, state.campaignBudgetRemaining, state.quarterlyBudget, state.q + 1, state.spent)),
       scenarioOverspend: 0,
-      feedback: `Quarter ${state.q + 1} is ready.`,
-    });
+      feedback: `Quarter ${state.q + 1} is ready. You can invest, accelerate deliberately, or take an observation quarter.`,
+    };
+    set(next);
+    saveCampaignCheckpoint(normalizeGameState({ ...state, ...next }), `Quarter ${state.q + 1} decision point`);
   },
 
   quickReset: () => set((state) => quickResetState(normalizeGameState(state))),
 
   resetCampaign: () => {
     clearPersistedCampaign();
-    set(initialGameState());
+    const next = initialGameState();
+    set(next);
+    saveCampaignCheckpoint(next, 'Quarter 1 decision point');
   },
 
   resetAllData: () => {
     clearPersistedGameData();
-    set(initialGameState());
+    const next = initialGameState();
+    set(next);
+    saveCampaignCheckpoint(next, 'Quarter 1 decision point');
   },
 
   // Backwards-compatible campaign reset action.
@@ -327,10 +399,37 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
     set(initialGameState());
   },
 
+  // Persist middleware writes the current snapshot on every state update. A
+  // dedicated action gives the UI an explicit, learner-visible checkpoint
+  // without changing any measured gameplay state.
+  saveCampaign: () => {
+    const state = normalizeGameState(get());
+    saveCampaignCheckpoint(state, `Manual checkpoint · Q${state.q}`);
+    set({ feedback: `Checkpoint saved for Quarter ${state.q}.` });
+  },
+
+  restoreLatestViableCheckpoint: () => {
+    const current = normalizeGameState(get());
+    const checkpoint = readLatestViableCampaignCheckpoint(current);
+    if (!checkpoint) {
+      set({ feedback: 'No earlier funded decision checkpoint is available for this campaign. Restart to try a new capital pace.' });
+      return false;
+    }
+    set({ ...checkpoint.state, feedback: `Restored ${checkpoint.label}. Revise the capital pace, then continue.` });
+    return true;
+  },
+
   applyWhatIfDraft: (draft) => {
     const normalized = normalizeWhatIfDraft(draft);
     if (!normalized) return;
-    set({ selected: normalized.selected, alloc: normalized.alloc, feedback: 'What-If strategy applied to the next decision.' });
+    set((state) => ({
+      selected: normalized.selected,
+      alloc: normalized.alloc,
+      deploymentAmount: normalized.deploymentAmount === undefined
+        ? state.deploymentAmount
+        : normalizeDeploymentAmount(normalized.deploymentAmount, state.campaignBudget, state.campaignBudgetRemaining, state.quarterlyBudget, state.q, state.spent),
+      feedback: 'What-If strategy applied to the next decision.',
+    }));
     removeWhatIfDraft();
   },
 
@@ -370,7 +469,7 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
       }
     }
     const allocation = rebalanceAllocation(state.alloc, guidance.operatingAllocationTargets);
-    const deployment = normalizeDeploymentAmount(guidance.deploymentAmount, state.campaignBudgetRemaining, state.quarterlyBudget);
+    const deployment = normalizeDeploymentAmount(guidance.deploymentAmount, state.campaignBudget, state.campaignBudgetRemaining, state.quarterlyBudget, state.q, state.spent);
     const selectedText = ids.length ? ` Selected: ${ids.join(', ')}.` : ' No initiative matched this recommendation; review the cards manually.';
     return { selected: ids, alloc: allocation, deploymentAmount: deployment, feedback: `Applied guidance for ${guidance.title}. You can edit the initiatives, deployment, and operating allocation before confirming.${selectedText}`, nextQuarterGuidance: null };
   }),

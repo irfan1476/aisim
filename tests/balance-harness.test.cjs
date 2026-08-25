@@ -154,13 +154,13 @@ const strategies = [
 
 function grade(result) {
   if (
-    result.score >= 88 &&
-    result.adoption >= 70 &&
-    result.risk <= 20 &&
-    result.people >= 20
+    result.score >= 85 &&
+    result.adoption >= 60 &&
+    result.risk <= 30 &&
+    result.people >= 15
   )
     return "A+";
-  if (result.score >= 80 && result.adoption >= 55 && result.risk <= 25)
+  if (result.score >= 75 && result.adoption >= 50 && result.risk <= 35)
     return "A";
   if (result.score > 65) return "B+";
   if (result.score >= 50) return "B";

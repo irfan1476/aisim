@@ -95,13 +95,27 @@ const steps = [
 
 export default function Home() {
   const [started, setStarted] = useState(false);
+  const [resumeAvailable, setResumeAvailable] = useState(false);
+  const [resumeRequested, setResumeRequested] = useState(false);
 
   useEffect(() => {
     const persisted = readPersistedGameState();
-    if (persisted && hasCampaignProgress(persisted)) setStarted(true);
+    setResumeAvailable(Boolean(persisted && hasCampaignProgress(persisted)));
   }, []);
 
-  if (started) return <Game />;
+  const startSimulation = () => {
+    setResumeRequested(false);
+    setStarted(true);
+    window.scrollTo({ top: 0, behavior: "auto" });
+  };
+
+  const resumeSimulation = () => {
+    setResumeRequested(true);
+    setStarted(true);
+    window.scrollTo({ top: 0, behavior: "auto" });
+  };
+
+  if (started) return <Game resume={resumeRequested} />;
   return (
     <main className="min-h-screen grid-bg">
       <nav className="sticky top-0 z-20 border-b border-white/10 bg-[#0d1117] text-white">
@@ -152,11 +166,21 @@ export default function Home() {
             your decisions create.
           </p>
           <button
-            onClick={() => setStarted(true)}
+            type="button"
+            onClick={startSimulation}
             className="mt-9 flex items-center gap-4 rounded-md bg-[#08872b] px-6 py-4 text-sm font-bold text-white shadow-lg shadow-[#08872b]/20 transition hover:-translate-y-0.5 hover:bg-[#077324]"
           >
             Choose your simulation <ArrowRight size={17} />
           </button>
+          {resumeAvailable && (
+            <button
+              type="button"
+              onClick={resumeSimulation}
+              className="mt-3 block text-left text-sm font-semibold text-[#1f2328] underline decoration-[#08872b]/40 underline-offset-4 transition hover:text-[#08872b]"
+            >
+              Resume saved campaign
+            </button>
+          )}
           <a href="#simulation" className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-[#1f2328] underline decoration-[#08872b]/40 underline-offset-4">
             See how the learning loop works <ArrowRight size={15} />
           </a>
@@ -166,7 +190,7 @@ export default function Home() {
         </div>
         <div className="relative reveal">
           <div className="absolute -inset-10 rounded-full bg-[#08872b]/10 blur-3xl" />
-          <div className="relative overflow-hidden rounded-xl border border-[#30363d] bg-[#0d1117] p-7 text-white shadow-2xl">
+          <div className="homepage-record-card relative overflow-hidden rounded-xl border border-[#30363d] bg-[#0d1117] p-7 text-white shadow-2xl">
             <div className="flex items-center justify-between border-b border-white/10 pb-5">
               <div>
                 <p className="text-xs uppercase tracking-widest text-[#3fb950]">
@@ -403,7 +427,8 @@ export default function Home() {
             </div>
           </div>
           <button
-            onClick={() => setStarted(true)}
+            type="button"
+            onClick={startSimulation}
             className="mt-10 flex items-center gap-3 rounded-md bg-[#08872b] px-6 py-4 text-sm font-bold text-white"
           >
             Start your transformation <ArrowRight size={17} />
@@ -534,7 +559,8 @@ export default function Home() {
             </p>
           </div>
           <button
-            onClick={() => setStarted(true)}
+            type="button"
+            onClick={startSimulation}
             className="mt-10 flex items-center gap-3 rounded-md bg-[#08872b] px-6 py-4 text-sm font-bold text-white"
           >
             Start your transformation <ArrowRight size={17} />

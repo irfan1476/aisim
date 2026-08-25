@@ -90,6 +90,28 @@ test('recommendation application is allocation-safe and preserves the recommenda
   // initiative selection or deployment amount. See docs/pre-production-checklist.md.
 });
 
+test('strategy drafts carry their chosen quarterly deployment without exceeding authority', () => {
+  const before = initialGameState();
+  useGameStore.getState().loadGame({ ...before, stage: 'decide', selected: ['demand'] });
+  const chosenDeployment = Math.min(before.quarterlyDeploymentCap, before.deploymentAmount + 1.4);
+
+  useGameStore.getState().applyWhatIfDraft({
+    name: 'Focused test',
+    selected: ['demand'],
+    alloc: before.alloc,
+    deploymentAmount: chosenDeployment,
+  });
+  assert.equal(useGameStore.getState().deploymentAmount, chosenDeployment);
+
+  useGameStore.getState().applyWhatIfDraft({
+    name: 'Out-of-range test',
+    selected: ['demand'],
+    alloc: before.alloc,
+    deploymentAmount: before.campaignBudget,
+  });
+  assert.equal(useGameStore.getState().deploymentAmount, before.quarterlyDeploymentCap);
+});
+
 test('advisor prompt carries scenario and visible decision evidence without scoring authority', () => {
   const prompt = buildAdvisorSystemPrompt({
     persona: 'CFO',

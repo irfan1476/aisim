@@ -5,3 +5,311 @@
 *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#f6f8fa;color:var(--github-text);font-family:var(--font-mona)}button,input{font:inherit}.serif{font-family:Georgia,serif}.grid-bg{background-color:#f6f8fa;background-image:radial-gradient(circle at 15% 15%,rgba(8,135,43,.08),transparent 28%),linear-gradient(rgba(31,35,40,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(31,35,40,.035) 1px,transparent 1px);background-size:auto,32px 32px,32px 32px}.glass{background:rgba(255,255,255,.82);backdrop-filter:blur(14px)}.github-card{border:1px solid var(--github-border);border-radius:12px;background:#fff;box-shadow:0 1px 3px rgba(31,35,40,.06);transition:transform .2s ease,box-shadow .2s ease}.github-card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(31,35,40,.10)}.reveal{animation:reveal .55s ease both}@keyframes reveal{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}.scanline{background:linear-gradient(90deg,transparent,#08872b,transparent);background-size:200% 100%;animation:scan 3s linear infinite}@keyframes scan{from{background-position:200% 0}to{background-position:-200% 0}}button:focus-visible,input:focus-visible{outline:2px solid #08872b;outline-offset:2px}
 .game-shell{display:flex;flex-direction:column}.game-shell>header{order:1}.game-shell>.game-roadmap{order:2}.game-shell>.mx-auto.grid{order:3}.game-roadmap{width:100%}.game-roadmap>section{border-color:#54aeff!important;background:#f6f8fa!important}.game-roadmap article{background:#fff!important;border-color:#d0d7de!important;color:#1f2328}.game-roadmap article b{color:#1f2328!important}.game-roadmap article p,.game-roadmap article span{color:#656d76!important}.game-roadmap article .text-sky-200{color:#0969da!important}.game-roadmap article .text-gold{color:#9a6700!important}.game-roadmap article .text-emerald{color:#1a7f37!important}
 .game-shell>div:not(.game-roadmap){order:4}
+
+/* Single visual system: black, green, white. Colour never carries meaning on
+   its own; priority and state are also communicated with labels and icons. */
+:root{--github-green:#2da44e;--github-ink:#0d1117;--github-text:#f0f6fc;--github-muted:#8b949e;--github-border:#30363d}
+body{background:#0d1117;color:#f0f6fc}
+.grid-bg{background-color:#0d1117;background-image:radial-gradient(circle at 15% 15%,rgba(45,164,78,.13),transparent 28%),linear-gradient(rgba(240,246,252,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(240,246,252,.035) 1px,transparent 1px)}
+.glass{background:rgba(22,27,34,.9)}
+.github-card{background:#161b22;border-color:#30363d;box-shadow:0 1px 3px rgba(0,0,0,.32)}
+.github-card:hover{box-shadow:0 8px 24px rgba(0,0,0,.45)}
+
+/* Convert legacy light and multicolour component utilities to the shared system. */
+.bg-white{background-color:#161b22!important}
+[class*="bg-white/"]{background-color:rgba(240,246,252,.08)!important}
+.bg-mist,[class*="bg-[#f6f8fa]"],[class*="bg-[#eaeef2]"],[class*="bg-[#ddf4ff]"],[class*="bg-[#dafbe1]"],[class*="bg-[#fff8c5]"],[class*="bg-[#ffebe9]"],[class*="bg-[#fff1f2]"],[class*="bg-[#f5f0ff]"],[class*="bg-purple-"],[class*="bg-sky-"],[class*="bg-blue-"],[class*="bg-indigo-"],[class*="bg-violet-"],[class*="bg-fuchsia-"],[class*="bg-pink-"],[class*="bg-rose-"],[class*="bg-red-"],[class*="bg-yellow-"],[class*="bg-amber-"],[class*="bg-orange-"],[class*="bg-cyan-"]{background-color:#161b22!important}
+[class*="bg-[#0d1117]"],.bg-ink{background-color:#0d1117!important}
+[class*="bg-ink/"]{background-color:rgba(240,246,252,.10)!important}
+[class*="bg-[#1a7f37]"],[class*="bg-[#238636]"],[class*="bg-[#2da44e]"],[class*="bg-gold"],[class*="bg-emerald"]{background-color:#1a7f37!important}
+
+[class*="border-[#"],[class*="border-ink"],[class*="border-white/"],[class*="border-blue"],[class*="border-indigo"],[class*="border-violet"],[class*="border-purple"],[class*="border-fuchsia"],[class*="border-pink"],[class*="border-rose"],[class*="border-red"],[class*="border-yellow"],[class*="border-amber"],[class*="border-orange"],[class*="border-cyan"],[class*="border-sky"]{border-color:#30363d!important}
+[class*="border-[#1a7f37]"],[class*="border-[#2da44e]"],[class*="border-emerald"],[class*="border-gold"]{border-color:#2da44e!important}
+
+.text-ink,[class*="text-[#1f2328]"],[class*="text-[#24292f]"],[class*="text-[#57606a]"],[class*="text-[#656d76]"],[class*="text-ink/"]{color:#f0f6fc!important}
+[class*="text-[#0969da]"],[class*="text-[#1a7f37]"],[class*="text-[#8250df]"],[class*="text-[#6e40c9]"],[class*="text-[#9a6700]"],[class*="text-[#bf8700]"],[class*="text-[#cf222e]"],[class*="text-gold"],[class*="text-emerald"],[class*="text-crimson"],[class*="text-fuchsia"],[class*="text-sky"],[class*="text-rose"],[class*="text-blue"],[class*="text-indigo"],[class*="text-violet"],[class*="text-purple"],[class*="text-pink"],[class*="text-red"],[class*="text-yellow"],[class*="text-amber"],[class*="text-orange"],[class*="text-cyan"]{color:#2da44e!important}
+[class*="text-white/"]{color:rgba(240,246,252,.72)!important}
+
+[class*="bg-[#1a7f37]"] *,[class*="bg-[#238636]"] *,[class*="bg-[#2da44e]"] *,[class*="bg-gold"] *,[class*="bg-emerald"] *{color:#fff!important}
+input,select,textarea{color:#f0f6fc!important;background-color:#161b22!important;border-color:#30363d!important}
+input::placeholder,textarea::placeholder{color:#8b949e!important}
+input[type="range"]{accent-color:#2da44e!important}
+button:focus-visible,input:focus-visible{outline-color:#2da44e!important}
+.game-roadmap>section{border-color:#30363d!important;background:#161b22!important}.game-roadmap article{background:#0d1117!important;border-color:#30363d!important;color:#f0f6fc!important}.game-roadmap article b{color:#f0f6fc!important}.game-roadmap article p,.game-roadmap article span{color:#8b949e!important}.game-roadmap article .text-sky-200,.game-roadmap article .text-gold,.game-roadmap article .text-emerald{color:#2da44e!important}
+
+/* Charts and small visual components use the same constrained palette too. */
+.game-shell [style*="background-color"]{background-color:#2da44e!important}
+.game-shell [style*="background:"]{background:#161b22!important}
+.game-shell [style*="border-color"]{border-color:#30363d!important}
+.game-shell [style*="color"]{color:#2da44e!important}
+.game-shell svg [stroke]{stroke:#2da44e!important}
+.game-shell svg [fill="#cf222e"],.game-shell svg [fill="#8250df"],.game-shell svg [fill="#0969da"],.game-shell svg [fill="#57606a"],.game-shell svg [fill="#8c959f"],.game-shell svg [fill="#9a6700"],.game-shell svg [fill="#3fb950"],.game-shell svg [fill="#34d399"],.game-shell svg [fill="#a7f3d0"]{fill:#2da44e!important}
+
+/* Inverted homepage system: white canvas, black type/surfaces, green accent. */
+body{background:#fff;color:#0d1117}
+.grid-bg{background-color:#fff;background-image:radial-gradient(circle at 15% 15%,rgba(45,164,78,.10),transparent 28%),linear-gradient(rgba(13,17,23,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(13,17,23,.035) 1px,transparent 1px)}
+.glass{background:rgba(255,255,255,.92)}
+.github-card{background:#fff;border-color:#d0d7de;box-shadow:0 1px 3px rgba(13,17,23,.10)}
+.github-card:hover{box-shadow:0 8px 24px rgba(13,17,23,.16)}
+.bg-white{background-color:#fff!important}
+[class*="bg-white/"]{background-color:rgba(13,17,23,.06)!important}
+.bg-mist,[class*="bg-[#f6f8fa]"],[class*="bg-[#eaeef2]"],[class*="bg-[#ddf4ff]"],[class*="bg-[#dafbe1]"],[class*="bg-[#fff8c5]"],[class*="bg-[#ffebe9]"],[class*="bg-[#fff1f2]"],[class*="bg-[#f5f0ff]"],[class*="bg-purple-"],[class*="bg-sky-"],[class*="bg-blue-"],[class*="bg-indigo-"],[class*="bg-violet-"],[class*="bg-fuchsia-"],[class*="bg-pink-"],[class*="bg-rose-"],[class*="bg-red-"],[class*="bg-yellow-"],[class*="bg-amber-"],[class*="bg-orange-"],[class*="bg-cyan-"]{background-color:#f6f8fa!important}
+[class*="bg-[#0d1117]"],.bg-ink{background-color:#fff!important}
+[class*="bg-ink/"]{background-color:rgba(13,17,23,.10)!important}
+.text-ink,[class*="text-[#1f2328]"],[class*="text-[#24292f]"],[class*="text-[#57606a]"],[class*="text-[#656d76]"],[class*="text-ink/"],[class*="text-white"],[class*="text-white/"]{color:#0d1117!important}
+[class*="border-white/"]{border-color:#d0d7de!important}
+input,select,textarea{color:#0d1117!important;background-color:#fff!important;border-color:#d0d7de!important}
+input::placeholder,textarea::placeholder{color:#656d76!important}
+select,select option{color:#0d1117!important;background-color:#fff!important}
+select:focus{border-color:#2da44e!important;box-shadow:0 0 0 3px rgba(45,164,78,.18)!important}
+select option:checked,select option:hover{color:#0d1117!important;background-color:#e8f5ec!important}
+.game-roadmap>section{border-color:#d0d7de!important;background:#f6f8fa!important}
+.game-roadmap article{background:#fff!important;border-color:#d0d7de!important;color:#0d1117!important}
+.game-roadmap article b{color:#0d1117!important}.game-roadmap article p,.game-roadmap article span{color:#656d76!important}
+
+/* Content safety: descriptive UI copy may wrap, while explicit compact controls
+   retain their own one-line treatment. Flex/grid children can also shrink. */
+:where(p,h1,h2,h3,h4,h5,h6,span,b,strong,label,button,a){overflow-wrap:anywhere}
+:where(.flex > *, .grid > *){min-width:0}
+:where(p,h1,h2,h3,h4,h5,h6){max-width:100%}
+
+/* Softened light surfaces: keep the inverted system calm rather than stark. */
+body{background:#eef2f5}
+.grid-bg{background-color:#eef2f5}
+.glass{background:rgba(247,249,250,.94)}
+.github-card{background:#fff}
+.bg-white{background-color:#fff!important}
+.bg-mist,[class*="bg-[#f6f8fa]"],[class*="bg-[#eaeef2]"],[class*="bg-[#ddf4ff]"],[class*="bg-[#dafbe1]"],[class*="bg-[#fff8c5]"],[class*="bg-[#ffebe9]"],[class*="bg-[#fff1f2]"],[class*="bg-[#f5f0ff]"],[class*="bg-purple-"],[class*="bg-sky-"],[class*="bg-blue-"],[class*="bg-indigo-"],[class*="bg-violet-"],[class*="bg-fuchsia-"],[class*="bg-pink-"],[class*="bg-rose-"],[class*="bg-red-"],[class*="bg-yellow-"],[class*="bg-amber-"],[class*="bg-orange-"],[class*="bg-cyan-"]{background-color:#f7f9fa!important}
+.game-shell [style*="background:"]{background:#f7f9fa!important}
+.game-roadmap>section{background:#f7f9fa!important}
+
+/* Legacy dark surfaces must invert with their text; leaving them dark creates
+   the low-contrast black-on-charcoal cards visible in the homepage record. */
+[class*="bg-[#161b22]"],[class*="bg-[#0d1117]"]{background-color:#f7f9fa!important}
+
+/* The hero record is intentionally the one dark anchor on the light canvas.
+   Keep its text on the light side of the contrast pair so the dashboard story
+   remains legible instead of becoming black-on-charcoal. */
+.homepage-record-card{background:#0d1117!important;color:#fff!important}
+.homepage-record-card .text-white,.homepage-record-card [class*="text-white"]{color:#fff!important}
+.homepage-record-card [class*="text-white/"]{color:rgba(255,255,255,.72)!important}
+.homepage-record-card [class*="bg-[#161b22]"]{background:#161b22!important}
+
+/* Large green surfaces become a quiet mint so green remains an accent rather
+   than flooding the decision screen. Strong green is reserved for actions,
+   selected controls, and status markers. */
+.scenario-active-panel{background:#e8f5ec!important;border-color:#9bd7aa!important;color:#0d1117!important}
+.scenario-active-panel .bg-white\/70{background:rgba(255,255,255,.72)!important}
+.scenario-active-panel .text-gold{color:#1a7f37!important}
+.scenario-active-panel .bg-gold\/15{background:rgba(45,164,78,.12)!important}
+.scenario-active-panel .text-ink\/45,.scenario-active-panel .text-ink\/50,.scenario-active-panel .text-ink\/55,.scenario-active-panel .text-ink\/60{color:#4b6352!important}
+
+/* Gameplay chrome stays dark and high-contrast even though the decision
+   workspace uses the softer light canvas. */
+.game-shell [class*="bg-[#0d1117]"],.game-shell .bg-ink{background:#0d1117!important;color:#fff!important}
+.game-shell [class*="bg-[#161b22]"]{background:#161b22!important}
+.game-shell .text-white,.game-shell [class*="text-white"]{color:#fff!important}
+.game-shell [class*="text-white/"]{color:rgba(255,255,255,.72)!important}
+
+/* Popup system: quiet command-deck surfaces, shared by results, sidecars,
+   analytics, advisor, coach, and the strategy laboratory. The shell is dark;
+   panels are only slightly lifted, so the content remains the focus. */
+.command-overlay{background:rgba(7,10,9,.76)!important;backdrop-filter:blur(8px)}
+.command-modal,.command-sidecar{background:linear-gradient(145deg,#1a2420 0%,#111715 48%,#0d1117 100%)!important;border:1px solid rgba(240,246,252,.18)!important;color:#f0f6fc!important;box-shadow:0 24px 90px rgba(0,0,0,.58),0 0 0 1px rgba(45,164,78,.08)!important}
+.command-modal header,.command-sidecar-header{border-color:rgba(240,246,252,.14)!important;background:transparent!important}
+.command-modal section,.command-modal article,.command-modal details,.command-panel,.command-sidecar .github-card{border-color:rgba(240,246,252,.14)!important;background:rgba(240,246,252,.065)!important;color:#f0f6fc!important}
+.command-modal section[class*="border-[#cf222e]"],.command-modal section[class*="border-[#d4a72c]"]{background:rgba(45,164,78,.07)!important;border-color:rgba(45,164,78,.34)!important}
+.command-modal [class*="bg-[#161b22]"],.command-modal [class*="bg-[#0d1117]"],.command-modal .bg-white,.command-modal [class*="bg-white/"]{background:rgba(240,246,252,.065)!important}
+.command-modal [class*="border-[#"],.command-modal [class*="border-ink"],.command-modal [class*="border-white/"]{border-color:rgba(240,246,252,.14)!important}
+.command-modal [class*="text-[#24292f]"],.command-modal [class*="text-[#1f2328]"],.command-modal [class*="text-[#57606a]"],.command-modal [class*="text-ink"]{color:#f0f6fc!important}
+.command-modal [class*="text-[#656d76]"],.command-modal [class*="text-white/"],.command-sidecar [class*="text-white/"]{color:rgba(240,246,252,.68)!important}
+.command-modal [class*="text-[#0969da]"],.command-modal [class*="text-[#1a7f37]"],.command-modal [class*="text-[#9a6700]"],.command-modal [class*="text-emerald"],.command-sidecar [class*="text-emerald"],.command-sidecar [class*="text-gold"]{color:#7ee787!important}
+.command-modal button[class*="bg-[#1a7f37]"],.command-modal button[class*="bg-ink"],.command-modal button[class*="bg-[#24292f]"]{background:#238636!important;color:#fff!important}
+.command-modal button[class*="bg-[#1a7f37]"]:hover,.command-modal button[class*="bg-ink"]:hover{background:#2ea043!important}
+.command-modal input,.command-modal select,.command-modal textarea{background:rgba(240,246,252,.08)!important;color:#f0f6fc!important;border-color:rgba(240,246,252,.18)!important}
+.command-modal input::placeholder,.command-modal textarea::placeholder{color:#8b949e!important}
+.command-sidecar{border-top:0!important;border-bottom:0!important;border-right:0!important;border-radius:24px 0 0 24px!important;overflow:hidden}
+.command-sidecar .bg-white,.command-sidecar [class*="bg-white/"],.command-sidecar [class*="bg-ink/"]{background:rgba(240,246,252,.065)!important}
+.command-sidecar [class*="border-white/"],.command-sidecar [class*="border-ink"],.command-sidecar [class*="border-[#"]{border-color:rgba(240,246,252,.14)!important}
+.command-sidecar [class*="text-[#"],.command-sidecar .text-ink{color:#f0f6fc!important}
+.command-sidecar [class*="text-white/"]{color:rgba(240,246,252,.68)!important}
+.command-icon-button{color:rgba(240,246,252,.7)!important;transition:background .2s ease,color .2s ease}
+.command-icon-button:hover{background:rgba(240,246,252,.1)!important;color:#fff!important}
+.command-simulator{border-color:rgba(240,246,252,.18)!important}
+.command-simulator>header,.command-simulator>div>main,.command-simulator>div>aside{background:transparent!important;color:#f0f6fc!important}
+.command-simulator section,.command-simulator article,.command-simulator aside>section,.command-simulator main>section,.command-simulator .bg-white,.command-simulator [class*="bg-[#f6f8fa]"],.command-simulator [class*="bg-[#fff8c5]"],.command-simulator [class*="bg-[#ffebe9]"],.command-simulator [class*="bg-[#ddf4ff]"]{background:rgba(240,246,252,.065)!important;border-color:rgba(240,246,252,.14)!important;color:#f0f6fc!important}
+.command-simulator [class*="text-[#24292f]"],.command-simulator [class*="text-[#57606a]"],.command-simulator [class*="text-ink"]{color:#f0f6fc!important}
+.command-simulator [class*="text-[#656d76]"],.command-simulator [class*="text-ink/"]{color:rgba(240,246,252,.68)!important}
+.command-simulator [class*="border-ink"],.command-simulator [class*="border-[#"]{border-color:rgba(240,246,252,.14)!important}
+.command-simulator [class*="bg-[#1a7f37]"],.command-simulator [class*="bg-ink"]{background:#238636!important;color:#fff!important}
+.command-simulator input{background:rgba(240,246,252,.08)!important;color:#f0f6fc!important;border-color:rgba(240,246,252,.18)!important}
+
+/* Final overlay contrast contract: popup surfaces stay dark, text stays readable.
+   Components intentionally use light-mode utility classes in the normal app, so
+   overlays must neutralise those utilities at the boundary rather than relying
+   on each popup to remember a second theme. */
+.command-overlay{
+  --overlay-surface:#18221d;
+  --overlay-surface-elevated:#222d27;
+  --overlay-surface-soft:#2b3730;
+  --overlay-border:rgba(240,246,252,.22);
+  --overlay-text:#f0f6fc;
+  --overlay-muted:#b5c1b9;
+  --overlay-green:#7ee787;
+}
+.command-overlay .command-modal,
+.command-overlay .command-sidecar{
+  color:var(--overlay-text)!important;
+}
+.command-overlay .command-modal .bg-white,
+.command-overlay .command-modal [class*="bg-white/"],
+.command-overlay .command-modal [class*="bg-[#f6f8fa]"],
+.command-overlay .command-modal [class*="bg-[#fff8c5]"],
+.command-overlay .command-modal [class*="bg-[#ffebe9]"],
+.command-overlay .command-modal [class*="bg-[#ddf4ff]"],
+.command-overlay .command-sidecar .bg-white,
+.command-overlay .command-sidecar [class*="bg-white/"],
+.command-overlay .command-sidecar [class*="bg-sky-"],
+.command-overlay .command-sidecar [class*="bg-emerald/"],
+.command-overlay .command-sidecar [class*="bg-gold/"],
+.command-overlay .command-sidecar [class*="bg-[#f6f8fa]"],
+.command-overlay .command-sidecar [class*="bg-[#ddf4ff]"]{
+  background:var(--overlay-surface-elevated)!important;
+  color:var(--overlay-text)!important;
+  border-color:var(--overlay-border)!important;
+}
+.command-overlay .command-modal [class*="bg-[#161b22]"],
+.command-overlay .command-modal [class*="bg-[#0d1117]"],
+.command-overlay .command-sidecar [class*="bg-white/5"],
+.command-overlay .command-sidecar [class*="bg-white/10"]{
+  background:var(--overlay-surface-soft)!important;
+  color:var(--overlay-text)!important;
+}
+.command-overlay .command-modal [class*="text-[#24292f]"],
+.command-overlay .command-modal [class*="text-[#1f2328]"],
+.command-overlay .command-modal [class*="text-[#57606a]"],
+.command-overlay .command-modal [class*="text-ink"],
+.command-overlay .command-sidecar [class*="text-[#24292f]"],
+.command-overlay .command-sidecar [class*="text-[#1f2328]"],
+.command-overlay .command-sidecar [class*="text-[#57606a]"],
+.command-overlay .command-sidecar .text-ink{
+  color:var(--overlay-text)!important;
+}
+.command-overlay .command-modal [class*="text-white/"],
+.command-overlay .command-sidecar [class*="text-white/"],
+.command-overlay .command-sidecar [class*="text-ink/"]{
+  color:var(--overlay-muted)!important;
+}
+.command-overlay .command-modal [class*="border-"],
+.command-overlay .command-sidecar [class*="border-"],
+.command-overlay .command-modal [class*="ring-"]{
+  border-color:var(--overlay-border)!important;
+}
+.command-overlay .command-modal button[class*="bg-white"],
+.command-overlay .command-modal button[class*="bg-ink"],
+.command-overlay .command-sidecar button[class*="bg-white"],
+.command-overlay .command-sidecar button[class*="bg-ink"]{
+  background:var(--overlay-green)!important;
+  color:#0d1117!important;
+  border-color:var(--overlay-green)!important;
+}
+.command-overlay .command-modal button[class*="bg-white"]:hover,
+.command-overlay .command-modal button[class*="bg-ink"]:hover,
+.command-overlay .command-sidecar button[class*="bg-white"]:hover,
+.command-overlay .command-sidecar button[class*="bg-ink"]:hover{
+  background:#a7f3b0!important;
+}
+.command-overlay input,
+.command-overlay select,
+.command-overlay textarea,
+.command-overlay option{
+  background:var(--overlay-surface-elevated)!important;
+  color:var(--overlay-text)!important;
+  border-color:var(--overlay-border)!important;
+}
+.command-overlay input::placeholder,
+.command-overlay textarea::placeholder{color:var(--overlay-muted)!important}
+.command-overlay .command-simulator .text-emerald,
+.command-overlay .command-simulator [class*="text-[#0969da]"],
+.command-overlay .command-simulator [class*="text-[#1a7f37]"],
+.command-overlay .command-simulator [class*="text-[#9a6700]"],
+.command-overlay .command-sidecar [class*="text-emerald"],
+.command-overlay .command-sidecar [class*="text-gold"]{
+  color:var(--overlay-green)!important;
+}
+.command-overlay .command-simulator [class*="bg-emerald/"],
+.command-overlay .command-simulator [class*="bg-[#dafbe1]"],
+.command-overlay .command-simulator [class*="bg-[#ffebe9]"],
+.command-overlay .command-simulator [class*="bg-[#fff8c5]"]{
+  background:var(--overlay-surface-soft)!important;
+  color:var(--overlay-text)!important;
+}
+.command-overlay .command-simulator [class*="text-[#cf222e]"],
+.command-overlay .command-simulator [class*="text-[#9a6700]"]{
+  color:#f2c879!important;
+}
+
+/* Decision-surface refinement: one restrained black / white / green language.
+   This final layer sits after legacy utility overrides so older component
+   classes cannot reintroduce competing colours into the learner's main view. */
+:root{--decision-canvas:#eef3f0;--decision-surface:#fff;--decision-subtle:#f4f7f5;--decision-ink:#111713;--decision-muted:#5e6a62;--decision-border:#c8d1cb;--decision-green:#238636;--decision-green-strong:#176b36;--decision-green-soft:#e8f4eb}
+.game-shell{background:var(--decision-canvas);color:var(--decision-ink)}
+.game-shell .decision-workbench,.game-shell [aria-label="Executive scorecard"],.game-shell [aria-label="Balance the operating system"]{background:var(--decision-surface)!important;border-color:var(--decision-border)!important;color:var(--decision-ink)!important}
+.game-shell [aria-label="Executive scorecard"] article{background:var(--decision-surface)!important;border-color:var(--decision-border)!important;box-shadow:0 1px 0 rgba(17,23,19,.04)}
+.game-shell [aria-label="Executive scorecard"] article svg{color:var(--decision-green)!important}
+.game-shell [aria-label="Executive scorecard"] article [class*="bg-[#cf222e]"],.game-shell [aria-label="Executive scorecard"] article [class*="bg-[#8250df]"],.game-shell [aria-label="Executive scorecard"] article [class*="bg-[#0969da]"],.game-shell [aria-label="Executive scorecard"] article [class*="bg-[#bf8700]"]{background:var(--decision-green)!important}
+.game-shell [aria-label="Executive scorecard"] article [class*="bg-black/10"]{background:#dfe6e1!important}
+.game-shell .decision-workbench .bg-mist,.game-shell .decision-workbench [class*="bg-[#f6f8fa]"]{background:var(--decision-subtle)!important}
+.game-shell .decision-workbench [class*="bg-[#dafbe1]"],.game-shell .decision-workbench [class*="bg-[#e8f5ec]"]{background:var(--decision-green-soft)!important}
+.game-shell .decision-workbench [class*="text-[#cf222e]"],.game-shell .decision-workbench [class*="text-[#8250df]"],.game-shell .decision-workbench [class*="text-[#0969da]"],.game-shell .decision-workbench [class*="text-[#9a6700]"],.game-shell .decision-workbench .text-crimson,.game-shell .decision-workbench .text-emerald{color:var(--decision-green-strong)!important}
+.game-shell .decision-workbench [class*="bg-[#fff8c5]"],.game-shell .decision-workbench [class*="bg-[#ffebe9]"]{background:var(--decision-subtle)!important}
+.game-shell input[type="range"]{accent-color:var(--decision-green)!important}
+
+/* Command overlay content contract.
+   Drawers and modals are dark application surfaces even when the surrounding
+   page uses the light learning canvas. These semantic classes keep nested
+   cards readable and prevent legacy utility classes from leaking light
+   backgrounds into an overlay. */
+.command-overlay{
+  --command-panel:#17211c;
+  --command-panel-raised:#243129;
+  --command-panel-subtle:#2d3a32;
+  --command-border:rgba(240,246,252,.22);
+  --command-text:#f0f6fc;
+  --command-muted:#c0cbc4;
+  --command-faint:#9baaa0;
+  --command-accent:#7ee787;
+}
+.command-overlay .command-content-card{background:var(--command-panel)!important;border:1px solid var(--command-border)!important;color:var(--command-text)!important}
+.command-overlay .command-content-soft{background:var(--command-panel-raised)!important;border:1px solid var(--command-border)!important;color:var(--command-text)!important}
+.command-overlay .command-content-subtle{background:var(--command-panel-subtle)!important;border:1px solid var(--command-border)!important;color:var(--command-text)!important}
+.command-overlay .command-text{color:var(--command-text)!important}
+.command-overlay .command-text-muted{color:var(--command-muted)!important}
+.command-overlay .command-text-faint{color:var(--command-faint)!important}
+.command-overlay .command-accent{color:var(--command-accent)!important}
+.command-overlay .command-track{background:rgba(240,246,252,.18)!important}
+.command-overlay .command-bar{background:var(--command-accent)!important}
+.command-overlay .command-status{background:rgba(126,231,135,.16)!important;border:1px solid rgba(126,231,135,.28)!important;border-radius:9999px;color:var(--command-accent)!important}
+.command-overlay .command-divider{border-color:var(--command-border)!important}
+
+/* Defensive compatibility for untouched sidecar/modal content. */
+.command-overlay .command-sidecar .text-white,.command-overlay .command-modal .text-white{color:var(--command-text)!important}
+.command-overlay .command-sidecar [class*="text-white/"],.command-overlay .command-modal [class*="text-white/"]{color:var(--command-muted)!important}
+.command-overlay .command-sidecar [class*="bg-fuchsia-"],.command-overlay .command-sidecar [class*="bg-purple-"],.command-overlay .command-sidecar [class*="bg-sky-"],.command-overlay .command-sidecar [class*="bg-[#f6f8fa]"],.command-overlay .command-sidecar [class*="bg-[#ddf4ff]"],.command-overlay .command-sidecar [class*="bg-black/"],.command-overlay .command-modal [class*="bg-fuchsia-"],.command-overlay .command-modal [class*="bg-purple-"],.command-overlay .command-modal [class*="bg-sky-"],.command-overlay .command-modal [class*="bg-[#f6f8fa]"],.command-overlay .command-modal [class*="bg-[#ddf4ff]"],.command-overlay .command-modal [class*="bg-black/"]{background:var(--command-panel-raised)!important;border-color:var(--command-border)!important;color:var(--command-text)!important}
+.command-overlay .command-sidecar [class*="text-fuchsia-"],.command-overlay .command-sidecar [class*="text-purple-"],.command-overlay .command-sidecar [class*="text-sky-"],.command-overlay .command-sidecar [class*="text-gold"],.command-overlay .command-modal [class*="text-fuchsia-"],.command-overlay .command-modal [class*="text-purple-"],.command-overlay .command-modal [class*="text-sky-"],.command-overlay .command-modal [class*="text-gold"]{color:var(--command-accent)!important}
+.command-overlay .command-sidecar [class*="text-[#1f2328]"],.command-overlay .command-modal [class*="text-[#1f2328]"]{color:var(--command-text)!important}
+.command-overlay .command-sidecar [class*="text-[#57606a]"],.command-overlay .command-modal [class*="text-[#57606a]"]{color:var(--command-muted)!important}
+
+/* Legacy analytics, learning and simulator cards used several presentation
+   colours directly. Inside a command overlay they all resolve to the same
+   readable command surface; emphasis is carried by copy, borders and icons,
+   not a pale fill with low-contrast text. */
+.command-overlay .command-sidecar [class*="bg-rose-"],.command-overlay .command-sidecar [class*="bg-red-"],.command-overlay .command-sidecar [class*="bg-amber-"],.command-overlay .command-sidecar [class*="bg-yellow-"],.command-overlay .command-sidecar [class*="bg-orange-"],.command-overlay .command-sidecar [class*="bg-violet-"],.command-overlay .command-sidecar [class*="bg-blue-"],.command-overlay .command-sidecar [class*="bg-emerald/"],.command-overlay .command-sidecar [class*="bg-[#dafbe1]"],.command-overlay .command-sidecar [class*="bg-[#ffebe9]"],.command-overlay .command-sidecar [class*="bg-[#fff8c5]"],.command-overlay .command-modal [class*="bg-rose-"],.command-overlay .command-modal [class*="bg-red-"],.command-overlay .command-modal [class*="bg-amber-"],.command-overlay .command-modal [class*="bg-yellow-"],.command-overlay .command-modal [class*="bg-orange-"],.command-overlay .command-modal [class*="bg-violet-"],.command-overlay .command-modal [class*="bg-blue-"],.command-overlay .command-modal [class*="bg-emerald/"],.command-overlay .command-modal [class*="bg-[#dafbe1]"],.command-overlay .command-modal [class*="bg-[#ffebe9]"],.command-overlay .command-modal [class*="bg-[#fff8c5]"]{background:var(--command-panel-raised)!important;border-color:var(--command-border)!important;color:var(--command-text)!important}
+.command-overlay .command-simulator [class*="bg-white"],.command-overlay .command-simulator [class*="bg-mist"],.command-overlay .command-simulator [class*="bg-[#f6f8fa]"],.command-overlay .command-simulator [class*="bg-[#dafbe1]"],.command-overlay .command-simulator [class*="bg-[#ffebe9]"],.command-overlay .command-simulator [class*="bg-[#fff8c5]"],.command-overlay .command-simulator [class*="bg-[#ddf4ff]"]{background:var(--command-panel-raised)!important;border-color:var(--command-border)!important;color:var(--command-text)!important}
+.command-overlay .command-sidecar [class*="text-rose-"],.command-overlay .command-sidecar [class*="text-red-"],.command-overlay .command-sidecar [class*="text-amber-"],.command-overlay .command-sidecar [class*="text-yellow-"],.command-overlay .command-sidecar [class*="text-orange-"],.command-overlay .command-sidecar [class*="text-violet-"],.command-overlay .command-sidecar [class*="text-blue-"],.command-overlay .command-modal [class*="text-rose-"],.command-overlay .command-modal [class*="text-red-"],.command-overlay .command-modal [class*="text-amber-"],.command-overlay .command-modal [class*="text-yellow-"],.command-overlay .command-modal [class*="text-orange-"],.command-overlay .command-modal [class*="text-violet-"],.command-overlay .command-modal [class*="text-blue-"]{color:var(--command-text)!important}
+
+/* Small drawers hold their own long-form advice.  The base shell clips rounded
+   corners, but these two panes must retain a real, contained scroll region. */
+.command-overlay .command-sidecar.command-sidecar-scroll{overflow-x:hidden!important;overflow-y:auto!important;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;scrollbar-gutter:stable}
+.command-overlay .command-sidecar.command-sidecar-scroll::-webkit-scrollbar{width:10px}
+.command-overlay .command-sidecar.command-sidecar-scroll::-webkit-scrollbar-thumb{border:3px solid transparent;border-radius:999px;background:rgba(126,231,135,.42);background-clip:padding-box}

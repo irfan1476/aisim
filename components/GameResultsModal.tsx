@@ -1,9 +1,13 @@
 "use client";
-import { ArrowRight, CheckCircle2, GitBranch, Lightbulb } from "lucide-react";
+
+import { ArrowRight, CheckCircle2, CircleDollarSign, GitBranch, Lightbulb, ShieldAlert, Users } from "lucide-react";
 import type { GameViewState } from "./gameViewTypes";
 import ReflectionCard from "./ReflectionCard";
 import { calculateReflection } from "../lib/reflection";
 import type { UserReflections } from "../lib/game/state";
+import { formatBudget } from "../lib/currency";
+import { deriveOperatingModelAdvisory } from "../lib/game/operatingModelAdvisory";
+
 interface Props {
   state: GameViewState;
   onRespond: (impact: Record<string, number>, cost?: number) => void;
@@ -11,155 +15,35 @@ interface Props {
   onApproveRecommendation: (title: string) => void;
   onSaveReflection: (value: Partial<UserReflections>) => void;
 }
-export default function GameResultsModal({
-  state,
-  onRespond,
-  onAdvance,
-  onApproveRecommendation,
-  onSaveReflection,
-}: Props) {
+
+function RingMetric({ label, value, color }: { label: string; value: string; color: string }) {
+  const numeric = Math.max(0, Math.min(100, Number.parseFloat(value) || 0));
+  return <div className="command-content-soft flex min-w-0 items-center gap-3 rounded-2xl border p-3 sm:justify-center sm:rounded-full sm:bg-transparent sm:p-0"><div className="relative flex h-20 w-20 shrink-0 items-center justify-center rounded-full p-1 sm:h-28 sm:w-28" style={{ background: `conic-gradient(${color} ${numeric}%, #4a5b51 0)` }}><div className="command-content-card flex h-full w-full flex-col items-center justify-center rounded-full border"><span className="command-text-muted text-[10px] uppercase tracking-wider">{label}</span><b className="command-text mt-1 text-xl leading-none sm:text-2xl">{value}</b></div></div><span className="command-text-muted text-xs font-semibold sm:hidden">Current quarter position</span></div>;
+}
+
+function EvidenceItem({ icon: Icon, label, value, detail }: { icon: typeof CircleDollarSign; label: string; value: string; detail?: string }) {
+  return <div className="command-content-soft flex items-start gap-3 rounded-xl border p-3"><span className="command-status mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"><Icon size={16} /></span><div className="min-w-0"><p className="command-text-muted text-[10px] font-bold uppercase tracking-[.14em]">{label}</p><p className="command-text mt-1 break-words text-sm font-bold">{value}</p>{detail && <p className="command-text-muted mt-1 break-words text-[11px] leading-4">{detail}</p>}</div></div>;
+}
+
+export default function GameResultsModal({ state, onRespond, onAdvance, onApproveRecommendation, onSaveReflection }: Props) {
   if (state.stage !== "results") return null;
   const recommendations = state.proactiveRecommendations as any[];
   const approved = new Set(state.approvedRecommendations || []);
   const reflection = calculateReflection(state as any);
-  return (
-    <div
-      data-testid="quarter-results"
-      className="fixed inset-0 z-20 flex items-end justify-center bg-ink/45 p-4 sm:items-center"
-    >
-      <div className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-3xl bg-white p-7 shadow-2xl">
-        <p className="text-xs font-bold uppercase tracking-widest text-gold">
-          Quarter {state.q} results
-        </p>
-        <h2 className="mt-2 text-3xl font-semibold">
-          The operating system responded.
-        </h2>
-        <p className="mt-4 leading-7 text-ink/60">{state.feedback}</p>
-        {state.crisis ? (
-          <div className="mt-6 rounded-2xl border border-crimson/15 bg-crimson/5 p-5">
-            <p className="text-xs font-bold uppercase tracking-widest text-crimson">
-              {state.crisis.type}
-            </p>
-            <p className="mt-2 text-lg font-bold">{state.crisis.title}</p>
-            <p className="mt-2 text-sm text-ink/60">{state.crisis.text}</p>
-            <div className="mt-4 grid gap-2">
-              {state.crisis.options.map((option) => (
-                <button
-                  key={option[0]}
-                  onClick={() => onRespond(option[2], option[3])}
-                  className="flex items-center justify-between rounded-xl border border-ink/10 bg-white p-3 text-left text-sm"
-                >
-                  <span>
-                    <b>{option[0]}</b>
-                    <span className="ml-2 text-ink/50">{option[1]}</span>
-                    {option[3] ? <span className="ml-2 text-xs font-bold text-crimson">Cost {option[3]}</span> : null}
-                  </span>
-                  <ArrowRight size={15} />
-                </button>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <>
-            <div className="mt-6 grid grid-cols-3 gap-3">
-              {[
-                ["ROI", `${state.roi.toFixed(1)}%`],
-                ["Adoption", `${state.adoption.toFixed(0)}%`],
-                ["Risk", `${state.risk.toFixed(0)}%`],
-              ].map((metric) => (
-                <div key={metric[0]} className="rounded-xl bg-mist p-4">
-                  <p className="text-xs text-ink/40">{metric[0]}</p>
-                  <b className="mt-1 block text-xl">{metric[1]}</b>
-                </div>
-              ))}
-            </div>
-            <section className="mt-6 rounded-2xl border border-emerald/20 bg-emerald/5 p-5">
-              <div className="flex items-center gap-2">
-                <GitBranch size={17} className="text-emerald" />
-                <b>What caused this result?</b>
-              </div>
-              {state.causalChain.length ? (
-                <div className="mt-3 space-y-2">
-                  {state.causalChain.slice(0, 4).map((item: any) => (
-                    <div
-                      key={item.name}
-                      className="rounded-xl bg-white p-3 text-sm"
-                    >
-                      <b>{item.name}</b>
-                      {item.explanation ? (
-                        <p className="mt-1 text-xs leading-5 text-ink/50">{item.explanation}</p>
-                      ) : null}
-                      <span className="ml-2 text-ink/55">
-                        {item.effects
-                          ?.map(
-                            (effect: any) =>
-                              `${effect.metric} ${effect.delta > 0 ? "+" : ""}${Number(effect.delta).toFixed(1)}${effect.unit ? ` ${effect.unit}` : "%"}`,
-                          )
-                          .join(" · ")}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="mt-3 text-sm text-ink/55">
-                  The causal chain will appear after the next decision.
-                </p>
-              )}
-            </section>
-            <section className="mt-4 rounded-2xl border border-gold/20 bg-gold/5 p-5">
-              <div className="flex items-center gap-2">
-                <Lightbulb size={17} className="text-gold" />
-                <b>Top recommendations</b>
-              </div>
-              {recommendations.length ? (
-                <div className="mt-3 space-y-2">
-                  {recommendations.slice(0, 3).map((rec: any) => (
-                    <div key={rec.title} className="rounded-xl bg-white p-3">
-                      <b className="text-sm">{rec.title}</b>
-                      <p className="mt-1 text-xs leading-5 text-ink/55">
-                        {rec.message}
-                      </p>
-                      <p className="mt-2 text-xs font-bold text-ink/60">
-                        Next: {rec.action} · {rec.metric}
-                      </p>
-                      <button
-                        onClick={() => onApproveRecommendation(rec.title)}
-                        className={`mt-3 rounded-lg px-3 py-2 text-xs font-bold ${approved.has(rec.title) ? "bg-emerald/15 text-emerald" : "bg-ink text-white"}`}
-                      >
-                        {approved.has(rec.title)
-                          ? "✓ Approved for next decision"
-                          : "Approve recommendation"}
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="mt-3 text-sm text-ink/55">
-                  No immediate recommendation overrides the current plan.
-                </p>
-              )}
-            </section>
-            {(state.q === 1 || state.q === 6) && (
-              <ReflectionCard
-                quarter={state.q as 1 | 6}
-                reflection={reflection}
-                userReflections={state.userReflections || {}}
-                onSave={onSaveReflection}
-              />
-            )}
-            <button
-              onClick={onAdvance}
-              className="mt-7 flex w-full items-center justify-center gap-2 rounded-xl bg-ink px-5 py-4 text-sm font-bold text-white"
-            >
-              <CheckCircle2 size={16} />
-              {state.q >= 12
-                ? "View final verdict"
-                : "Continue to next quarter"}{" "}
-              <ArrowRight size={16} />
-            </button>
-          </>
-        )}
-      </div>
-    </div>
-  );
+  const fundedInitiatives = state.selected.map((id) => state.initiativeStates?.[id]?.name).filter((name): name is string => Boolean(name));
+  const operatingEmphasis = Object.entries(state.alloc || {}).sort(([, left], [, right]) => Number(right) - Number(left)).slice(0, 2).map(([key, value]) => `${key === "mlops" ? "Ops & Maintenance" : key[0].toUpperCase() + key.slice(1)} ${value}%`);
+  const initiativeSpend = Number(state.lastQuarterDeployment || 0);
+  const crisisSpend = Number(state.quarterlyCrisisCost || 0);
+  const quarterSpend = initiativeSpend + crisisSpend;
+  const operatingModel = deriveOperatingModelAdvisory(state);
+
+  return <div data-testid="quarter-results" className="command-overlay fixed inset-0 z-20 flex items-end justify-center overflow-y-auto p-3 sm:items-center sm:p-6"><div className="command-modal my-auto max-h-[94vh] w-full max-w-5xl overflow-y-auto rounded-[28px] text-white">
+    <header className="border-b border-[#30363d] px-5 py-6 text-center sm:px-10 sm:py-8"><p className="text-[10px] font-bold uppercase tracking-[.24em] text-[#7ee787]">Quarter {state.q} results</p><h2 className="mt-2 break-words text-3xl font-bold tracking-[-.04em] sm:text-5xl">The operating system responded.</h2><p className="mx-auto mt-3 max-w-3xl break-words text-sm leading-6 text-white/60">{state.feedback}</p></header>
+    <section className="grid gap-3 border-b border-[#30363d] px-5 py-5 sm:grid-cols-3 sm:px-10 sm:py-7"><RingMetric label="ROI" value={`${state.roi.toFixed(1)}%`} color="#34d399"/><RingMetric label="Adoption" value={`${state.adoption.toFixed(0)}%`} color="#c9b896"/><RingMetric label="Risk" value={`${state.risk.toFixed(0)}%`} color="#f59e0b"/></section>
+    {state.crisis && <section className="border-b border-[#30363d] px-5 py-5 sm:px-8"><div className="rounded-2xl border border-[#cf222e]/40 bg-[#cf222e]/10 p-5"><div className="flex items-center gap-2 text-[#ff7b72]"><ShieldAlert size={18}/><p className="text-xs font-bold uppercase tracking-[.16em]">{state.crisis.type} · response needed</p></div><p className="mt-3 text-xl font-bold">{state.crisis.title}</p><p className="mt-2 max-w-3xl text-sm leading-6 text-white/65">{state.crisis.text} Choose a response below; the quarter evidence remains visible underneath.</p><div className="mt-5 grid gap-2 sm:grid-cols-2">{state.crisis.options.map((option) => <button key={option[0]} onClick={() => onRespond(option[2], option[3])} className="flex min-w-0 items-center justify-between gap-3 rounded-xl border border-[#30363d] bg-[#161b22] p-4 text-left transition hover:border-[#7ee787] hover:bg-[#1f2933]"><span className="min-w-0 break-words"><b>{option[0]}</b><span className="mt-1 block text-xs text-white/50">{option[1]}</span>{option[3] ? <span className="mt-2 block text-xs font-bold text-[#ff7b72]">Cost {option[3]}</span> : null}</span><ArrowRight size={16} className="shrink-0 text-[#7ee787]"/></button>)}</div></div></section>}
+      <div className="grid gap-5 p-5 sm:p-8 lg:grid-cols-[minmax(0,.9fr)_minmax(0,1.1fr)]"><section><div className="flex items-center gap-2"><GitBranch size={18} className="text-[#7ee787]"/><h3 className="text-xl font-bold">System insights &amp; evidence</h3></div><p className="mt-2 text-xs leading-5 text-white/50">The quarter record explains what was funded, how it was operated, and which outcomes moved.</p><p className="mt-2 text-xs leading-5 text-white/60"><span className="font-bold text-[#7ee787]">{operatingModel.label}:</span> {operatingModel.resultInsight}</p><div className="mt-4 space-y-2"><EvidenceItem icon={CircleDollarSign} label="Capital committed" value={formatBudget(quarterSpend, state.currencyMode)} detail={crisisSpend ? `${formatBudget(initiativeSpend, state.currencyMode)} portfolio · ${formatBudget(crisisSpend, state.currencyMode)} response` : `Recorded for Quarter ${state.q}`}/><EvidenceItem icon={Users} label="Funded this quarter" value={fundedInitiatives.length ? fundedInitiatives.join(" · ") : "No initiatives selected"}/><EvidenceItem icon={GitBranch} label="Operating emphasis" value={operatingEmphasis.join(" · ") || "No allocation recorded"}/></div>{state.causalChain.length ? <div className="mt-4 rounded-xl border border-[#30363d] bg-[#161b22] p-4"><p className="text-[10px] font-bold uppercase tracking-[.14em] text-[#7ee787]">Causal chain</p><div className="mt-3 space-y-2">{state.causalChain.slice(0, 4).map((item: any) => <div key={item.name} className="border-l-2 border-[#7ee787]/60 pl-3"><b className="text-sm">{item.name}</b>{item.explanation && <p className="mt-1 text-xs leading-5 text-white/50">{item.explanation}</p>}<p className="mt-1 text-[11px] text-white/60">{item.effects?.map((effect: any) => `${effect.metric} ${effect.delta > 0 ? "+" : ""}${Number(effect.delta).toFixed(1)}${effect.unit ? ` ${effect.unit}` : "%"}`).join(" · ")}</p></div>)}</div></div> : <p className="mt-4 rounded-xl border border-[#30363d] bg-[#161b22] p-4 text-sm text-white/50">The causal chain will appear after the next decision.</p>}</section>
+      <section><div className="flex items-center gap-2"><Lightbulb size={18} className="text-[#c9b896]"/><h3 className="text-xl font-bold">Top recommendations</h3></div>{recommendations.length ? <div className="mt-4 space-y-3">{recommendations.slice(0, 3).map((rec: any) => <div key={rec.title} className="rounded-xl border border-[#30363d] bg-[#161b22] p-4"><b className="break-words text-sm">{rec.title}</b><p className="mt-2 break-words text-xs leading-5 text-white/55">{rec.message}</p><p className="mt-2 break-words text-xs font-bold text-white/70">Next: {rec.action} · {rec.metric}</p><button onClick={() => onApproveRecommendation(rec.title)} className={`mt-3 rounded-lg px-3 py-2 text-xs font-bold transition ${approved.has(rec.title) ? "bg-[#34d399]/20 text-[#7ee787]" : "bg-[#f0f6fc] text-[#0d1117] hover:bg-[#7ee787]"}`}>{approved.has(rec.title) ? "✓ Approved for next decision" : "Approve recommendation"}</button></div>)}</div> : <p className="mt-4 rounded-xl border border-[#30363d] bg-[#161b22] p-4 text-sm text-white/50">No immediate recommendation overrides the current plan.</p>}</section></div>
+      {(state.q === 1 || state.q === 6) && <div className="px-5 pb-5 sm:px-8"><ReflectionCard quarter={state.q as 1 | 6} reflection={reflection} userReflections={state.userReflections || {}} onSave={onSaveReflection}/></div>}
+      <div className="border-t border-[#30363d] px-5 py-5 sm:px-8"><button type="button" data-testid="advance-quarter" onClick={onAdvance} disabled={Boolean(state.crisis)} className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#1a7f37] px-5 py-4 text-sm font-bold text-white transition hover:bg-[#2da44e] disabled:cursor-not-allowed disabled:opacity-45">{state.crisis ? <ShieldAlert size={16}/> : <CheckCircle2 size={16}/>} {state.crisis ? "Resolve the event to continue" : state.q >= 12 ? "View final verdict" : "Continue to next quarter"}{!state.crisis && <ArrowRight size={16}/>}</button></div>
+  </div></div>;
 }

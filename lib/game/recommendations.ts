@@ -37,9 +37,9 @@ function actionData(state: GameState, metric?: string, preferred: string[] = [])
   const initiativeIds = initiativeIdsForMetric(state, metric);
   const preferredInitiativeIds = preferred.filter((id) => Boolean(state.initiativeStates?.[id]));
   const chosen = preferredInitiativeIds.length ? preferredInitiativeIds : initiativeIds;
-  const cost = chosen.slice(0, 3).reduce((sum, id) => sum + Number(state.initiativeStates[id]?.baseCost ?? state.initiativeStates[id]?.cost ?? 0), 0);
-  const cap = Number(state.quarterlyDeploymentCap || state.quarterlyBudget || 0);
-  const amount = Math.min(cap, Math.max(Number(state.quarterlyBudget || 0), cost));
+  const cost = chosen.slice(0, 3).reduce((sum, id) => sum + Number(state.initiativeStates[id]?.currentCost ?? state.initiativeStates[id]?.baseCost ?? state.initiativeStates[id]?.cost ?? 0), 0);
+  const cap = Number(state.quarterlyDeploymentCap ?? state.quarterlyBudget ?? 0);
+  const amount = Math.min(cap, Math.max(Number(state.deploymentAmount || 0), cost));
   return { initiativeIds: initiativeIds.slice(0, 3), preferredInitiativeIds: preferredInitiativeIds.slice(0, 3), deploymentAmount: Number.isFinite(amount) ? Number(amount.toFixed(2)) : undefined, operatingAllocationTargets: targetsForMetric(metric) };
 }
 

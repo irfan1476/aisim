@@ -24,6 +24,7 @@ import type { ScenarioProgressDefinition } from "../lib/scenarios/types";
 import { explainScore } from "../lib/game/scoring";
 import { buildReplayRun, deleteReplayRun, readReplayRuns, saveReplayRun, type ReplayRun } from "../lib/replay";
 import RunComparison from "./RunComparison";
+import { deriveOperatingModelAdvisory } from "../lib/game/operatingModelAdvisory";
 
 interface GameDoneScreenProps {
   state: GameViewState;
@@ -50,14 +51,17 @@ function verdict(
   risk: number,
   people: number,
 ) {
-  if (score >= 88 && adoption >= 70 && risk <= 20 && people >= 20)
+  // The rating rewards a sustainable learning trajectory, not a perfect
+  // scoreboard. A learner can build a credible transformation without driving
+  // every operating measure to an exceptional final-state value.
+  if (score >= 85 && adoption >= 60 && risk <= 30 && people >= 15)
     return [
       "A+",
       "Transformation Leader",
       "You built value and the operating system required to sustain it.",
       "text-[#1a7f37]",
     ];
-  if (score >= 80 && adoption >= 55 && risk <= 25)
+  if (score >= 75 && adoption >= 50 && risk <= 35)
     return [
       "A",
       "Strategic Driver",
@@ -146,7 +150,8 @@ export default function GameDoneScreen({
   ]);
   const riskMovement = state.risk - 36;
   const evidence = `Across ${history.length} quarters, you averaged ${n(averagePeople, 0)}% in people, ${n(averageData, 0)}% in data, and ${n(averageGovernance, 0)}% in governance. ${topBetEvidence}; risk ${riskMovement <= 0 ? "fell" : "rose"} ${n(Math.abs(riskMovement))} points, and you discovered ${discoveredSynergies.size} capability ${discoveredSynergies.size === 1 ? "combination" : "combinations"}.`;
-  const diagnosis = `Your strategic pattern: ${strategicArchetype}. ${archetypeMessage} ${evidence} ${verdictMessage}`;
+  const operatingModel = deriveOperatingModelAdvisory(state);
+  const diagnosis = `Your strategic pattern: ${strategicArchetype}. ${archetypeMessage} ${evidence} ${operatingModel.finalInsight} ${verdictMessage}`;
   const best = history.reduce<Snapshot | undefined>(
     (a, x) =>
       !a || Number(x.metrics?.roi || 0) > Number(a.metrics?.roi || 0) ? x : a,

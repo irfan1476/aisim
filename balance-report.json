@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-19T16:11:07.990Z",
+  "generatedAt": "2026-08-25T08:39:11.903Z",
   "campaignsPerStrategy": 100,
   "strategies": {
     "balanced": {
@@ -9,12 +9,12 @@
       "averageRoi": 43.48,
       "averageAdoption": 69.45,
       "averageRisk": 19.06,
-      "averageSpend": 69.68,
+      "averageSpend": 69.44,
       "averageConfidence": 84.32,
       "gradeDistribution": {
         "A+": 0,
-        "A": 0,
-        "B+": 100,
+        "A": 99,
+        "B+": 1,
         "B": 0,
         "C": 0
       },
@@ -30,12 +30,12 @@
       "averageRoi": 49.78,
       "averageAdoption": 61.47,
       "averageRisk": 5,
-      "averageSpend": 58.57,
+      "averageSpend": 73.5,
       "averageConfidence": 96,
       "gradeDistribution": {
         "A+": 0,
-        "A": 1,
-        "B+": 99,
+        "A": 98,
+        "B+": 2,
         "B": 0,
         "C": 0
       },
@@ -51,12 +51,12 @@
       "averageRoi": 39.77,
       "averageAdoption": 83.9,
       "averageRisk": 8.64,
-      "averageSpend": 64.4,
+      "averageSpend": 62.61,
       "averageConfidence": 98,
       "gradeDistribution": {
         "A+": 0,
-        "A": 97,
-        "B+": 3,
+        "A": 100,
+        "B+": 0,
         "B": 0,
         "C": 0
       },
@@ -72,12 +72,12 @@
       "averageRoi": 43.03,
       "averageAdoption": 57.47,
       "averageRisk": 16.89,
-      "averageSpend": 72.12,
+      "averageSpend": 80.09,
       "averageConfidence": 98,
       "gradeDistribution": {
         "A+": 0,
-        "A": 0,
-        "B+": 100,
+        "A": 99,
+        "B+": 1,
         "B": 0,
         "C": 0
       },
@@ -93,7 +93,7 @@
       "averageRoi": 41.65,
       "averageAdoption": 66.69,
       "averageRisk": 32.84,
-      "averageSpend": 70.9,
+      "averageSpend": 78.95,
       "averageConfidence": 98,
       "gradeDistribution": {
         "A+": 0,
@@ -114,12 +114,12 @@
       "averageRoi": 30.84,
       "averageAdoption": 64.52,
       "averageRisk": 5,
-      "averageSpend": 56.26,
+      "averageSpend": 63,
       "averageConfidence": 98,
       "gradeDistribution": {
         "A+": 0,
-        "A": 0,
-        "B+": 100,
+        "A": 77,
+        "B+": 23,
         "B": 0,
         "C": 0
       },
@@ -136,12 +136,12 @@
     "averageRoi": 41.42,
     "averageAdoption": 67.25,
     "averageRisk": 14.57,
-    "averageSpend": 65.32,
+    "averageSpend": 71.27,
     "averageConfidence": 95.39,
     "gradeDistribution": {
       "A+": 0,
-      "A": 98,
-      "B+": 502,
+      "A": 473,
+      "B+": 127,
       "B": 0,
       "C": 0
     },
@@ -176,8 +176,8 @@
     },
     "gradeDistribution": {
       "A+": 0,
-      "A": 98,
-      "B+": 502,
+      "A": 473,
+      "B+": 127,
       "B": 0,
       "C": 0
     },

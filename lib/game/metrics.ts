@@ -3,6 +3,10 @@ import { evaluateSynergies } from "./generator";
 import { getScenario } from "../scenarios/registry";
 import { allocationToReadiness } from "./allocation";
 import { maturityReadiness } from "./maturity";
+import { calculatePortfolioDynamics, fundingIntensityFor } from "./effectResolver";
+
+const clamp = (value: number, min: number, max: number) =>
+  Math.min(max, Math.max(min, value));
 
 export function calculateMetrics(
   state: GameState,
@@ -95,34 +99,65 @@ export function calculateMetrics(
   };
 }
 
-export function causalChain(state: GameState, selected: string[]) {
+export function causalChain(
+  state: GameState,
+  selected: string[],
+  resolvedInitiativeStates: GameState["initiativeStates"] = state.initiativeStates,
+  deploymentAmount?: number,
+) {
   const scenario = state.scenarioMode ? getScenario(state.scenarioId) : undefined;
   if (scenario) {
     const definitions = new Map(scenario.progress.map((item) => [item.key, item]));
-    const synergies = evaluateSynergies(selected, state.initiativeStates, scenario.synergies);
+    const synergies = evaluateSynergies(selected, resolvedInitiativeStates, scenario.synergies);
     const synergyMultiplier = 1 + synergies.reduce((sum, item) => sum + item.roiBoost, 0);
     const readiness = allocationToReadiness(state.alloc);
     const readinessFactor = 0.55 + readiness.data * 0.2 + readiness.people * 0.15 + readiness.governance * 0.1;
     const adoptionFactor = 0.7 + Math.max(0, Math.min(1, state.adoption / 100)) * 0.3;
+    const portfolio = calculatePortfolioDynamics(
+      selected.length,
+      3,
+      Math.max(0, Object.keys(resolvedInitiativeStates || {}).length - selected.length),
+    );
+    const portfolioEffect = portfolio.focusMultiplier * (1 - portfolio.coordinationPressure / 100);
+    const minimumPortfolioCost = selected.reduce(
+      (sum, id) => sum + Number(state.initiativeStates[id]?.currentCost ?? state.initiativeStates[id]?.baseCost ?? 0),
+      0,
+    );
+    // Direct engine callers from older saves and tests do not supply a deployment
+    // amount. In that case the resolver also uses the baseline portfolio effect.
+    // Only a deliberate deployment choice may accelerate the causal explanation.
+    const fundingIntensity = deploymentAmount === undefined
+      ? 1
+      : fundingIntensityFor(deploymentAmount, minimumPortfolioCost);
+    const fundingMultiplier = 1 + Math.max(0, Math.min(0.35, fundingIntensity - 1)) * 0.7;
+    // Apply contributions in the same order and against the same bounded metric
+    // values as the quarter resolver. The displayed deltas therefore reconcile
+    // with the recorded scenario outcome rather than acting as illustrative copy.
+    const projectedMetrics = { ...(state.scenarioState?.metrics || state.scenarioStartingMetrics || {}) };
     return selected
-      .map((id) => state.initiativeStates[id])
+      .map((id) => resolvedInitiativeStates[id])
       .filter(Boolean)
       .map((initiative) => {
         const metadata = initiative.scenarioMetadata;
         const definition = metadata ? definitions.get(metadata.primaryMetric) : undefined;
         if (!metadata || !definition) return null;
         const diminishingReturns = 1 / (1 + Math.max(0, initiative.quartersFunded - 1) * 0.08);
-        const delta = metadata.baseEffect * maturityReadiness(initiative.maturityLevel) * readinessFactor * adoptionFactor * diminishingReturns * synergyMultiplier;
+        const rawEffect = metadata.baseEffect * maturityReadiness(initiative.maturityLevel) * readinessFactor * adoptionFactor * diminishingReturns * synergyMultiplier * portfolioEffect * fundingMultiplier;
+        const before = Number(projectedMetrics[metadata.primaryMetric] ?? definition.start);
+        const after = clamp(before + rawEffect, definition.min, definition.max);
+        const delta = after - before;
+        projectedMetrics[metadata.primaryMetric] = after;
         const direction = definition.direction === "higher-is-better" ? "increase" : "reduce";
+        const outcomeImproves = definition.direction === "higher-is-better" ? delta >= 0 : delta <= 0;
         return {
           name: initiative.name,
           explanation: `${direction} ${definition.label.toLowerCase()} through ${initiative.maturityLevel} capability maturity, current allocation readiness, and ${initiative.quartersFunded} funded quarter${initiative.quartersFunded === 1 ? "" : "s"}.`,
           effects: [{
             metric: definition.label,
             delta,
-            color: delta >= 0 ? "emerald" : "crimson",
+            color: outcomeImproves ? "emerald" : "crimson",
             unit: definition.unit,
-            explanation: `Base effect ${metadata.baseEffect > 0 ? "+" : ""}${metadata.baseEffect} ${metadata.effectUnit}; adjusted for maturity, readiness, adoption, and diminishing returns.`,
+          explanation: `Recorded contribution from a base effect of ${metadata.baseEffect > 0 ? "+" : ""}${metadata.baseEffect} ${metadata.effectUnit}, adjusted for maturity, readiness, adoption, portfolio focus, funding intensity, synergies, diminishing returns, and metric bounds.`,
           }],
         };
       })

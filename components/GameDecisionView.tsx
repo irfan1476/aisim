@@ -1,23 +1,36 @@
 import {
   ArrowRight,
+  Activity,
+  BrainCircuit,
   Check,
+  BookOpenCheck,
   Clock3,
+  Compass,
   Info,
-  ShieldAlert,
-  SlidersHorizontal,
-  TrendingUp,
-  Users,
-  Wallet,
   X,
 } from "lucide-react";
-import AnalyticsHub from "./AnalyticsHub";
-import DecisionPreview from "./DecisionPreview";
+import { useState } from "react";
+import AnalyticsHub, { type AnalyticsTab } from "./AnalyticsHub";
 import DecisionCoach from "./DecisionCoach";
 import BoardAdvisor from "./BoardAdvisor";
 import type { GameInitiative, GameViewState, Metric } from "./gameViewTypes";
 import { formatBudget, formatCurrency } from "../lib/currency";
 import { getScenario } from "../lib/scenarios/registry";
 import ScenarioProgress from "./ScenarioProgress";
+import DecisionDashboardVisuals from "./DecisionDashboardVisuals";
+import GameCommandHUD from "./GameCommandHUD";
+import StrategySimulator from "./StrategySimulator";
+import OperatingSystemControls from "./OperatingSystemControls";
+import DecisionCommandRail from "./DecisionCommandRail";
+import InitiativeEvolution from "./InitiativeEvolution";
+import LearningRetrospective from "./LearningRetrospective";
+import LLMSettings from "./LLMSettings";
+import StrategyDNA from "./StrategyDNA";
+import { deploymentCapacity } from "../lib/game/state";
+import { calculateCapitalPlan, calculateCapitalRunway } from "../lib/game/capital";
+import { downloadExport } from "../lib/exportGameplay";
+import { useGameStore } from "../stores/gameStore";
+import QuarterRoadmap from "./QuarterRoadmap";
 
 interface Props {
   state: GameViewState;
@@ -57,49 +70,97 @@ export default function GameDecisionView({
   onReset,
 }: Props) {
   const scenario = state.scenarioMode ? getScenario(state.scenarioId) : undefined;
+  const [advisorOpen, setAdvisorOpen] = useState(false);
+  const [coachOpen, setCoachOpen] = useState(false);
+  const [simulatorOpen, setSimulatorOpen] = useState(false);
+  const [insightDrawer, setInsightDrawer] = useState<"dna" | "evolution" | "learn" | "roadmap" | null>(null);
+  const [analyticsRequest, setAnalyticsRequest] = useState<{ tab: AnalyticsTab; nonce: number } | null>(null);
+  const [savedNotice, setSavedNotice] = useState(false);
+  const [accelerateConfirmOpen, setAccelerateConfirmOpen] = useState(false);
+  const saveCampaign = useGameStore((store) => store.saveCampaign);
+  const restoreLatestViableCheckpoint = useGameStore((store) => store.restoreLatestViableCheckpoint);
+  const capacity = deploymentCapacity(
+    state.campaignBudget,
+    state.campaignBudgetRemaining,
+    state.quarterlyBudget,
+    state.q,
+    state.spent,
+  );
+  const selectedInitiatives = initiatives.filter((initiative) => state.selected.includes(initiative.id));
+  const selectedIds = selectedInitiatives.map((initiative) => initiative.id);
+  const declaredCostReduction = Math.min(
+    0.15,
+    (scenario?.synergies || [])
+      .filter((synergy) => synergy.initiativeIds.every((id) => selectedIds.includes(id)))
+      .reduce((sum, synergy) => sum + synergy.costReduction, 0),
+  );
+  const requiredDeployment = selectedInitiatives.reduce(
+    (sum, initiative) => sum + Number(state.initiativeStates?.[initiative.id]?.currentCost ?? initiative.cost ?? 0),
+    0,
+  ) * (1 - declaredCostReduction);
+  const deployment = Math.min(Number(state.deploymentAmount || 0), capacity.maximumDeployment);
+  const capitalPlan = calculateCapitalPlan(state, selectedIds, requiredDeployment, deployment);
+  const runway = calculateCapitalRunway(state, deployment);
+  const requiresMoreDeployment = selectedInitiatives.length > 0 && capitalPlan.requiredCapital > deployment + 1e-9;
+  const portfolioFitsThisQuarter = capitalPlan.requiredCapital <= capacity.maximumDeployment + 1e-9;
+  const isAccelerating = selectedInitiatives.length > 0 && deployment > capacity.recommendedAuthority + 0.05;
+  const reserveExhausted = capacity.maximumDeployment <= 0.01;
+  const handleConfirm = () => {
+    if (isAccelerating) {
+      setAccelerateConfirmOpen(true);
+      return;
+    }
+    onConfirm();
+  };
+  const saveCheckpoint = () => {
+    saveCampaign();
+    setSavedNotice(true);
+    window.setTimeout(() => setSavedNotice(false), 1800);
+  };
   return (
     <>
-      <header className="sticky top-0 z-10 border-b border-ink/8 bg-white/90 px-5 py-4 backdrop-blur">
-        <div className="mx-auto flex max-w-[1500px] items-center justify-between">
+      <header className="sticky top-0 z-10 border-b border-white/10 bg-[#0d1117] px-5 py-4 text-white shadow-[0_1px_0_rgba(255,255,255,.06)]">
+        <div className="flex w-full items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-ink text-sm font-bold text-gold">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#1a7f37] text-sm font-bold text-white">
               AI
             </div>
             <div>
               <p className="text-xs font-bold tracking-[.16em]">
                 {scenario?.name || "PROJECT FACTORY 2030"}
               </p>
-              <p className="text-xs text-ink/45">Chief AI Officer cockpit</p>
+              <p className="text-xs text-white/55">Chief AI Officer cockpit</p>
             </div>
           </div>
           <div className="flex items-center gap-5">
             <div className="hidden text-right sm:block">
-              <p className="text-xs text-ink/45">Campaign progress</p>
+              <p className="text-xs text-white/55">Campaign progress</p>
               <p className="text-sm font-bold">
                 <span data-testid="campaign-quarter">Quarter {state.q}</span>{" "}
-                <span className="font-normal text-ink/40">of 12</span>
+                <span className="font-normal text-white/50">of 12</span>
               </p>
             </div>
-            <div className="h-2 w-28 overflow-hidden rounded-full bg-ink/10">
+            <div className="h-2 w-28 overflow-hidden rounded-full bg-white/15">
               <div
-                className="h-full bg-gold"
+                className="h-full bg-[#2da44e]"
                 style={{ width: `${(state.q / 12) * 100}%` }}
               />
             </div>
             <button
               onClick={onReset}
-              className="rounded-lg p-2 text-ink/40 hover:bg-ink/5"
+              className="rounded-lg p-2 text-white/55 hover:bg-white/10"
             >
               <X size={18} />
             </button>
           </div>
         </div>
       </header>
-      <div className="mx-auto grid max-w-[1500px] gap-5 p-5 pb-28 sm:pb-5 lg:grid-cols-[1fr_340px]">
+      <div className="grid w-full lg:grid-cols-[16rem_minmax(0,1fr)]">
+      <div className="order-2 min-w-0 p-5 pb-28 sm:pb-5 lg:order-2">
         <section>
           <div className="mb-5 flex items-end justify-between">
             <div>
-              <p className="text-xs font-bold uppercase tracking-[.22em] text-gold">
+              <p className="text-xs font-bold uppercase tracking-[.22em] text-[#1a7f37]">
                 Decision window
               </p>
               <h1 className="mt-2 text-4xl font-semibold tracking-[-.05em]">
@@ -113,34 +174,13 @@ export default function GameDecisionView({
               <Clock3 size={15} /> Self-paced mode
             </div>
           </div>
-          <DecisionCoach state={state} initiatives={initiatives} />
-          <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-            {metrics.map((metric) => (
-              <div
-                key={metric.label}
-                className="rounded-2xl border border-ink/8 bg-white p-4"
-              >
-                <p className="text-[11px] font-bold uppercase tracking-wider text-ink/40">
-                  {metric.label}
-                </p>
-                <p className="mt-2 text-2xl font-semibold">
-                  {metric.value.toFixed(metric.label === "ROI" ? 1 : 0)}
-                  {metric.unit}
-                </p>
-                <div
-                  className={`mt-3 h-1.5 rounded-full bg-${metric.color}/15`}
-                >
-                  <div
-                    className={`h-full rounded-full bg-${metric.color}`}
-                    style={{ width: `${Math.min(100, metric.value)}%` }}
-                  />
-                </div>
-              </div>
-            ))}
+          <GameCommandHUD state={state} metrics={metrics} />
+          <AnalyticsHub state={state} initiatives={initiatives} hideTrigger externalOpen={analyticsRequest} />
+          <div className={`mt-5 grid items-stretch gap-5 ${state.scenarioMode ? "2xl:grid-cols-2" : ""}`}>
+            {state.scenarioMode && <ScenarioProgress state={state} />}
+            <DecisionDashboardVisuals state={state} />
           </div>
-          <DecisionPreview state={state} initiatives={initiatives} />
-          {state.scenarioMode && <ScenarioProgress state={state} />}
-          <div className="rounded-3xl border border-ink/8 bg-white p-5">
+          <div className="decision-workbench rounded-3xl border border-ink/8 bg-white p-5">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-lg font-bold">Choose initiatives</h2>
@@ -148,19 +188,28 @@ export default function GameDecisionView({
                   Fund up to three bets. Their capability and risk will evolve
                   as you invest.
                 </p>
+                <p className="mt-2 text-xs font-medium text-[#57606a]">Click anywhere on a card to select it. A selected card turns green and shows “Selected”.</p>
               </div>
-              <span className="rounded-full bg-gold/15 px-3 py-1 text-xs font-bold text-ink">
+              <span className="rounded-full bg-[#dafbe1] px-3 py-1 text-xs font-bold text-[#1a7f37]">
                 {state.selected.length} / 3 selected
               </span>
             </div>
-            <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-              {initiatives.map((initiative) => {
+            <div className="mt-4 grid gap-2 rounded-2xl border border-[#d0d7de] bg-[#f6f8fa] p-3 text-xs sm:grid-cols-4">
+              <span><b className="block text-[#57606a]">Initiative floor</b><strong className="mt-1 block text-base text-[#24292f]">{formatCurrency(capitalPlan.initiativeMinimum, state.currencyMode)}</strong></span>
+              <span><b className="block text-[#57606a]">Continuity commitment</b><strong className="mt-1 block text-base text-[#24292f]">{formatCurrency(capitalPlan.maintenanceSpend, state.currencyMode)}</strong></span>
+              <span><b className="block text-[#57606a]">Released this quarter</b><strong className="mt-1 block text-base text-[#24292f]">{formatBudget(deployment, state.currencyMode)}</strong></span>
+              <span><b className="block text-[#57606a]">Reserve available</b><strong className="mt-1 block text-base text-[#0969da]">{formatBudget(capacity.maximumDeployment, state.currencyMode)}</strong></span>
+            </div>
+            <div className="mt-5 grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(360px,420px)]">
+              <div className="grid gap-3 md:grid-cols-2 2xl:grid-cols-3">
+                {initiatives.map((initiative) => {
                 const live =
                   state.initiativeStates?.[initiative.id] || initiative;
                 const selected = state.selected.includes(initiative.id);
                 const maturity = (live as any).maturityLevel || "nascent";
                 const funded = Number((live as any).quartersFunded || 0);
-                const evolution = Math.min(100, (funded / 6) * 100);
+                const maturityCredits = Number((live as any).maturityCredits ?? funded);
+                const evolution = Math.min(100, (maturityCredits / 6) * 100);
                 const riskScore = Number(
                   (live as any).riskScore ??
                     ((live as any).currentRisk === "LOW"
@@ -191,25 +240,30 @@ export default function GameDecisionView({
                     )}
                     data-risk-score={riskScore}
                     data-selected={selected ? "true" : "false"}
+                    aria-pressed={selected}
+                    aria-label={`${selected ? "Deselect" : "Select"} ${initiative.name}`}
                     onClick={() => onToggleInitiative(initiative.id)}
-                    className={`group rounded-2xl border p-4 text-left transition ${selected ? "border-gold bg-gold/8 shadow-lg shadow-gold/10" : "border-ink/8 bg-mist hover:border-ink/20"}`}
+                    className={`group relative rounded-xl border p-3 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1a7f37] focus-visible:ring-offset-2 ${selected ? "border-[#1a7f37] bg-[#dafbe1] shadow-lg shadow-[#1a7f37]/10 ring-1 ring-[#1a7f37]/35" : "border-ink/8 bg-mist hover:-translate-y-0.5 hover:border-[#1a7f37]/55 hover:bg-white"}`}
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <p className="text-sm font-bold">{initiative.name}</p>
-                        <p className="mt-2 text-xs leading-5 text-ink/55">
+                        <p className="mt-1 line-clamp-2 text-[11px] leading-4 text-ink/55">
                           {initiative.desc}
                         </p>
                       </div>
                       <div
-                        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border ${selected ? "border-gold bg-gold text-ink" : "border-ink/15 text-transparent"}`}
+                        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border ${selected ? "border-[#1a7f37] bg-[#1a7f37] text-white" : "border-ink/15 text-transparent"}`}
                       >
                         <Check size={14} />
                       </div>
                     </div>
+                    <span className={`mt-3 inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-bold uppercase tracking-wider transition ${selected ? "bg-[#1a7f37] text-white" : "bg-ink/5 text-ink/45 group-hover:bg-[#dafbe1] group-hover:text-[#1a7f37]"}`}>
+                      <Check size={11} className={selected ? "opacity-100" : "opacity-0"} />{selected ? "Selected" : "Click to select"}
+                    </span>
                     <div
                       title={baselineTitle}
-                      className="mt-5 grid grid-cols-2 gap-2 border-t border-ink/8 pt-3 text-xs sm:grid-cols-4"
+                      className="mt-4 grid grid-cols-2 gap-2 border-t border-ink/8 pt-3 text-[11px] sm:grid-cols-5"
                     >
                       <span>
                         <b className="block text-ink">
@@ -245,6 +299,10 @@ export default function GameDecisionView({
                         </b>
                         <small className="text-ink/40">delivery risk</small>
                       </span>
+                      <span>
+                        <b className="block text-ink">{funded}</b>
+                        <small className="text-ink/40">quarters invested</small>
+                      </span>
                     </div>
                     <div className="mt-3 flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-ink/45">
                       <span>
@@ -259,13 +317,17 @@ export default function GameDecisionView({
                     </div>
                     <div className="mt-2 h-1 overflow-hidden rounded-full bg-ink/10">
                       <div
-                        className="h-full rounded-full bg-gold transition-all"
+                        className="h-full rounded-full bg-[#1a7f37] transition-all"
                         style={{ width: `${evolution}%` }}
                       />
                     </div>
                   </button>
                 );
-              })}
+                })}
+              </div>
+              <aside className="order-first sticky top-24 xl:order-none" aria-label="Quarter decision configuration">
+                <OperatingSystemControls state={state} onAllocationChange={onAllocationChange} onDeploymentChange={onDeploymentChange} minimumInitiativeCost={requiredDeployment} compact />
+              </aside>
             </div>
             <p className="mt-4 flex items-center gap-2 text-[11px] text-ink/45">
               <Info size={13} /> Values shown are current operating conditions.
@@ -273,127 +335,48 @@ export default function GameDecisionView({
               compare against its campaign baseline.
             </p>
           </div>
-          <div className="mt-5 rounded-3xl border border-ink/8 bg-white p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-bold">
-                  Balance the operating system
-                </h2>
-                <p className="mt-1 text-sm text-ink/50">
-                  Campaign purse: {formatBudget(state.campaignBudget || (state.quarterlyBudget || 10) * 12, state.currencyMode)}
-                  <span className="ml-2 text-emerald">· {formatBudget(state.campaignBudgetRemaining ?? state.quarterlyBudget * 12, state.currencyMode)} remaining</span>
-                  <span className="ml-2 text-ink/40">· pace {formatBudget(state.quarterlyBudget || 10, state.currencyMode)} / quarter</span>
-                </p>
+          <div className="mt-5 flex flex-col items-end gap-3">
+            {requiresMoreDeployment && (
+              <div className="w-full rounded-2xl border border-[#bf8700]/35 bg-[#fff8c5] p-3 text-left sm:max-w-2xl">
+                <p className="text-sm font-bold text-[#24292f]">Your selected plan needs {formatBudget(capitalPlan.requiredCapital, state.currencyMode)} this quarter.</p>
+                <p className="mt-1 text-xs leading-5 text-[#57606a]">This includes {formatBudget(capitalPlan.initiativeMinimum, state.currencyMode)} for the selected initiatives and {formatBudget(capitalPlan.maintenanceSpend, state.currencyMode)} to continue earlier work. You have released {formatBudget(deployment, state.currencyMode)}. {portfolioFitsThisQuarter ? 'Increase the release to fund this plan, or edit the portfolio.' : `The plan exceeds the remaining campaign reserve of ${formatBudget(capacity.maximumDeployment, state.currencyMode)}; choose fewer initiatives or restore a checkpoint.`}</p>
+                {portfolioFitsThisQuarter && <button type="button" onClick={() => onDeploymentChange(Number(capitalPlan.requiredCapital.toFixed(1)))} className="mt-3 rounded-lg bg-[#24292f] px-3 py-2 text-xs font-bold text-white transition hover:bg-[#0969da]">Fund this plan</button>}
               </div>
-              <span
-                className={`text-sm font-bold ${total === 100 ? "text-emerald" : "text-crimson"}`}
-              >
-                {total}% allocated
-              </span>
-            </div>
-            <div className="mt-5 grid gap-x-8 gap-y-5 md:grid-cols-2">
-              {Object.entries(state.alloc).map(([key, value]) => (
-                <label key={key} className="block">
-                  <div className="mb-2 flex justify-between text-xs font-bold">
-                    <span className="capitalize">
-                      {key === "mlops" ? "Ops & Maintenance" : key}
-                    </span>
-                    <span className="text-ink/45">
-                      {value}% · {formatCurrency((value / 100) * (state.deploymentAmount || 0), state.currencyMode)}
-                    </span>
-                  </div>
-                  <input
-                    data-testid={`allocation-${key}`}
-                    type="range"
-                    min="5"
-                    max="50"
-                    value={value}
-                    onChange={(event) =>
-                      onAllocationChange(key, Number(event.target.value))
-                    }
-                    className="w-full accent-[#D4AF37]"
-                  />
-                </label>
-              ))}
-            </div>
-            <div className="mt-6 rounded-2xl border border-gold/25 bg-gold/5 p-4">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-wider text-ink/55">Deploy this quarter</p>
-                  <p className="mt-1 text-xs leading-5 text-ink/55">The quarterly pace is a guide, not a target. A 60% starting pace preserves room to learn before committing the full reserve.</p>
+            )}
+            {state.feedback.startsWith("This portfolio needs") && <p role="status" className="w-full rounded-xl bg-[#ffebe9] px-3 py-2 text-right text-xs font-bold text-[#cf222e]">{state.feedback}</p>}
+            {reserveExhausted && (
+              <div className="w-full rounded-2xl border border-[#bf8700]/35 bg-[#fff8c5] p-4 text-left sm:max-w-2xl">
+                <p className="text-sm font-bold text-[#24292f]">Campaign reserve exhausted.</p>
+                <p className="mt-1 text-xs leading-5 text-[#57606a]">You can still run an observation quarter with no new funding. It will show how previously funded work holds up under neglect. Or return to a saved decision point and revise your capital pace.</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button type="button" onClick={() => restoreLatestViableCheckpoint()} className="rounded-lg border border-[#bf8700]/50 bg-white px-3 py-2 text-xs font-bold text-[#24292f]">Restore checkpoint</button>
+                  <button type="button" onClick={() => { if (window.confirm("Restart this campaign? Your current campaign record will be cleared.")) onReset(); }} className="rounded-lg border border-[#cf222e]/30 bg-white px-3 py-2 text-xs font-bold text-[#cf222e]">Restart campaign</button>
                 </div>
-                <b className="text-sm text-ink">{formatBudget(state.deploymentAmount || 0, state.currencyMode)}</b>
               </div>
-              <input data-testid="deployment-amount" aria-label="Deploy this quarter" type="range" min="0" max={Math.max(0, state.quarterlyDeploymentCap || state.quarterlyBudget || 0)} step="0.1" value={Math.min(state.deploymentAmount || 0, state.quarterlyDeploymentCap || state.quarterlyBudget || 0)} onChange={(event) => onDeploymentChange(Number(event.target.value))} className="mt-4 w-full accent-[#D4AF37]" />
-              <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-[11px] text-ink/45"><span>Reserve all</span><span>Suggested starting pace (60%): {formatBudget((state.quarterlyBudget || 0) * 0.6, state.currencyMode)}</span><span>Cap: {formatBudget(state.quarterlyDeploymentCap || 0, state.currencyMode)}</span></div>
-              <button type="button" onClick={() => onDeploymentChange(Number(((state.quarterlyBudget || 0) * 0.6).toFixed(1)))} className="mt-3 rounded-lg border border-gold/40 bg-white/70 px-3 py-2 text-[11px] font-bold text-ink hover:bg-white">Use 60% suggestion</button>
-              <p className="mt-2 text-[11px] text-ink/45">Unused campaign capital carries forward. Selected initiatives still need to fit within this deployment amount.</p>
-            </div>
-            {total !== 100 && (
-              <p className="mt-5 flex items-center gap-2 rounded-xl bg-crimson/8 px-3 py-2 text-xs font-bold text-crimson">
-                <Info size={14} /> Rebalance allocations to exactly 100% before
-                confirming.
+            )}
+            {!reserveExhausted && (
+              <p className={`w-full rounded-xl border px-3 py-2 text-xs leading-5 sm:max-w-2xl ${runway.depletionQuarter ? "border-[#bf8700]/35 bg-[#fff8c5] text-[#57606a]" : "border-[#b8d8c0] bg-[#f2f8f3] text-[#176b36]"}`}>
+                <b className="text-[#24292f]">Capital runway:</b> {runway.message}
               </p>
             )}
-          </div>
-          <div className="mt-5 flex justify-end">
             <button
-              disabled={state.selected.length === 0 || total !== 100}
-              onClick={onConfirm}
-              className="flex items-center gap-3 rounded-xl bg-ink px-6 py-4 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-35"
+              disabled={total !== 100 || requiresMoreDeployment}
+              onClick={handleConfirm}
+              className="flex items-center gap-3 rounded-xl bg-[#1a7f37] px-6 py-4 text-sm font-bold text-white shadow-sm transition hover:bg-[#0969da] disabled:cursor-not-allowed disabled:opacity-35"
             >
-              Confirm decisions <ArrowRight size={17} />
+              {state.selected.length === 0 ? "Continue without funding" : "Confirm decisions"} <ArrowRight size={17} />
             </button>
           </div>
         </section>
-        <aside className="space-y-5">
-          <BoardAdvisor
-            context={state}
-            persona={persona as "CFO" | "CTO" | "CHRO" | "RISK"}
-            answer={answer}
-            question={question}
-            isAsking={isAsking}
-            onPersonaChange={onPersonaChange as (persona: "CFO" | "CTO" | "CHRO" | "RISK") => void}
-            onQuestionChange={onQuestionChange}
-            onAsk={onAsk}
-          />
-          <div className="rounded-3xl border border-ink/8 bg-white p-5">
-            <div className="flex items-center gap-2">
-              <ShieldAlert size={17} className="text-gold" />
-              <h2 className="font-bold">Board signals</h2>
-            </div>
-            <div className="mt-4 space-y-3 text-sm">
-              <p className="flex gap-2 text-ink/60">
-                <TrendingUp size={15} className="mt-1 shrink-0 text-emerald" />
-                People allocation is {state.alloc.people}%.{" "}
-                {state.alloc.people < 15
-                  ? "Adoption risk is rising."
-                  : "This is protecting value realization."}
-              </p>
-              <p className="flex gap-2 text-ink/60">
-                <Wallet size={15} className="mt-1 shrink-0 text-gold" />
-                Campaign spend is {formatCurrency(state.spent, state.currencyMode)}. Keep the
-                portfolio intentional.
-              </p>
-              <p className="flex gap-2 text-ink/60">
-                <Users size={15} className="mt-1 shrink-0 text-purple-500" />
-                Employee satisfaction is {state.satisfaction.toFixed(0)}%.
-              </p>
-            </div>
-          </div>
-          <div className="rounded-3xl border border-ink/8 bg-white p-5">
-            <div className="flex items-center gap-2">
-              <SlidersHorizontal size={17} className="text-gold" />
-              <h2 className="font-bold">Campaign notes</h2>
-            </div>
-            <p className="mt-3 text-sm leading-6 text-ink/55">
-              Capabilities compound when funded consistently. Watch the maturity
-              signals and adjust before a weak foundation becomes a crisis.
-            </p>
-          </div>
-        </aside>
       </div>
-      <AnalyticsHub state={state} initiatives={initiatives} />
+      <DecisionCommandRail quarter={state.q} onAdvisor={() => setAdvisorOpen(true)} onCoach={() => setCoachOpen(true)} onSimulator={() => setSimulatorOpen(true)} onDNA={() => setInsightDrawer("dna")} onEvolution={() => setInsightDrawer("evolution")} onLearn={() => setInsightDrawer("learn")} onAnalytics={() => setAnalyticsRequest({ tab: "dashboard", nonce: Date.now() })} onRoadmap={() => setInsightDrawer("roadmap")} onSave={saveCheckpoint} onExportSummary={() => downloadExport(state, "txt")} onExportFull={() => downloadExport(state, "md")} onExportMetrics={() => downloadExport(state, "csv")} onReset={() => { if (window.confirm("Reset this campaign and return to setup?")) onReset(); }} />
+      </div>
+      {savedNotice && <div role="status" className="fixed bottom-5 left-1/2 z-[80] -translate-x-1/2 rounded-full border border-[#2da44e] bg-[#dafbe1] px-4 py-2 text-xs font-bold text-[#1a7f37] shadow-lg">Campaign checkpoint saved</div>}
+      {accelerateConfirmOpen && <div className="fixed inset-0 z-[90] grid place-items-center bg-[#0d1117]/60 p-4 backdrop-blur-sm" role="presentation" onClick={() => setAccelerateConfirmOpen(false)}><section role="dialog" aria-modal="true" aria-labelledby="accelerate-capital-title" className="w-full max-w-lg rounded-2xl border border-white/15 bg-[#161b22] p-6 text-white shadow-2xl" onClick={(event) => event.stopPropagation()}><p className="text-xs font-bold uppercase tracking-[.18em] text-[#7ee787]">Capital pace check</p><h2 id="accelerate-capital-title" className="mt-2 text-2xl font-bold">Release future capital now?</h2><p className="mt-3 text-sm leading-6 text-white/70">You are releasing {formatBudget(deployment, state.currencyMode)}, above the recommended pace of {formatBudget(capacity.recommendedAuthority, state.currencyMode)}. This is allowed. It creates earlier delivery intensity but shortens the capital runway.</p><div className="mt-4 rounded-xl border border-white/10 bg-white/5 p-3 text-sm"><div className="flex justify-between"><span className="text-white/60">Acceleration / scale-up</span><b>{formatBudget(capitalPlan.accelerationSpend, state.currencyMode)}</b></div><p className="mt-2 text-xs leading-5 text-white/55">{runway.message}</p></div><div className="mt-6 flex flex-wrap justify-end gap-3"><button type="button" onClick={() => setAccelerateConfirmOpen(false)} className="rounded-lg border border-white/20 px-4 py-2 text-sm font-bold text-white/80">Edit plan</button><button type="button" onClick={() => { setAccelerateConfirmOpen(false); onConfirm(); }} className="rounded-lg bg-[#2da44e] px-4 py-2 text-sm font-bold text-white">Accelerate deliberately</button></div></section></div>}
+      {coachOpen && <div className="command-overlay fixed inset-0 z-40" onClick={() => setCoachOpen(false)}><aside role="dialog" aria-label="Quarter coach" onClick={(event) => event.stopPropagation()} className="command-sidecar command-sidecar-scroll absolute bottom-0 left-0 max-h-[85vh] w-full overflow-y-auto rounded-t-3xl p-4 lg:bottom-auto lg:left-64 lg:top-0 lg:h-full lg:max-h-none lg:w-[560px] lg:max-w-[560px] lg:rounded-none lg:rounded-r-3xl"><div className="command-sidecar-header mb-3 flex items-center justify-between"><p className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest"><Compass size={15} /> Quarter coach</p><button type="button" onClick={() => setCoachOpen(false)} aria-label="Close quarter coach" className="command-icon-button rounded-lg p-2"><X size={16}/></button></div><DecisionCoach state={state} initiatives={initiatives} /></aside></div>}
+      {advisorOpen && <div className="command-overlay fixed inset-0 z-40" onClick={() => setAdvisorOpen(false)}><aside role="dialog" aria-label="Board advisor" onClick={(event) => event.stopPropagation()} className="command-sidecar command-sidecar-scroll absolute bottom-0 left-0 max-h-[90vh] w-full overflow-y-auto rounded-t-3xl p-4 lg:bottom-auto lg:left-64 lg:top-0 lg:h-full lg:max-h-none lg:w-[430px] lg:max-w-[430px] lg:rounded-none lg:rounded-r-3xl"><div className="command-sidecar-header mb-3 flex items-center justify-between"><p className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest"><BrainCircuit size={15} /> Board advisor</p><button type="button" onClick={() => setAdvisorOpen(false)} aria-label="Close board advisor" className="command-icon-button rounded-lg p-2"><X size={16}/></button></div><BoardAdvisor context={state} persona={persona as "CFO" | "CTO" | "CHRO" | "RISK"} answer={answer} question={question} isAsking={isAsking} onPersonaChange={onPersonaChange as (persona: "CFO" | "CTO" | "CHRO" | "RISK") => void} onQuestionChange={onQuestionChange} onAsk={onAsk} /></aside></div>}
+      {insightDrawer && <div className="command-overlay fixed inset-0 z-50" onClick={() => setInsightDrawer(null)}><aside role="dialog" aria-label={insightDrawer === "dna" ? "Strategy DNA" : insightDrawer === "evolution" ? "Initiative evolution" : insightDrawer === "roadmap" ? "Campaign roadmap" : "Learning loop"} onClick={(event) => event.stopPropagation()} className="command-sidecar absolute right-0 top-0 flex h-full w-full max-w-[720px] flex-col"><header className="command-sidecar-header flex items-center justify-between border-b p-4 sm:p-5"><div><p className="text-[10px] font-bold uppercase tracking-[.2em]">Evidence tools</p><h2 className="mt-1 text-xl font-bold">{insightDrawer === "dna" ? "Strategy DNA" : insightDrawer === "evolution" ? "Initiative evolution" : insightDrawer === "roadmap" ? "Campaign roadmap" : "Learning loop"}</h2></div><button type="button" onClick={() => setInsightDrawer(null)} aria-label="Close insight drawer" className="command-icon-button rounded-lg p-2"><X size={18}/></button></header><div className="flex-1 overflow-y-auto p-4 sm:p-5">{insightDrawer === "dna" && <StrategyDNA state={state}/>} {insightDrawer === "evolution" && <InitiativeEvolution state={state} initiatives={initiatives}/>} {insightDrawer === "roadmap" && <QuarterRoadmap state={state}/>} {insightDrawer === "learn" && <div className="space-y-5"><div className="command-panel rounded-xl p-5"><BookOpenCheck className="text-[#7ee787]"/><h3 className="mt-3 text-xl font-bold">Reflect, replay, improve</h3><p className="mt-2 text-sm leading-6 text-white/60">Compare the decision you made with the evidence it created, then use that lesson to make the next quarter more deliberate.</p><p className="mt-4 text-3xl font-bold">Q{state.q}<span className="text-sm font-normal text-white/45"> / 12</span></p></div><LearningRetrospective state={state}/><details className="command-panel rounded-xl p-4"><summary className="cursor-pointer text-sm font-bold">Advisor settings</summary><p className="mt-2 text-[10px] text-white/45">Optional advisor configuration. It never changes the measured simulation outcomes.</p><div className="mt-3"><LLMSettings/></div></details></div>}</div></aside></div>}
+      {simulatorOpen && <StrategySimulator state={state} initiatives={initiatives} onClose={() => setSimulatorOpen(false)} />}
     </>
   );
 }

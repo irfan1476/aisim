@@ -22,6 +22,12 @@ export default function GameSetupScreen({
   name, experimental, scenarioMode, scenarioId, currencyMode, campaignBudget,
   onNameChange, onExperimentalChange, onScenarioModeChange, onScenarioChange, onCurrencyChange, onCampaignBudgetChange, onContinue,
 }: GameSetupScreenProps) {
+  const campaignBudgetMin = 48;
+  const campaignBudgetMax = 180;
+  const budgetUnit = currencyMode === '$' ? 'M' : ' Cr';
+  const formatPurse = (amount: number) => `${currencyMode}${amount.toFixed(0)}${budgetUnit}`;
+  const suggestedQuarterlyPace = campaignBudget / 12;
+
   return (
     <main className="min-h-screen grid-bg">
       <header className="mx-auto flex max-w-7xl items-center gap-3 px-6 py-6">
@@ -54,9 +60,19 @@ export default function GameSetupScreen({
                 <input id="player-name" value={name} onChange={(event) => onNameChange(event.target.value)} placeholder="e.g. Priya Sharma" className="mt-2 w-full rounded-xl border border-ink/10 bg-mist px-4 py-3 outline-none focus:border-gold" />
                 <label className="mt-5 flex items-center gap-3 rounded-xl bg-mist p-3 text-sm"><input type="checkbox" checked={experimental} onChange={(event) => onExperimentalChange(event.target.checked)} className="accent-[#D4AF37]" /><span><b>Experimental mode</b><small className="block text-ink/50">Practice hypotheses with softened consequences.</small></span></label>
                 <div className="mt-6 rounded-xl border border-ink/8 bg-mist/60 p-4">
-                  <div className="flex items-start justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-widest text-ink/45">Campaign purse</p><p className="mt-1 text-sm text-ink/60">One finite budget across all 12 quarters.</p></div><b className="text-lg text-ink">{currencyMode}{campaignBudget.toFixed(0)}{currencyMode === '$' ? 'M' : ' Cr'}</b></div>
-                  <input aria-label="Total campaign budget" type="range" min="48" max="180" step="12" value={campaignBudget} onChange={(event) => onCampaignBudgetChange(Number(event.target.value))} className="mt-4 w-full accent-[#D4AF37]" />
-                  <div className="mt-2 flex justify-between text-[11px] text-ink/45"><span>{currencyMode}48{currencyMode === '$' ? 'M' : ' Cr'}</span><span>Suggested pace: {currencyMode}{(campaignBudget / 12).toFixed(0)}{currencyMode === '$' ? 'M' : ' Cr'} / quarter</span><span>{currencyMode}180{currencyMode === '$' ? 'M' : ' Cr'}</span></div>
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-widest text-ink/45">Campaign purse</p>
+                      <p className="mt-1 text-sm text-ink/60">One finite budget across all 12 quarters.</p>
+                    </div>
+                    <b className="whitespace-nowrap text-lg text-ink">{formatPurse(campaignBudget)}</b>
+                  </div>
+                  <input aria-label="Total campaign budget" type="range" min={campaignBudgetMin} max={campaignBudgetMax} step="12" value={campaignBudget} onChange={(event) => onCampaignBudgetChange(Number(event.target.value))} className="mt-4 w-full accent-[#D4AF37]" />
+                  <div className="mt-3 grid grid-cols-3 gap-2 text-[10px] leading-4 text-ink/50">
+                    <span><b className="block uppercase tracking-wide text-ink/40">Minimum purse</b>{formatPurse(campaignBudgetMin)}</span>
+                    <span className="text-center"><b className="block uppercase tracking-wide text-ink/40">Suggested pace</b><strong className="whitespace-nowrap text-ink/70">{formatPurse(suggestedQuarterlyPace)} / qtr</strong></span>
+                    <span className="text-right"><b className="block uppercase tracking-wide text-ink/40">Maximum purse</b>{formatPurse(campaignBudgetMax)}</span>
+                  </div>
                 </div>
                 <div className="mt-6 rounded-xl border border-ink/8 bg-mist/60 p-4 text-sm leading-6 text-ink/60"><b className="text-ink">What you will learn</b><p className="mt-1">How funding choices compound into operating outcomes, trade-offs, and board confidence.</p></div>
               </div>

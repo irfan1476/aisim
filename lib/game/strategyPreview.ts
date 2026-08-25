@@ -1,5 +1,5 @@
 import { resolveQuarter } from './engine';
-import type { Allocation, GameState } from './state';
+import { quarterlyDeploymentCap, type Allocation, type GameState } from './state';
 import { getScenario } from '../scenarios/registry';
 
 export type StrategyPreviewDecision = {
@@ -30,7 +30,7 @@ export type StrategyPreview = {
   alternative: {
     selected: string[];
     deploymentAmount: number;
-    spend: { deploymentAmount: number; amount: number; provenance: string };
+    spend: { deploymentAmount: number; amount: number; portfolioCost: number; acceleratedInvestment: number; fundingIntensity: number; provenance: string };
     metrics: Record<string, number>;
     scenarioMetrics: Record<string, number>;
     scenarioProgress: Record<string, number>;
@@ -93,9 +93,10 @@ export function previewStrategy(state: GameState, decisionOrSelected: StrategyPr
   const currentSpend = selectedCost(state, currentSelected);
   const alternativeSpend = selectedCost(state, selected);
   const campaignRemaining = finite(state.campaignBudgetRemaining, finite(state.campaignBudget, state.quarterlyBudget * 12));
-  const deploymentAmount = Math.max(0, Math.min(finite(decision.deploymentAmount), campaignRemaining));
-  const currentDeployment = Math.max(0, Math.min(finite(state.deploymentAmount), campaignRemaining));
-  const alternativeResolution = resolveQuarter(state, { selected, alloc: decision.alloc || state.alloc });
+  const deploymentCap = quarterlyDeploymentCap(state.campaignBudget, campaignRemaining, state.quarterlyBudget, state.q, state.spent);
+  const deploymentAmount = Math.max(0, Math.min(finite(decision.deploymentAmount), deploymentCap));
+  const currentDeployment = Math.max(0, Math.min(finite(state.deploymentAmount), deploymentCap));
+  const alternativeResolution = resolveQuarter(state, { selected, alloc: decision.alloc || state.alloc, deploymentAmount });
   const currentMetrics = Object.fromEntries(nativeMetrics.map(([key]) => [key, finite(state[key as keyof GameState])]));
   const alternativeMetrics = Object.fromEntries(nativeMetrics.map(([key]) => [key, finite(alternativeResolution.metrics[key as keyof typeof alternativeResolution.metrics], currentMetrics[key])]));
   const currentScenario = stateScenarioMetrics(state);
@@ -141,6 +142,7 @@ export function previewStrategy(state: GameState, decisionOrSelected: StrategyPr
   const valid = selected.length <= 3 && alternativeSpend <= deploymentAmount + 1e-9 && alternativeSpend <= campaignRemaining + 1e-9;
   const warning = alternativeSpend > deploymentAmount + 1e-9
     ? `This portfolio costs ${alternativeSpend.toFixed(2)} but only ${deploymentAmount.toFixed(2)} is deployed. Increase deployment or choose fewer initiatives.`
+    : finite(decision.deploymentAmount) > deploymentCap + 1e-9 ? `This deployment exceeds this quarter's available authority of ${deploymentCap.toFixed(2)}.`
     : alternativeSpend > campaignRemaining + 1e-9 ? 'This portfolio exceeds the remaining campaign purse.' : undefined;
 
   const deltas: Record<string, number> = Object.fromEntries(metricDeltas.map((item) => [item.key, item.delta]));
@@ -149,7 +151,7 @@ export function previewStrategy(state: GameState, decisionOrSelected: StrategyPr
   const alternativeScenarioState = alternativeResolution.scenarioState || (scenario ? { metrics: alternativeScenario, progress: alternativeProgress, flags: {} } : undefined);
   return {
     current: { selected: currentSelected, deploymentAmount: currentDeployment, spend: currentSpend, metrics: currentMetrics, scenarioMetrics: currentScenario, scenarioProgress: currentProgress },
-    alternative: { selected, deploymentAmount, spend: { deploymentAmount, amount: alternativeSpend, provenance: 'engine-preview' }, metrics: alternativeMetrics, scenarioMetrics: alternativeScenario, scenarioProgress: alternativeProgress, scenarioState: alternativeScenarioState, initiativeStates: alternativeResolution.initiativeStates, decision: { selected, alloc: decision.alloc || state.alloc } },
+    alternative: { selected, deploymentAmount, spend: { deploymentAmount, amount: selected.length ? deploymentAmount : 0, portfolioCost: alternativeSpend, acceleratedInvestment: selected.length ? Math.max(0, deploymentAmount - alternativeSpend) : 0, fundingIntensity: alternativeResolution.snapshot.fundingIntensity || 1, provenance: 'engine-preview' }, metrics: alternativeMetrics, scenarioMetrics: alternativeScenario, scenarioProgress: alternativeProgress, scenarioState: alternativeScenarioState, initiativeStates: alternativeResolution.initiativeStates, decision: { selected, alloc: decision.alloc || state.alloc } },
     deltas, uncoveredPressures: uncovered, metricDeltas, improves, worsens, uncovered, tradeoffs, learningInsight, valid, warning,
   };
 }

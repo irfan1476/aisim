@@ -12,7 +12,6 @@ import type { GameViewState, Metric } from "./gameViewTypes";
 import { useLLMStore } from "../stores/llmStore";
 import { useGameStore } from "../stores/gameStore";
 import NextQuarterGuidance from "./NextQuarterGuidance";
-import QuarterRoadmap from "./QuarterRoadmap";
 import { createInferredGeneration } from "../lib/game/generator";
 import { initialGameState } from "../lib/game/state";
 import { getScenario } from "../lib/scenarios/registry";
@@ -35,7 +34,7 @@ function deterministicAdvisorAnswer(state: GameViewState, persona: string, quest
   return answerBoardAdvisorQuestion(state, boardPersona, question);
 }
 
-export default function Game() {
+export default function Game({ resume = false }: { resume?: boolean }) {
   const store = useGameStore();
   const s = store as unknown as GameViewState;
   const [name, setName] = useState("");
@@ -60,6 +59,7 @@ export default function Game() {
     );
   }, []);
   useEffect(() => {
+    if (!resume) return;
     const persisted = readPersistedGameState();
     if (!persisted || !hasCampaignProgress(persisted)) return;
     store.loadGame(persisted);
@@ -70,9 +70,9 @@ export default function Game() {
     setCurrencyMode(persisted.currencyMode || "$");
     setCampaignBudget(Number(persisted.campaignBudget || persisted.quarterlyBudget * 12 || 120));
     setScreen(persisted.stage === "done" ? "done" : "game");
-    // The persisted campaign is read once when the game shell mounts.
+    // Saved state is loaded only after the player explicitly chooses resume.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [resume]);
   const total = useMemo(
     () => Object.values(s.alloc).reduce((a, b) => a + b, 0),
     [s.alloc],
@@ -268,14 +268,13 @@ export default function Game() {
   if (screen === "done")
     return <GameDoneScreen state={s} onPlayAgain={reset} />;
   return (
-    <main className="game-shell min-h-screen bg-mist">
+    <main className="game-shell min-h-screen grid-bg">
       <NextQuarterGuidance
         guidance={s.nextQuarterGuidance}
         onApply={store.applyRecommendation}
         onDismiss={store.dismissRecommendation}
       />
-      <div className="game-roadmap order-2 mx-auto w-full max-w-[1500px] px-5 pt-5">
-        <QuarterRoadmap state={s} />
+      <div className="game-roadmap order-2 w-full px-5 pt-3">
         {debug && (
           <section className="mt-3 rounded-xl border border-dashed border-purple-400 bg-purple-50 p-4 text-xs text-purple-950">
             <b className="uppercase tracking-widest">Simulation debug</b>
