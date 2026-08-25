@@ -3,15 +3,10 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist, type StateStorage } from 'zustand/middleware';
 import { initialGameState, normalizeDeploymentAmount, quarterlyDeploymentCap, type Allocation, type GameState, type Recommendation } from '../lib/game/state';
-import { causalChain } from '../lib/game/metrics';
-import { generateCrisis } from '../lib/game/crises';
 import { getScenario } from '../lib/scenarios/registry';
-import { calculateProgressPercentages, calculateScenarioProgress } from '../lib/scenarios/progress';
-import { generateProactiveRecommendations } from '../lib/game/recommendations';
-import { resolveQuarter, deriveScore } from '../lib/game/engine';
-import { describeSynergies } from '../lib/game/generator';
 import { scenarioInitiativesToStates } from '../lib/game/initiativeAdapter';
-import { calculateCapitalPlan } from '../lib/game/capital';
+import { advanceTurn, applyCrisisResponse, applyTurnDecision } from '../lib/game/turnResolver';
+import { clearActiveCounterfactualTrace, createCounterfactualTrace, readActiveCounterfactualTrace, recordCrisisResponse, recordDecision, writeActiveCounterfactualTrace } from '../lib/counterfactual';
 import {
   clearPersistedCampaign,
   clearPersistedGameData,
@@ -88,12 +83,6 @@ function quickResetState(state: GameState): Partial<GameState> {
   };
 }
 
-function crisisRoll(seed: number, quarter: number): number {
-  let value = ((seed >>> 0) + quarter * 2654435761) >>> 0;
-  value = (value * 1664525 + 1013904223) >>> 0;
-  return value / 4294967296;
-}
-
 const allocationKeys: (keyof Allocation)[] = ['infra', 'data', 'people', 'mlops', 'compliance', 'innovation'];
 
 function rebalanceAllocation(current: Allocation, targets: Partial<Allocation> = {}): Allocation {
@@ -128,6 +117,7 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
 
   startGame: () => {
     clearPersistedCampaign();
+    clearActiveCounterfactualTrace();
     const next = initialGameState();
     set(next);
     saveCampaignCheckpoint(next, 'Quarter 1 decision point');
@@ -185,202 +175,49 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
   })),
 
   confirmDecisions: () => {
-    const state = normalizeGameState(get());
-    const scenario = state.scenarioMode ? getScenario(state.scenarioId) : undefined;
-    const discovery = describeSynergies(state.selected, state.initiativeStates, scenario?.synergies);
-    const synergyCostReduction = Math.min(0.15, discovery?.effects.reduce((sum, effect) => sum + effect.costReduction, 0) || 0);
-    const selectedCost = state.selected.reduce((sum, id) => {
-      const initiative = state.initiativeStates[id];
-      return sum + Number(initiative?.currentCost ?? initiative?.baseCost ?? initiative?.cost ?? 0);
-    }, 0) * (1 - synergyCostReduction);
-    const campaignRemaining = Number(state.campaignBudgetRemaining ?? state.campaignBudget ?? state.quarterlyBudget * 12);
-    const deploymentCap = quarterlyDeploymentCap(state.campaignBudget, campaignRemaining, state.quarterlyBudget, state.q, state.spent);
-    const deploymentAmount = normalizeDeploymentAmount(state.deploymentAmount, state.campaignBudget, campaignRemaining, state.quarterlyBudget, state.q, state.spent);
-    const capitalPlan = calculateCapitalPlan(state, state.selected, selectedCost, deploymentAmount);
-    if (state.selected.length > 0 && capitalPlan.requiredCapital > deploymentAmount + 1e-9) {
-      set({ feedback: `This portfolio needs ${capitalPlan.requiredCapital.toFixed(2)} this quarter: ${selectedCost.toFixed(2)} for the initiatives and ${capitalPlan.maintenanceSpend.toFixed(2)} to continue existing work. You have released ${deploymentAmount.toFixed(2)}. Increase deployment, choose fewer initiatives, or keep the reserve.` });
-      return;
+    const before = normalizeGameState(get());
+    const resolution = applyTurnDecision(before, {
+      selected: before.selected,
+      alloc: before.alloc,
+      deploymentAmount: before.deploymentAmount,
+    });
+    if (resolution.accepted) {
+      const trace = readActiveCounterfactualTrace() || createCounterfactualTrace(before);
+      writeActiveCounterfactualTrace(recordDecision(trace, {
+        type: 'decision',
+        q: before.q,
+        ...resolution.decision,
+      }));
     }
-    const actualDeployment = state.selected.length ? deploymentAmount : 0;
-    // Continuity spend keeps existing work viable; only delivery capital can
-    // accelerate the newly selected initiatives in the quarter engine.
-    const deliveryCapital = state.selected.length ? capitalPlan.deliveryCapital : 0;
-    const result = resolveQuarter(state, {
-      selected: state.selected,
-      alloc: state.alloc,
-      deploymentAmount: deliveryCapital,
-      continuityAllocations: state.selected.length ? capitalPlan.continuityAllocations : undefined,
-    });
-    const overspend = capitalPlan.accelerationSpend;
-    const overspendRisk = 0;
-    const adjustedMetrics = {
-      ...result.metrics,
-      spent: state.spent + actualDeployment,
-      risk: Math.min(95, Number(result.metrics.risk ?? state.risk) + overspendRisk),
-    };
-    const resolvedState = { ...state, ...adjustedMetrics, initiativeStates: result.initiativeStates, scenarioState: result.scenarioState };
-    const newlyDiscovered = discovery?.effects.map(effect => effect.key) || [];
-    const discoveredSynergies = Array.from(new Set([...state.discoveredSynergies, ...newlyDiscovered]));
-    const resolvedRisk = Number(adjustedMetrics.risk ?? state.risk);
-    const crisisProbability = Math.max(.08, Math.min(.7, (resolvedRisk - 15) / 75));
-    const scenarioProgress = scenario ? (result.scenarioState?.progress || calculateScenarioProgress(resolvedState, scenario)?.values) : state.scenarioProgress;
-    const scenarioBonus = state.scenarioMode && state.q >= 12 && scenario ? Math.round((calculateScenarioProgress(resolvedState, scenario)?.overall || 0) / 20) : state.scenarioBonus;
-    const scenarioCrisis = scenario && state.q % 3 === 0 && crisisRoll(state.initiativeGeneration.seed, state.q) < crisisProbability
-      ? scenario.crises[Math.abs(state.initiativeGeneration.seed + state.q) % scenario.crises.length]
-      : null;
-    const nextCrisis = scenarioCrisis
-      ? { ...scenarioCrisis, options: scenarioCrisis.options.map((option) => [option.label, option.description, option.impacts, option.cost] as [string, string, Record<string, number>, number?]) }
-      : state.q % 3 === 0 && crisisRoll(state.initiativeGeneration.seed, state.q) < crisisProbability
-        ? generateCrisis(state.initiativeGeneration.seed + state.q)
-        : null;
-    const nextCausalChain = causalChain(state, state.selected, result.initiativeStates, deliveryCapital);
-    const nextRecommendations = generateProactiveRecommendations(resolvedState);
-    set({
-      ...resolvedState,
-      score: Math.min(100, deriveScore(state, adjustedMetrics) + scenarioBonus),
-      scenarioProgress,
-      scenarioState: result.scenarioState,
-      portfolio: result.snapshot.portfolio,
-      selectedCount: result.snapshot.selectedCount ?? result.snapshot.selectedIds?.length ?? 0,
-      portfolioPosture: result.snapshot.portfolioPosture ?? 'pause',
-      portfolioBreadth: result.snapshot.breadth ?? 0,
-      concentrationRisk: result.snapshot.concentrationRisk ?? 0,
-      scenarioOverspend: overspend,
-      campaignBudgetRemaining: Math.max(0, campaignRemaining - actualDeployment),
-      deploymentAmount,
-      quarterlyDeploymentCap: quarterlyDeploymentCap(state.campaignBudget, Math.max(0, campaignRemaining - actualDeployment), state.quarterlyBudget, state.q, state.spent + actualDeployment),
-      lastQuarterDeployment: actualDeployment,
-      scenarioBudgetRemaining: state.scenarioMode
-        ? Math.max(0, state.quarterlyBudget - actualDeployment)
-        : state.scenarioBudgetRemaining,
-      scenarioBonus,
-      stage: 'results',
-      crisis: nextCrisis,
-      causalChain: nextCausalChain,
-      proactiveRecommendations: nextRecommendations,
-      discoveredSynergies,
-      feedback: discovery?.message || (state.selected.length === 0
-        ? `Quarter ${state.q} resolved with no new funding. Reserve was preserved; previously funded initiatives will now be tested by neglect dynamics.`
-        : `Quarter ${state.q} resolved. ${capitalPlan.accelerationSpend > 0 ? `Scale-up capital increased delivery intensity to ${result.snapshot.fundingIntensity?.toFixed(2)}×.` : 'Your portfolio is now showing the consequences of this allocation.'}`),
-      history: [...state.history, {
-        ...result.snapshot,
-        deployedAmount: actualDeployment,
-        fixedInitiativeSpend: selectedCost,
-        maintenanceSpend: state.selected.length ? capitalPlan.maintenanceSpend : 0,
-        accelerationSpend: state.selected.length ? capitalPlan.accelerationSpend : 0,
-        crisisResponseSpend: state.quarterlyCrisisCost,
-        remainingReserve: Math.max(0, campaignRemaining - actualDeployment),
-        budgetProvenance: 'campaign-purse-with-guided-acceleration',
-        metrics: adjustedMetrics,
-        crisis: nextCrisis,
-        causalChain: nextCausalChain,
-        recommendations: nextRecommendations,
-      }],
-    });
+    set(resolution.nextState);
   },
 
   respondToCrisis: (impact, cost = 0) => set((state) => {
-    const scenario = state.scenarioMode ? getScenario(state.scenarioId) : undefined;
-    const scenarioKeys = new Set(scenario?.progress.map((definition) => definition.key) || []);
-    const nativeImpact = Object.fromEntries(Object.entries(impact).filter(([key]) => !scenarioKeys.has(key)));
-    const scenarioMetrics = scenario
-      ? { ...(state.scenarioState?.metrics || {}) }
-      : undefined;
-    if (scenarioMetrics) {
-      for (const [key, delta] of Object.entries(impact)) {
-        const definition = scenario?.progress.find((item) => item.key === key);
-        if (definition) {
-          scenarioMetrics[key] = Math.min(
-            definition.max,
-            Math.max(definition.min, (scenarioMetrics[key] || definition.start) + Number(delta)),
-          );
-        }
-      }
+    const trace = readActiveCounterfactualTrace();
+    if (trace) {
+      writeActiveCounterfactualTrace(recordCrisisResponse(trace, {
+        type: 'crisis-response',
+        q: state.q,
+        impact,
+        cost,
+        eventTitle: state.crisis?.title,
+        eventType: state.crisis?.type,
+      }));
     }
-    const crisisCausalItem = {
-      name: 'Crisis response',
-      explanation: cost > 0
-        ? `The chosen response changed this quarter's operating outcome and used ${cost.toFixed(2)} of campaign capital.`
-        : 'The chosen response changed this quarter\'s operating outcome without an additional capital charge.',
-      effects: Object.entries(impact).map(([key, delta]) => {
-        const definition = scenario?.progress.find((item) => item.key === key);
-        const improves = definition
-          ? (definition.direction === 'higher-is-better' ? Number(delta) >= 0 : Number(delta) <= 0)
-          : key === 'risk' ? Number(delta) <= 0 : Number(delta) >= 0;
-        return {
-          metric: definition?.label || key,
-          delta: Number(delta),
-          color: improves ? 'emerald' : 'crimson',
-          unit: definition?.unit,
-          explanation: 'Recorded impact of the crisis response selected by the learner.',
-        };
-      }),
-    };
-    const nextCausalChain = [...(state.causalChain || []), crisisCausalItem];
-    const next = {
-      ...state,
-      ...nativeImpact,
-      spent: state.spent + cost,
-      campaignBudgetRemaining: Math.max(0, Number(state.campaignBudgetRemaining ?? state.campaignBudget ?? state.quarterlyBudget * 12) - cost),
-      scenarioBudgetRemaining: state.scenarioMode ? Math.max(0, state.scenarioBudgetRemaining - cost) : state.scenarioBudgetRemaining,
-      quarterlyDeploymentCap: quarterlyDeploymentCap(
-        state.campaignBudget,
-        Math.max(0, Number(state.campaignBudgetRemaining ?? state.campaignBudget ?? state.quarterlyBudget * 12) - cost),
-        state.quarterlyBudget,
-        state.q,
-        state.spent + cost,
-      ),
-      quarterlyCrisisCost: state.quarterlyCrisisCost + cost,
-      crisis: null,
-      stage: 'results' as const,
-      causalChain: nextCausalChain,
-      ...(scenarioMetrics ? { scenarioState: { ...state.scenarioState, metrics: scenarioMetrics } } : {}),
-    };
-    const nextScenarioState = scenarioMetrics && scenario
-      ? { ...next.scenarioState, progress: calculateProgressPercentages(scenarioMetrics, scenario) }
-      : next.scenarioState;
-    const history = next.history.length
-      ? [...next.history.slice(0, -1), {
-          ...next.history[next.history.length - 1],
-          scenarioState: nextScenarioState,
-          crisisResponse: impact,
-          causalChain: nextCausalChain,
-          metrics: { ...next.history[next.history.length - 1].metrics, spent: next.spent },
-        }]
-      : next.history;
-    return {
-      ...next,
-      history,
-      scenarioProgress: scenario ? calculateScenarioProgress(next, scenario)?.values : next.scenarioProgress,
-      scenarioState: nextScenarioState,
-    };
+    return applyCrisisResponse(state, { impact, cost });
   }),
 
   advanceQuarter: () => {
-    const state = normalizeGameState(get());
-    if (state.q >= 12) return set({ stage: 'done' });
-    const next = {
-      q: state.q + 1,
-      stage: 'decide' as const,
-      selected: [],
-      crisis: null,
-      causalChain: [],
-      proactiveRecommendations: [],
-      quarterlyCrisisCost: 0,
-      scenarioBudgetRemaining: state.scenarioBudgetRemaining === undefined ? state.quarterlyBudget : state.quarterlyBudget,
-      quarterlyDeploymentCap: quarterlyDeploymentCap(state.campaignBudget, state.campaignBudgetRemaining, state.quarterlyBudget, state.q + 1, state.spent),
-      deploymentAmount: Math.min(state.quarterlyBudget * 0.6, quarterlyDeploymentCap(state.campaignBudget, state.campaignBudgetRemaining, state.quarterlyBudget, state.q + 1, state.spent)),
-      scenarioOverspend: 0,
-      feedback: `Quarter ${state.q + 1} is ready. You can invest, accelerate deliberately, or take an observation quarter.`,
-    };
+    const next = advanceTurn(get());
     set(next);
-    saveCampaignCheckpoint(normalizeGameState({ ...state, ...next }), `Quarter ${state.q + 1} decision point`);
+    if (next.stage === 'decide') saveCampaignCheckpoint(next, `Quarter ${next.q} decision point`);
   },
 
   quickReset: () => set((state) => quickResetState(normalizeGameState(state))),
 
   resetCampaign: () => {
     clearPersistedCampaign();
+    clearActiveCounterfactualTrace();
     const next = initialGameState();
     set(next);
     saveCampaignCheckpoint(next, 'Quarter 1 decision point');
@@ -388,6 +225,7 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
 
   resetAllData: () => {
     clearPersistedGameData();
+    clearActiveCounterfactualTrace();
     const next = initialGameState();
     set(next);
     saveCampaignCheckpoint(next, 'Quarter 1 decision point');
@@ -396,6 +234,7 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
   // Backwards-compatible campaign reset action.
   resetGame: () => {
     clearPersistedCampaign();
+    clearActiveCounterfactualTrace();
     set(initialGameState());
   },
 

@@ -50,6 +50,8 @@ const { buildAdvisorSystemPrompt } = require('../lib/llm/advisorPrompt.ts');
 const { causalChain } = require('../lib/game/metrics.ts');
 const { generateProactiveRecommendations } = require('../lib/game/recommendations.ts');
 const { calculateCapitalPlan, calculateCapitalRunway } = require('../lib/game/capital.ts');
+const { createCounterfactualTrace, recordDecision, recordCrisisResponse, replayCounterfactual } = require('../lib/counterfactual.ts');
+const { advanceTurn, applyCrisisResponse, applyTurnDecision } = require('../lib/game/turnResolver.ts');
 
 const allocation = {
   infra: 35,
@@ -70,6 +72,40 @@ test('resolveQuarter is deterministic for the same state and decision', () => {
   assert.deepEqual(first, second);
   assert.equal(first.snapshot.q, 1);
   assert.deepEqual(first.snapshot.chosen, ['Demand Forecasting', 'Energy Optimization']);
+});
+
+test('counterfactual replay uses recorded actions and leaves the original trace immutable', () => {
+  let state = initialGameState();
+  let trace = createCounterfactualTrace(state);
+  const originalAllocation = { ...allocation };
+
+  for (let q = 1; q <= 12; q += 1) {
+    const decision = { selected: ['demand'], alloc: originalAllocation, deploymentAmount: state.deploymentAmount };
+    const resolved = applyTurnDecision(state, decision);
+    assert.equal(resolved.accepted, true);
+    state = resolved.nextState;
+    trace = recordDecision(trace, { type: 'decision', q, ...decision });
+    if (state.crisis) {
+      const response = { type: 'crisis-response', q, impact: {}, cost: 0, eventTitle: state.crisis.title, eventType: state.crisis.type };
+      trace = recordCrisisResponse(trace, response);
+      state = applyCrisisResponse(state, response);
+    }
+    state = advanceTurn(state);
+  }
+
+  const originalActions = JSON.stringify(trace.actions);
+  const replay = replayCounterfactual(trace, {
+    q: 1,
+    selected: ['demand'],
+    alloc: { infra: 25, data: 35, people: 15, mlops: 10, compliance: 10, innovation: 5 },
+    deploymentAmount: trace.actions.find((action) => action.type === 'decision' && action.q === 1).deploymentAmount,
+  });
+
+  assert.equal(replay.status, 'complete');
+  assert.equal(replay.state.stage, 'done');
+  assert.equal(replay.appliedThroughQuarter, 12);
+  assert.equal(JSON.stringify(trace.actions), originalActions, 'replay must never rewrite the original trace');
+  assert.notDeepEqual(replay.state.history[0].allocation, state.history[0].allocation);
 });
 
 test('run metadata makes reproducibility explicit while allowing seeded campaigns to vary', () => {

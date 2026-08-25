@@ -313,3 +313,14 @@ body{background:#eef2f5}
 .command-overlay .command-sidecar.command-sidecar-scroll{overflow-x:hidden!important;overflow-y:auto!important;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;scrollbar-gutter:stable}
 .command-overlay .command-sidecar.command-sidecar-scroll::-webkit-scrollbar{width:10px}
 .command-overlay .command-sidecar.command-sidecar-scroll::-webkit-scrollbar-thumb{border:3px solid transparent;border-radius:999px;background:rgba(126,231,135,.42);background-clip:padding-box}
+
+/* Strategy Laboratory: selected bets use a quiet outline and check. Unselected
+   bets stay on the dark command surface instead of inheriting a neon green wash. */
+.command-overlay .command-simulator .strategy-bets-section{background:#17211c!important;border-color:rgba(240,246,252,.18)!important;color:#f0f6fc!important}
+.command-overlay .command-simulator .strategy-bets-section > div > div > p{color:rgba(240,246,252,.74)!important}
+.command-overlay .command-simulator .strategy-bet-card{background:#1b2820!important;border-color:rgba(240,246,252,.18)!important;color:#f0f6fc!important}
+.command-overlay .command-simulator .strategy-bet-card:hover{background:#203126!important;border-color:#5fca7c!important}
+.command-overlay .command-simulator .strategy-bet-card.is-selected{background:#21382a!important;border-color:#4ac26b!important}
+.command-overlay .command-simulator .strategy-bet-card b{color:#f5fbf6!important}
+.command-overlay .command-simulator .strategy-bet-card p{color:rgba(240,246,252,.74)!important}
+.command-overlay .command-simulator .strategy-bet-card .border-ink\/10{border-color:rgba(240,246,252,.14)!important}
