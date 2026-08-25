@@ -93,7 +93,8 @@ export default function GameDoneScreen({
   const [savedRuns, setSavedRuns] = useState<ReplayRun[]>([]);
   const [saved, setSaved] = useState(false);
   const [counterfactualTrace, setCounterfactualTrace] = useState<CounterfactualTrace | null>(null);
-  const draftRun = useMemo(() => buildReplayRun(state as any, runName), [state, runName]);
+  const [openedReplayTrace, setOpenedReplayTrace] = useState<CounterfactualTrace | null>(null);
+  const draftRun = useMemo(() => buildReplayRun(state as any, runName, counterfactualTrace), [state, runName, counterfactualTrace]);
   useEffect(() => { setSavedRuns(readReplayRuns()); }, []);
   useEffect(() => {
     const trace = readActiveCounterfactualTrace();
@@ -348,7 +349,15 @@ export default function GameDoneScreen({
           <p className="mt-4 text-xs leading-5 text-[#656d76]">Stored locally with the scenario, seed, rules version, and frozen quarter snapshots. No advisor wording is used to calculate this report.</p>
         </section>
         {counterfactualTrace && <CounterfactualLab trace={counterfactualTrace} originalState={state as any} />}
-        <RunComparison runs={savedRuns} currentRun={draftRun} onDelete={(id) => setSavedRuns(deleteReplayRun(id))} />
+        {openedReplayTrace && openedReplayTrace.runId !== counterfactualTrace?.runId && (
+          <CounterfactualLab trace={openedReplayTrace} />
+        )}
+        <RunComparison
+          runs={savedRuns}
+          currentRun={draftRun}
+          onDelete={(id) => setSavedRuns(deleteReplayRun(id))}
+          onOpenTrace={(run) => setOpenedReplayTrace(run.counterfactualTrace || null)}
+        />
         <section className="mt-6 grid gap-6 lg:grid-cols-[1.35fr_.65fr]">
           <div className="rounded-3xl border border-[#d0d7de] bg-white p-6 shadow-sm md:p-8">
             <div className="flex items-center gap-3">

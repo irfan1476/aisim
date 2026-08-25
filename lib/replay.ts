@@ -1,4 +1,5 @@
 import type { GameState, QuarterSnapshot } from './game/state';
+import type { CounterfactualTrace } from './counterfactual';
 
 export const REPLAY_STORAGE_KEY = 'aisim-replay-notebook-v1';
 
@@ -31,6 +32,7 @@ export type ReplayRun = {
   quarters: ReplayQuarter[];
   strongestQuarter?: number;
   mostUsedInitiative?: string;
+  counterfactualTrace?: CounterfactualTrace;
 };
 
 const finite = (value: unknown, fallback = 0) =>
@@ -58,7 +60,7 @@ function snapshotToQuarter(snapshot: QuarterSnapshot): ReplayQuarter {
   };
 }
 
-export function buildReplayRun(state: GameState, name: string): ReplayRun {
+export function buildReplayRun(state: GameState, name: string, counterfactualTrace?: CounterfactualTrace | null): ReplayRun {
   const quarters = (state.history || []).map(snapshotToQuarter);
   const frequency = quarters.flatMap((quarter) => quarter.selectedIds).reduce<Record<string, number>>((counts, id) => {
     counts[id] = (counts[id] || 0) + 1;
@@ -88,6 +90,7 @@ export function buildReplayRun(state: GameState, name: string): ReplayRun {
     quarters,
     strongestQuarter,
     mostUsedInitiative,
+    ...(counterfactualTrace ? { counterfactualTrace } : {}),
   };
 }
 

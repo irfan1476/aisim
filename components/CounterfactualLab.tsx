@@ -7,7 +7,7 @@ import type { Allocation, GameState } from '../lib/game/state';
 
 type CounterfactualLabProps = {
   trace: CounterfactualTrace;
-  originalState: GameState;
+  originalState?: GameState;
 };
 
 const allocationLabels: Record<keyof Allocation, string> = {
@@ -20,10 +20,21 @@ function decisionFor(trace: CounterfactualTrace, q: number): RecordedDecision | 
 
 export default function CounterfactualLab({ trace, originalState }: CounterfactualLabProps) {
   const decisions = useMemo(() => trace.actions.filter((action): action is RecordedDecision => action.type === 'decision'), [trace]);
+  const baselineState = useMemo(() => {
+    if (originalState) return originalState;
+    const first = decisions[0];
+    if (!first) return trace.initialState;
+    return replayCounterfactual(trace, {
+      q: first.q,
+      selected: first.selected,
+      alloc: first.alloc,
+      deploymentAmount: first.deploymentAmount,
+    }).state;
+  }, [decisions, originalState, trace]);
   const [quarter, setQuarter] = useState(decisions[0]?.q || 1);
   const original = decisionFor(trace, quarter) || decisions[0];
   const [selected, setSelected] = useState<string[]>(original?.selected || []);
-  const [alloc, setAlloc] = useState<Allocation>(original?.alloc || originalState.alloc);
+  const [alloc, setAlloc] = useState<Allocation>(original?.alloc || baselineState.alloc);
   const [deploymentAmount, setDeploymentAmount] = useState(original?.deploymentAmount || 0);
   const [result, setResult] = useState<ReturnType<typeof replayCounterfactual> | null>(null);
 
@@ -69,7 +80,7 @@ export default function CounterfactualLab({ trace, originalState }: Counterfactu
     {result && <div className="mt-5 rounded-2xl border border-[#0969da]/20 bg-white p-5">
       <div className="flex items-center gap-2"><GitCompareArrows size={18} className="text-[#0969da]"/><h3 className="font-bold text-[#24292f]">{result.status === 'complete' ? 'Original vs counterfactual' : 'Replay paused at a meaningful divergence'}</h3></div>
       {result.status === 'complete' ? <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">{[
-        ['Score', `${originalState.score}/100`, `${result.state.score}/100`], ['ROI', `${originalState.roi.toFixed(1)}%`, `${result.state.roi.toFixed(1)}%`], ['Adoption', `${originalState.adoption.toFixed(0)}%`, `${result.state.adoption.toFixed(0)}%`], ['Risk', `${originalState.risk.toFixed(0)}%`, `${result.state.risk.toFixed(0)}%`], ['Spend', `${originalState.spent.toFixed(1)}M`, `${result.state.spent.toFixed(1)}M`],
+        ['Score', `${baselineState.score}/100`, `${result.state.score}/100`], ['ROI', `${baselineState.roi.toFixed(1)}%`, `${result.state.roi.toFixed(1)}%`], ['Adoption', `${baselineState.adoption.toFixed(0)}%`, `${result.state.adoption.toFixed(0)}%`], ['Risk', `${baselineState.risk.toFixed(0)}%`, `${result.state.risk.toFixed(0)}%`], ['Spend', `${baselineState.spent.toFixed(1)}M`, `${result.state.spent.toFixed(1)}M`],
       ].map(([label, originalValue, branchValue]) => <div key={label} className="rounded-xl bg-[#f6f8fa] p-3"><p className="text-[10px] font-bold uppercase tracking-wide text-[#57606a]">{label}</p><p className="mt-2 text-xs text-[#57606a]">Original <b className="text-[#24292f]">{originalValue}</b></p><p className="mt-1 text-xs text-[#0969da]">Branch <b>{branchValue}</b></p></div>)}</div> : <p className="mt-3 text-sm leading-6 text-[#57606a]">{result.reason} The branch is reproducible through Quarter {result.appliedThroughQuarter}; continue it later by recording a deliberate response or revised decision.</p>}
     </div>}
   </section>;
