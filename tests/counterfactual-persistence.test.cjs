@@ -111,3 +111,21 @@ test('active trace round-trips through storage and rejects incompatible versions
   storage.set(ACTIVE_COUNTERFACTUAL_TRACE_STORAGE_KEY, JSON.stringify({ ...trace, version: 999 }));
   assert.equal(readActiveCounterfactualTrace(), null);
 });
+
+test('active trace rejects malformed actions instead of crashing replay', () => {
+  storage.clear();
+  const { trace } = completedTrace();
+  storage.set(ACTIVE_COUNTERFACTUAL_TRACE_STORAGE_KEY, JSON.stringify({
+    ...trace,
+    actions: [{ type: 'decision', q: 1, selected: null, alloc: {}, deploymentAmount: 'bad' }],
+  }));
+  assert.equal(readActiveCounterfactualTrace(), null);
+
+  const replay = replayCounterfactual({ ...trace, actions: [{ type: 'unknown', q: 1 }] }, {
+    q: 1,
+    selected: ['demand'],
+    alloc: allocation,
+    deploymentAmount: 0,
+  });
+  assert.equal(replay.status, 'invalid');
+});

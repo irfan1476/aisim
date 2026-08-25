@@ -48,6 +48,38 @@ function copyState(value: GameState): GameState {
   return normalizeGameState(JSON.parse(JSON.stringify(value)));
 }
 
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value);
+}
+
+function isRecordedAction(value: unknown): value is CounterfactualAction {
+  if (!value || typeof value !== 'object') return false;
+  const action = value as Partial<CounterfactualAction>;
+  if (!Number.isInteger(action.q) || (action.q as number) < 1) return false;
+  if (action.type === 'decision') {
+    return Array.isArray(action.selected)
+      && action.selected.every((id) => typeof id === 'string')
+      && Boolean(action.alloc)
+      && typeof action.alloc === 'object'
+      && isFiniteNumber(action.deploymentAmount)
+      && action.deploymentAmount >= 0;
+  }
+  if (action.type === 'crisis-response') {
+    return Boolean(action.impact)
+      && typeof action.impact === 'object'
+      && Object.values(action.impact as Record<string, unknown>).every(isFiniteNumber)
+      && (action.cost === undefined || (isFiniteNumber(action.cost) && action.cost >= 0));
+  }
+  return false;
+}
+
+function isValidTrace(value: Partial<CounterfactualTrace>): value is CounterfactualTrace {
+  return value.version === COUNTERFACTUAL_TRACE_VERSION
+    && Boolean(value.initialState)
+    && Array.isArray(value.actions)
+    && value.actions.every(isRecordedAction);
+}
+
 /** Create a self-contained, executable record at the first decision point. */
 export function createCounterfactualTrace(initialState: GameState): CounterfactualTrace {
   const state = copyState(initialState);
@@ -100,7 +132,7 @@ export function readActiveCounterfactualTrace(): CounterfactualTrace | null {
     const raw = window.localStorage.getItem(ACTIVE_COUNTERFACTUAL_TRACE_STORAGE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<CounterfactualTrace>;
-    if (parsed.version !== COUNTERFACTUAL_TRACE_VERSION || !parsed.initialState || !Array.isArray(parsed.actions)) return null;
+    if (!isValidTrace(parsed)) return null;
     return {
       version: COUNTERFACTUAL_TRACE_VERSION,
       runId: typeof parsed.runId === 'string' ? parsed.runId : normalizeGameState(parsed.initialState).runMetadata.runId,
@@ -108,7 +140,7 @@ export function readActiveCounterfactualTrace(): CounterfactualTrace | null {
       seed: Number(parsed.seed) || normalizeGameState(parsed.initialState).runMetadata.seed,
       rulesVersion: typeof parsed.rulesVersion === 'string' ? parsed.rulesVersion : normalizeGameState(parsed.initialState).runMetadata.rulesVersion,
       initialState: copyState(parsed.initialState),
-      actions: parsed.actions.filter((action): action is CounterfactualAction => Boolean(action && typeof action === 'object')),
+      actions: parsed.actions,
     };
   } catch {
     return null;
@@ -135,8 +167,14 @@ function fail(state: GameState, appliedThroughQuarter: number, reason: string, d
  * replay intentionally pauses rather than inventing a learner choice.
  */
 export function replayCounterfactual(trace: CounterfactualTrace, edit: CounterfactualEdit): CounterfactualReplay {
-  if (trace.version !== COUNTERFACTUAL_TRACE_VERSION) {
-    return { status: 'invalid', state: copyState(trace.initialState), appliedThroughQuarter: 0, reason: 'This campaign was recorded with an incompatible replay format.' };
+  if (trace.version !== COUNTERFACTUAL_TRACE_VERSION || !isValidTrace(trace)) {
+    let state: GameState;
+    try {
+      state = copyState(trace.initialState);
+    } catch {
+      state = normalizeGameState({} as GameState);
+    }
+    return { status: 'invalid', state, appliedThroughQuarter: 0, reason: 'This campaign contains an invalid or incompatible replay trace.' };
   }
   if (edit.q < 1 || !Number.isInteger(edit.q)) {
     return { status: 'invalid', state: copyState(trace.initialState), appliedThroughQuarter: 0, reason: 'Choose a valid completed quarter to test.' };
