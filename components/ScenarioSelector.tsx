@@ -7,6 +7,7 @@ interface Props {
   scenarioId: string;
   currency: CurrencyMode;
   campaignBudget?: number;
+  className?: string;
   onEnabledChange: (enabled: boolean) => void;
   onScenarioChange: (scenarioId: string) => void;
   onCurrencyChange: (currency: CurrencyMode) => void;
@@ -17,6 +18,7 @@ export default function ScenarioSelector({
   scenarioId,
   currency,
   campaignBudget = 60,
+  className = '',
   onEnabledChange,
   onScenarioChange,
   onCurrencyChange,
@@ -32,10 +34,10 @@ export default function ScenarioSelector({
   );
 
   return (
-    <section className="mt-0 min-w-0 rounded-2xl border border-ink/15 bg-white p-5 shadow-sm sm:p-6">
+    <section className={`setup-panel mt-0 min-w-0 rounded-[24px] border border-ink/15 bg-white p-5 shadow-sm sm:p-6 ${className}`}>
     <div className="flex min-w-0 flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
-          <p className="text-xs font-bold uppercase tracking-widest text-gold">Choose your operating world</p>
+          <p className="text-xs font-bold uppercase tracking-widest text-emerald">Operating environment &amp; scenario</p>
           <h2 className="mt-2 text-xl font-bold">How do you want to practice?</h2>
           <p className="mt-1 max-w-xl break-words text-sm leading-6 text-ink/60">Start with a domain challenge for the full living simulation, or use Standard Mode for open practice.</p>
         </div>
@@ -56,7 +58,7 @@ export default function ScenarioSelector({
 
       {enabled ? (
         <div className="scenario-active-panel mt-5 min-w-0 rounded-xl border border-emerald/25 bg-emerald/[.06] p-4 text-ink">
-          <div className="flex min-w-0 flex-wrap items-center gap-2"><Factory size={17} className="shrink-0 text-gold" /><label htmlFor="scenario-select" className="sr-only">Choose scenario</label><select id="scenario-select" value={scenario.id} onChange={(event) => onScenarioChange(event.target.value)} className="w-full min-w-0 max-w-full rounded-lg border border-ink/20 bg-white px-3 py-2 text-sm font-bold text-ink outline-none focus:border-emerald focus:ring-2 focus:ring-emerald/20 sm:w-auto sm:max-w-[28rem] sm:flex-none"><option value={scenario.id}>{scenario.name}</option>{scenarioList.filter((item) => item.id !== scenario.id).map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select><span className="shrink-0 rounded-full bg-gold/15 px-2 py-1 text-[10px] font-bold text-ink/70">{scenario.difficulty}</span></div>
+          <div className="flex min-w-0 flex-wrap items-center gap-2"><Factory size={17} className="shrink-0 text-emerald" /><label htmlFor="scenario-select" className="sr-only">Choose scenario</label><select id="scenario-select" value={scenario.id} onChange={(event) => onScenarioChange(event.target.value)} className="w-full min-w-0 max-w-full rounded-lg border border-ink/20 bg-white px-3 py-2 text-sm font-bold text-ink outline-none focus:border-emerald focus:ring-2 focus:ring-emerald/20 sm:w-auto sm:max-w-[28rem] sm:flex-none"><option value={scenario.id}>{scenario.name}</option>{scenarioList.filter((item) => item.id !== scenario.id).map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select><span className="shrink-0 rounded-full bg-emerald/10 px-2 py-1 text-[10px] font-bold text-emerald">{scenario.difficulty}</span></div>
           <p className="mt-2 break-words text-sm leading-6 text-ink/65">{scenario.description}</p>
           <div className="mt-4 grid min-w-0 gap-2 sm:grid-cols-2">{scenario.challenges.map((challenge) => <div key={challenge.id} className="min-w-0 rounded-lg bg-white/75 p-3 text-xs text-ink"><b className="break-words">{challenge.label}</b><span className="ml-1 inline-block break-words text-gold">{challenge.severity}</span><p className="mt-1 break-words text-ink/60">{challenge.description}</p></div>)}</div>
           <div className="mt-4 flex min-w-0 flex-col items-start gap-3 border-t border-ink/10 pt-4 sm:flex-row sm:items-start sm:justify-between"><span className="min-w-0 max-w-full break-words text-xs font-bold leading-5 text-ink/65">{budgetSummary}</span><div className="flex shrink-0 flex-wrap gap-2">{currencyButtons}</div></div>

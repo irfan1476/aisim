@@ -392,3 +392,60 @@ body{background:#eef2f5}
 .command-overlay .command-simulator .strategy-bet-card b{color:#f5fbf6!important}
 .command-overlay .command-simulator .strategy-bet-card p{color:rgba(240,246,252,.74)!important}
 .command-overlay .command-simulator .strategy-bet-card .border-ink\/10{border-color:rgba(240,246,252,.14)!important}
+
+/* Homepage product preview: this is a deliberately dark application surface
+   inside the light learning canvas.  Scope the corrections here because the
+   legacy theme compatibility rules also match Tailwind's arbitrary colour
+   class names globally. */
+.homepage-cockpit{background:#0d1117!important;color:#fff!important}
+.homepage-cockpit [class*="bg-[#161b22]"]{background:#161b22!important}
+.homepage-cockpit [class*="bg-[#3fb950]/10"]{background:rgba(63,185,80,.1)!important}
+.homepage-cockpit [class*="bg-[#3fb950]/15"]{background:rgba(63,185,80,.15)!important}
+.homepage-cockpit [class*="bg-white/"]{background:rgba(255,255,255,.05)!important}
+.homepage-cockpit [class*="border-white/"]{border-color:rgba(255,255,255,.12)!important}
+.homepage-cockpit [class*="border-[#3fb950]/30"]{border-color:rgba(63,185,80,.3)!important}
+.homepage-cockpit [class*="text-white/"]{color:rgba(255,255,255,.68)!important}
+.homepage-cockpit .text-white{color:#fff!important}
+
+/* Setup board: a compact command surface for choosing context, purse and
+   starting conditions.  It deliberately reuses the homepage's quiet canvas
+   with a slightly stronger panel separation for scanning. */
+.setup-shell{
+  color:#0d1117;
+  background-color:#eef3f1;
+  background-image:
+    radial-gradient(circle at 72% 8%,rgba(45,164,78,.10),transparent 24rem),
+    linear-gradient(rgba(13,17,23,.045) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(13,17,23,.045) 1px,transparent 1px);
+  background-size:auto,24px 24px,24px 24px;
+}
+.setup-shell .setup-header{border-bottom:1px solid rgba(13,17,23,.08)}
+.setup-shell .setup-panel,.setup-shell .setup-baseline-card{box-shadow:0 14px 28px rgba(13,17,23,.06)}
+.setup-shell .setup-rule-tile{min-height:118px}
+.setup-shell .setup-input{color:#0d1117}
+.setup-shell .setup-input::placeholder{color:rgba(13,17,23,.45)}
+.setup-shell .setup-purse-card{background:rgba(238,243,241,.72)}
+.setup-shell .setup-scenario-panel select,.setup-shell .setup-scenario-panel option{background:#fff!important;color:#0d1117!important}
+.setup-shell .setup-scenario-panel button:focus-visible,.setup-shell button:focus-visible,.setup-shell input:focus-visible,.setup-shell select:focus-visible{outline:2px solid #1a7f37;outline-offset:2px}
+.setup-shell .setup-primary-action{background:#0d1117;color:#fff}
+@media (max-width:1279px){.setup-shell .setup-baseline-card{grid-column:auto}}
+
+/* Final report: use the same quiet setup canvas and readable command palette.
+   This scoped layer prevents the legacy dark-mode compatibility selectors from
+   turning report copy into near-black text on a dark result panel. */
+.report-shell{
+  color:#0d1117;
+  background-color:#eef3f1!important;
+  background-image:
+    radial-gradient(circle at 18% 8%,rgba(45,164,78,.08),transparent 24rem),
+    linear-gradient(rgba(13,17,23,.045) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(13,17,23,.045) 1px,transparent 1px);
+  background-size:auto,24px 24px,24px 24px;
+}
+.report-shell .report-hero{background:#fff!important;border-color:rgba(26,127,55,.25)!important;color:#0d1117!important}
+.report-shell .report-hero [class*="text-white"]{color:#0d1117!important}
+.report-shell .report-hero .report-muted{color:#57606a!important}
+.report-shell .report-verdict{background:#eef7f0!important;border-color:rgba(26,127,55,.2)!important}
+.report-shell .report-metric{background:#f6f8fa!important;border-color:#d0d7de!important}
+.report-shell .report-dark-action{background:#0d1117!important;color:#fff!important}
+.report-shell .report-dark-action:hover{background:#1a7f37!important;color:#fff!important}

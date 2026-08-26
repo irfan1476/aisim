@@ -247,7 +247,7 @@ export default function GameDoneScreen({
   };
 
   return (
-    <main className="min-h-screen bg-[#f6f8fa] px-4 py-6 text-[#1f2328] md:px-8 md:py-10">
+    <main className="report-shell min-h-screen bg-[#eef3f1] px-4 py-6 text-[#0d1117] md:px-8 md:py-10">
       <div className="mx-auto max-w-6xl">
         <div className="mb-6 flex flex-wrap justify-between gap-4">
           <button
@@ -263,25 +263,25 @@ export default function GameDoneScreen({
             <Download size={16} /> Export learning report
           </button>
         </div>
-        <section className="overflow-hidden rounded-[2rem] bg-[#0d1b2e] p-7 text-white shadow-xl md:p-12">
+        <section className="report-hero overflow-hidden rounded-[2rem] border border-[#1a7f37]/25 bg-white p-7 text-[#0d1117] shadow-xl md:p-12">
           <div className="flex flex-wrap items-start justify-between gap-8">
             <div>
-              <p className="text-xs font-bold uppercase tracking-[.25em] text-[#d4a72c]">
+              <p className="text-xs font-bold uppercase tracking-[.25em] text-[#1a7f37]">
                 Campaign complete · strategy autopsy
               </p>
               <h1 className="mt-4 max-w-3xl text-5xl font-semibold tracking-[-.06em] md:text-7xl">
                 Your strategy has a story.
               </h1>
-              <p className="mt-6 max-w-2xl text-lg leading-8 text-white/65">
+              <p className="report-muted mt-6 max-w-2xl text-lg leading-8 text-[#57606a]">
                 {diagnosis}
               </p>
             </div>
-            <div className="rounded-3xl border border-white/10 bg-white/10 px-7 py-5 text-center">
-              <p className="text-xs uppercase tracking-widest text-white/50">
+            <div className="report-verdict rounded-3xl border border-[#1a7f37]/20 bg-[#eef7f0] px-7 py-5 text-center">
+              <p className="text-xs uppercase tracking-widest text-[#57606a]">
                 CEO verdict
               </p>
               <b className="mt-1 block text-6xl">{grade}</b>
-              <p className="mt-1 text-sm text-[#79c0ff]">{archetype}</p>
+              <p className="mt-1 text-sm text-[#1a7f37]">{archetype}</p>
             </div>
           </div>
           <div className="mt-12 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -291,15 +291,15 @@ export default function GameDoneScreen({
               ["Adoption", `${n(state.adoption, 0)}%`],
               ["Risk exposure", `${n(state.risk, 0)}%`],
             ].map(([label, value]) => (
-              <div key={label} className="rounded-2xl bg-white/10 p-5">
-                <p className="text-xs text-white/45">{label}</p>
+              <div key={label} className="report-metric rounded-2xl border border-[#d0d7de] bg-[#f6f8fa] p-5">
+                <p className="text-xs text-[#656d76]">{label}</p>
                 <b className="mt-2 block text-3xl">{value}</b>
               </div>
             ))}
           </div>
         </section>
-        {scenario && <section className="mt-6 rounded-3xl border border-[#d0d7de] bg-white p-6 shadow-sm"><p className="text-xs font-bold uppercase tracking-[.2em] text-[#0969da]">Campaign budget ledger</p><div className="mt-4 grid gap-3 sm:grid-cols-3"><div><p className="text-xs text-[#656d76]">Total purse</p><b className="text-xl">{formatBudget(state.campaignBudget || state.quarterlyBudget * 12, state.currencyMode)}</b></div><div><p className="text-xs text-[#656d76]">Spent</p><b className="text-xl">{formatCurrency(state.spent, state.currencyMode)}</b></div><div><p className="text-xs text-[#656d76]">Remaining</p><b className="text-xl text-[#0969da]">{formatCurrency(state.campaignBudgetRemaining ?? 0, state.currencyMode)}</b></div></div><p className="mt-3 text-xs text-[#656d76]">The purse is finite across all twelve quarters; unused capital is not automatically a failure.</p></section>}
-        {scenario && <section className="mt-6 rounded-3xl border border-[#54aeff]/35 bg-[#ddf4ff] p-6 shadow-sm md:p-8"><div className="flex flex-wrap items-start justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-[.2em] text-[#0969da]">Scenario performance</p><h2 className="mt-2 text-2xl font-bold">{scenario.name}</h2><p className="mt-2 text-sm text-[#57606a]">Budget framing: {formatBudget(state.quarterlyBudget, state.currencyMode)} per quarter · campaign spend: {formatCurrency(state.spent, state.currencyMode)}</p></div><div className="rounded-2xl bg-white px-5 py-3 text-center"><p className="text-xs text-[#57606a]">Scenario bonus</p><b className="text-3xl text-[#0969da]">+{state.scenarioBonus || 0}</b></div></div><p className="mt-5 rounded-2xl border border-[#54aeff]/25 bg-white p-4 text-sm leading-6 text-[#57606a]">{scenarioDiagnosis}</p><div className="mt-6 grid gap-3 sm:grid-cols-2">{scenario.progress.map((item) => { const value = scenarioMetricValue(item); const score = scenarioMetricScore(item); return <div key={item.key} className="rounded-xl bg-white p-4"><div className="flex items-start justify-between gap-3 text-sm font-bold"><span>{item.label}</span><span className="text-right text-[#0969da]">{formatScenarioMetric(value, item.unit)}</span></div><div className="mt-3 h-2 rounded-full bg-[#d0d7de]"><div className="h-full rounded-full bg-[#0969da]" style={{ width: `${score}%` }} /></div><div className="mt-2 flex justify-between gap-2 text-xs text-[#656d76]"><span>{Math.round(score)}% toward target</span><span>Target {formatScenarioMetric(item.target, item.unit)}</span></div></div>; })}</div></section>}
+        {scenario && <section className="mt-6 rounded-3xl border border-[#1a7f37]/25 bg-[#f1f8f3] p-6 shadow-sm"><p className="text-xs font-bold uppercase tracking-[.2em] text-[#1a7f37]">Campaign budget ledger</p><div className="mt-4 grid gap-3 sm:grid-cols-3"><div><p className="text-xs text-[#656d76]">Total purse</p><b className="text-xl">{formatBudget(state.campaignBudget || state.quarterlyBudget * 12, state.currencyMode)}</b></div><div><p className="text-xs text-[#656d76]">Spent</p><b className="text-xl">{formatCurrency(state.spent, state.currencyMode)}</b></div><div><p className="text-xs text-[#656d76]">Remaining</p><b className="text-xl text-[#1a7f37]">{formatCurrency(state.campaignBudgetRemaining ?? 0, state.currencyMode)}</b></div></div><p className="mt-3 text-xs text-[#656d76]">The purse is finite across all twelve quarters; unused capital is not automatically a failure.</p></section>}
+        {scenario && <section className="mt-6 rounded-3xl border border-[#1a7f37]/25 bg-[#f1f8f3] p-6 shadow-sm md:p-8"><div className="flex flex-wrap items-start justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-[.2em] text-[#1a7f37]">Scenario performance</p><h2 className="mt-2 text-2xl font-bold">{scenario.name}</h2><p className="mt-2 text-sm text-[#57606a]">Budget framing: {formatBudget(state.quarterlyBudget, state.currencyMode)} per quarter · campaign spend: {formatCurrency(state.spent, state.currencyMode)}</p></div><div className="rounded-2xl bg-white px-5 py-3 text-center"><p className="text-xs text-[#57606a]">Scenario bonus</p><b className="text-3xl text-[#1a7f37]">+{state.scenarioBonus || 0}</b></div></div><p className="mt-5 rounded-2xl border border-[#1a7f37]/20 bg-white p-4 text-sm leading-6 text-[#57606a]">{scenarioDiagnosis}</p><div className="mt-6 grid gap-3 sm:grid-cols-2">{scenario.progress.map((item) => { const value = scenarioMetricValue(item); const score = scenarioMetricScore(item); return <div key={item.key} className="rounded-xl bg-white p-4"><div className="flex items-start justify-between gap-3 text-sm font-bold"><span>{item.label}</span><span className="text-right text-[#1a7f37]">{formatScenarioMetric(value, item.unit)}</span></div><div className="mt-3 h-2 rounded-full bg-[#d0d7de]"><div className="h-full rounded-full bg-[#1a7f37]" style={{ width: `${score}%` }} /></div><div className="mt-2 flex justify-between gap-2 text-xs text-[#656d76]"><span>{Math.round(score)}% toward target</span><span>Target {formatScenarioMetric(item.target, item.unit)}</span></div></div>; })}</div></section>}
         <section className="mt-6 rounded-3xl border border-[#d0d7de] bg-white p-6 shadow-sm md:p-8">
           <div className="flex items-center justify-between gap-4">
             <div>
@@ -334,17 +334,17 @@ export default function GameDoneScreen({
               <p><b className="text-[#1f2328]">The trade-off:</b> {state.adoption >= 60 ? "You accepted some risk to build adoption and operating momentum." : "You created value, but the operating system did not keep pace with the portfolio."} {strongestCombination ? `Your most repeated combination was ${strongestCombination.replaceAll(" + ", " + ")}.` : ""}</p>
             </div>
           </div>
-          <div className="rounded-3xl border border-[#d4a72c]/40 bg-[#fff8c5] p-6 shadow-sm md:p-8">
-            <div className="flex items-center gap-3"><Sparkles className="text-[#9a6700]" /><h2 className="text-2xl font-bold">Your next experiment</h2></div>
+          <div className="rounded-3xl border border-[#1a7f37]/25 bg-[#f1f8f3] p-6 shadow-sm md:p-8">
+            <div className="flex items-center gap-3"><Sparkles className="text-[#1a7f37]" /><h2 className="text-2xl font-bold">Your next experiment</h2></div>
             <p className="mt-6 text-lg font-semibold leading-8 text-[#3d2e00]">{nextExperiment}</p>
-            <p className="mt-4 text-sm leading-6 text-[#6e5620]">Change one meaningful variable at a time. The aim is to learn which timing and portfolio shape works under these conditions—not to discover one permanent correct answer.</p>
-            <p className="mt-4 text-xs leading-5 text-[#6e5620]">Frozen evidence: {history.length} quarter snapshots · run {state.runMetadata?.runId || `seed-${state.initiativeGeneration?.seed || "unknown"}`} · rules {state.runMetadata?.rulesVersion || "2.0"}. Advisor wording never changes the measured result.</p>
+            <p className="mt-4 text-sm leading-6 text-[#57606a]">Change one meaningful variable at a time. The aim is to learn which timing and portfolio shape works under these conditions—not to discover one permanent correct answer.</p>
+            <p className="mt-4 text-xs leading-5 text-[#57606a]">Frozen evidence: {history.length} quarter snapshots · run {state.runMetadata?.runId || `seed-${state.initiativeGeneration?.seed || "unknown"}`} · rules {state.runMetadata?.rulesVersion || "2.0"}. Advisor wording never changes the measured result.</p>
           </div>
         </section>
         <section className="mt-6 rounded-3xl border border-[#d0d7de] bg-white p-6 shadow-sm md:p-8">
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div><h2 className="text-2xl font-bold">Save this campaign</h2><p className="mt-1 text-sm text-[#656d76]">Name the hypothesis you tested so a later run has something meaningful to compare.</p></div>
-            <div className="flex flex-wrap gap-2"><input value={runName} onChange={(event) => setRunName(event.target.value)} placeholder="e.g. Governance first" className="rounded-xl border border-[#d0d7de] px-3 py-2 text-sm outline-none focus:border-[#0969da]" /><button type="button" onClick={saveCurrentRun} className="rounded-xl bg-[#0d1b2e] px-4 py-2 text-sm font-bold text-white hover:bg-[#0969da]">{saved ? "Saved" : "Save run"}</button></div>
+            <div className="flex flex-wrap gap-2"><input value={runName} onChange={(event) => setRunName(event.target.value)} placeholder="e.g. Governance first" className="rounded-xl border border-[#d0d7de] px-3 py-2 text-sm outline-none focus:border-[#1a7f37]" /><button type="button" onClick={saveCurrentRun} className="report-dark-action rounded-xl bg-[#0d1117] px-4 py-2 text-sm font-bold text-white hover:bg-[#1a7f37]">{saved ? "Saved" : "Save run"}</button></div>
           </div>
           <p className="mt-4 text-xs leading-5 text-[#656d76]">Stored locally with the scenario, seed, rules version, and frozen quarter snapshots. No advisor wording is used to calculate this report.</p>
         </section>
@@ -539,9 +539,9 @@ export default function GameDoneScreen({
                 </div>
               ))}
             </div>
-            <button
+              <button
               onClick={onPlayAgain}
-              className="mt-7 flex items-center gap-2 rounded-xl bg-[#0d1b2e] px-5 py-3 font-bold text-white hover:bg-[#0969da]"
+              className="report-dark-action mt-7 flex items-center gap-2 rounded-xl bg-[#0d1117] px-5 py-3 font-bold text-white hover:bg-[#1a7f37]"
             >
               Run the next campaign <ArrowRight size={16} />
             </button>

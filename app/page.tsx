@@ -190,38 +190,105 @@ export default function Home() {
         </div>
         <div className="relative reveal">
           <div className="absolute -inset-10 rounded-full bg-[#08872b]/10 blur-3xl" />
-          <div className="homepage-record-card relative overflow-hidden rounded-xl border border-[#30363d] bg-[#0d1117] p-7 text-white shadow-2xl">
-            <div className="flex items-center justify-between border-b border-white/10 pb-5">
+          <div
+            aria-label="Illustrative live campaign cockpit"
+            className="homepage-cockpit relative overflow-hidden rounded-2xl border border-[#30363d] bg-[#0d1117] p-5 text-white shadow-2xl sm:p-6"
+          >
+            <div className="flex items-start justify-between gap-4 border-b border-white/10 pb-5">
               <div>
-                <p className="text-xs uppercase tracking-widest text-[#3fb950]">
-                  A living decision record
+                <p className="text-[10px] font-bold uppercase tracking-[.22em] text-[#3fb950]">
+                  Live campaign cockpit
                 </p>
-                <p className="mt-1 text-xl font-semibold">
-                  Make choices worth learning from.
+                <p className="mt-2 text-lg font-semibold sm:text-xl">
+                  See the decision system respond.
                 </p>
               </div>
-              <span className="rounded-md bg-[#3fb950]/15 px-3 py-1 text-xs font-bold text-[#3fb950]">
-                12 quarters
+              <span className="shrink-0 rounded-md bg-[#3fb950]/15 px-3 py-1.5 text-xs font-bold text-[#7ee787]">
+                Q4 / 12
               </span>
             </div>
-            <div className="mt-7 grid gap-3 sm:grid-cols-2">
+
+            <div className="mt-5 grid grid-cols-3 gap-2">
               {[
-                ["01", "Choose a context", "Open practice or an operating environment"],
-                ["02", "Set your pace", "Deploy capital now or keep a reserve"],
-                ["03", "Read the evidence", "See capability, pressure, and trade-offs move"],
-                ["04", "Replay with intent", "Compare one changed strategic thesis"],
-              ].map(([number, title, copy], index) => (
-                <div key={title} className={`rounded-lg border p-4 ${index === 3 ? "border-[#3fb950]/40 bg-[#3fb950]/10" : "border-white/10 bg-[#161b22]"}`}>
-                  <p className="text-[10px] font-bold tracking-[.18em] text-[#3fb950]">{number}</p>
-                  <p className="mt-2 font-semibold">{title}</p>
-                  <p className="mt-1 text-xs leading-5 text-white/55">{copy}</p>
+                ["ROI", "+8.4%", "68%"],
+                ["Adoption", "67%", "74%"],
+                ["Risk", "24%", "32%"],
+              ].map(([label, value, width]) => (
+                <div key={label} className="rounded-lg border border-white/10 bg-[#161b22] p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-[9px] font-bold uppercase tracking-[.15em] text-white/55">{label}</p>
+                    <span className="text-[9px] text-[#7ee787]">↗</span>
+                  </div>
+                  <p className="mt-2 text-base font-bold sm:text-lg">{value}</p>
+                  <div className="mt-2 h-1 rounded-full bg-white/10">
+                    <div className="h-1 rounded-full bg-[#3fb950]" style={{ width }} />
+                  </div>
                 </div>
               ))}
             </div>
-            <div className="mt-6 flex items-center gap-3 rounded-lg border border-white/10 bg-white/5 p-4 text-sm text-white/75">
-              <FileText className="shrink-0 text-[#3fb950]" size={20} />
-              <span>Finish with a personalised strategy report—not just a score.</span>
+
+            <div className="mt-4 grid gap-3 sm:grid-cols-[.86fr_1.14fr]">
+              <div className="rounded-lg border border-white/10 bg-[#161b22] p-4">
+                <div className="flex items-center justify-between">
+                  <p className="text-[10px] font-bold uppercase tracking-[.16em] text-white/55">Operating pressures</p>
+                  <span className="text-[10px] text-[#7ee787]">live</span>
+                </div>
+                <div className="mt-4 space-y-3">
+                  {[
+                    ["Capability", "Building", "72%"],
+                    ["Adoption", "Watch", "58%"],
+                    ["Reserve", "$42M available", "84%"],
+                  ].map(([label, status, width]) => (
+                    <div key={label}>
+                      <div className="flex items-center justify-between gap-2 text-xs">
+                        <span className="text-white/65">{label}</span>
+                        <span className="font-semibold text-white">{status}</span>
+                      </div>
+                      <div className="mt-1.5 h-1 rounded-full bg-white/10">
+                        <div className="h-1 rounded-full bg-[#3fb950]" style={{ width }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="rounded-lg border border-white/10 bg-[#161b22] p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-[.16em] text-white/55">Campaign trajectory</p>
+                    <p className="mt-1 text-xs text-white/65">Outcomes become evidence each quarter.</p>
+                  </div>
+                  <BarChart3 size={18} className="text-[#7ee787]" />
+                </div>
+                <svg
+                  className="mt-3 h-24 w-full"
+                  viewBox="0 0 240 100"
+                  role="img"
+                  aria-label="Illustrative trajectory rising from quarter one to quarter four"
+                >
+                  <path d="M8 82H232 M8 56H232 M8 30H232" stroke="rgba(255,255,255,.1)" strokeWidth="1" />
+                  <path d="M8 64 C42 62, 63 57, 87 55 S134 47, 158 42 S202 34, 232 24" fill="none" stroke="#3fb950" strokeWidth="3" strokeLinecap="round" />
+                  <path d="M8 48 C42 48, 67 47, 91 46 S137 44, 164 42 S205 41, 232 40" fill="none" stroke="rgba(126,231,135,.4)" strokeWidth="1.5" strokeDasharray="4 4" />
+                  {["8,64", "87,55", "158,42", "232,24"].map((point) => {
+                    const [cx, cy] = point.split(",");
+                    return <circle key={point} cx={cx} cy={cy} r="4" fill="#0d1117" stroke="#7ee787" strokeWidth="2" />;
+                  })}
+                </svg>
+                <div className="flex justify-between text-[10px] text-white/45"><span>Q1</span><span>Q4</span></div>
+              </div>
             </div>
+
+            <div className="mt-4 flex items-center justify-between gap-3 rounded-lg border border-[#3fb950]/30 bg-[#3fb950]/10 p-3">
+              <div className="flex min-w-0 items-center gap-3">
+                <FileText className="shrink-0 text-[#7ee787]" size={18} />
+                <div className="min-w-0">
+                  <p className="text-[9px] font-bold uppercase tracking-[.16em] text-[#7ee787]">Next decision</p>
+                  <p className="mt-1 truncate text-sm font-semibold">Choose your next bets</p>
+                </div>
+              </div>
+              <span className="flex shrink-0 items-center gap-1 text-xs font-bold text-[#7ee787]">Review evidence <ArrowRight size={14} /></span>
+            </div>
+            <p className="mt-3 text-[10px] text-white/45">Example campaign state · compare the record, then replay with intent.</p>
           </div>
         </div>
       </section>
