@@ -61,6 +61,10 @@ export type StandardEffectInputs = {
   synergyAdoption: number;
   synergyCostReduction: number;
   fundingIntensity?: number;
+  gateMultiplier?: number;
+  gateRiskAdjustment?: number;
+  /** The quarter's canonical portfolio context, derived by resolveQuarter. */
+  portfolio?: PortfolioSnapshot;
 };
 
 /**
@@ -74,11 +78,27 @@ export function calculateStandardEffects(
   chosen: InitiativeState[],
   inputs: StandardEffectInputs,
 ): Partial<GameState> {
+  // An observation quarter must not create generic operating improvements just
+  // because an allocation exists. Explicit scenario maintenance/neglect is
+  // resolved separately; native metrics remain at their current values.
+  if (chosen.length === 0) {
+    return {
+      roi: current.roi,
+      revenue: current.revenue,
+      efficiency: current.efficiency,
+      adoption: current.adoption,
+      risk: current.risk,
+      data: current.data,
+      satisfaction: current.satisfaction,
+      literacy: current.literacy,
+      spent: current.spent,
+    };
+  }
   const fundingMultiplier = deliveryMultiplier(inputs.fundingIntensity);
-  const portfolio = calculatePortfolioDynamics(
+  const gateMultiplier = Math.max(0, Math.min(1, Number(inputs.gateMultiplier) || 1));
+  const portfolio = inputs.portfolio || calculatePortfolioDynamics(
     chosen.length,
-    3,
-    Math.max(0, Object.keys(current.initiativeStates || {}).length - chosen.length),
+    Object.keys(current.initiativeStates || {}).length,
   );
   // Preserve the established three-bet Standard-mode baseline. Focused
   // one/two-bet choices still create the new trade-offs; the existing
@@ -98,16 +118,16 @@ export function calculateStandardEffects(
   const adoptionGain = (0.8 + allocation.people / 10 + (chosen.some((item) => item.id === 'knowledge') ? 2.5 : 0) + inputs.synergyAdoption) * adoptionHeadroom * teamReadiness;
   const technicalLeverage = 0.7 + (allocation.infra + allocation.mlops) / 100;
   const efficiencyGain = chosen.reduce((sum, item) => sum + (item.id === 'energy' ? 7 : item.id === 'maintenance' ? 6 : 3), 0) * 0.3 * technicalLeverage;
-  const riskChange = portfolioRiskPressure * 0.55 - governanceRelief * (0.5 + current.risk / 60) - inputs.synergyRiskReduction - (fundingMultiplier - 1) * 2;
+  const riskChange = portfolioRiskPressure * 0.55 - governanceRelief * (0.5 + current.risk / 60) - inputs.synergyRiskReduction + Math.max(0, Number(inputs.gateRiskAdjustment) || 0);
   return {
-    roi: Math.min(99, current.roi + (((chosen.reduce((sum, item) => sum + item.currentRoi, 0) / 100) * factor / 2) * inputs.synergyMultiplier * portfolioEffect * fundingMultiplier)),
+    roi: Math.min(99, current.roi + (((chosen.reduce((sum, item) => sum + item.currentRoi, 0) / 100) * factor / 2) * inputs.synergyMultiplier * portfolioEffect * fundingMultiplier * gateMultiplier)),
     revenue: Math.min(60, current.revenue + chosen.reduce((sum, item) => sum + (item.id === 'demand' ? 3 : ['quality', 'supply'].includes(item.id) ? 2 : 1), 0) * (0.9 + portfolio.breadth * 0.1) * fundingMultiplier),
-    efficiency: Math.min(95, current.efficiency + efficiencyGain * portfolioEffect * fundingMultiplier),
-    adoption: Math.min(98, current.adoption + adoptionGain * (0.9 + portfolio.breadth * 0.1) * fundingMultiplier),
+    efficiency: Math.min(95, current.efficiency + efficiencyGain * portfolioEffect * fundingMultiplier * gateMultiplier),
+    adoption: Math.min(98, current.adoption + adoptionGain * (0.9 + portfolio.breadth * 0.1) * fundingMultiplier * gateMultiplier),
     risk: Math.max(5, Math.min(95, current.risk + riskChange + portfolioRisk)),
-    data: Math.min(98, current.data + (allocation.data / 10 + (chosen.some((item) => item.id === 'demand') ? 3 : 0)) * fundingMultiplier),
-    satisfaction: Math.min(98, current.satisfaction + (allocation.people / 5 + (chosen.some((item) => item.id === 'knowledge') ? 5 : 0)) * fundingMultiplier),
-    literacy: Math.min(98, current.literacy + allocation.people / 4 * fundingMultiplier),
+    data: Math.min(98, current.data + (allocation.data / 10 + (chosen.some((item) => item.id === 'demand') ? 3 : 0)) * fundingMultiplier * gateMultiplier),
+    satisfaction: Math.min(98, current.satisfaction + (allocation.people / 5 + (chosen.some((item) => item.id === 'knowledge') ? 5 : 0)) * fundingMultiplier * gateMultiplier),
+    literacy: Math.min(98, current.literacy + allocation.people / 4 * fundingMultiplier * gateMultiplier),
     // The learner's budget commitment is the initiative's fixed campaign
     // cost. Evolution may change the operating cost displayed on the card,
     // but it must not silently rewrite the financial rules of the campaign.
@@ -124,19 +144,17 @@ export function applyScenarioEffects(
   adoption: number,
   synergies: SynergyEffect[] = [],
   fundingIntensity = 1,
+  portfolio?: PortfolioSnapshot,
+  gateMultiplier = 1,
 ): ScenarioState {
   const metrics = { ...previous.metrics };
   const readiness = allocationToReadiness(allocation);
   const adoptionFactor = 0.7 + clamp(adoption / 100, 0, 1) * 0.3;
   const definitions = new Map(scenario.progress.map((item) => [item.key, item]));
   const synergyMultiplier = 1 + synergies.reduce((sum, item) => sum + item.roiBoost, 0);
-  const portfolio = calculatePortfolioDynamics(
-    selected.length,
-    3,
-    Math.max(0, Object.keys(states || {}).length - selected.length),
-  );
-  const coordinationFactor = 1 - portfolio.coordinationPressure / 100;
-  const portfolioEffect = portfolio.focusMultiplier * coordinationFactor;
+  const portfolioContext = portfolio || calculatePortfolioDynamics(selected.length, Object.keys(states || {}).length);
+  const coordinationFactor = 1 - portfolioContext.coordinationPressure / 100;
+  const portfolioEffect = portfolioContext.focusMultiplier * coordinationFactor;
   const fundingMultiplier = deliveryMultiplier(fundingIntensity);
 
   selected.forEach((id) => {
@@ -147,18 +165,40 @@ export function applyScenarioEffects(
     if (!definition) return;
     const readinessFactor = 0.55 + readiness.data * 0.2 + readiness.people * 0.15 + readiness.governance * 0.1;
     const diminishingReturns = 1 / (1 + Math.max(0, state.quartersFunded - 1) * 0.08);
-    const effect = metadata.baseEffect * maturityReadiness(state.maturityLevel) * readinessFactor * adoptionFactor * diminishingReturns * synergyMultiplier * portfolioEffect * fundingMultiplier;
+    // Older direct-engine callers predate lifecycle tracking; retain their
+    // established effect while action-aware turns only include capabilities
+    // whose benefits have begun to realise.
+    const realisedBenefit = Number(state.benefitRealization) > 0
+      ? Math.max(0, Math.min(1, Number(state.benefitRealization)))
+      : 1;
+    const effect = metadata.baseEffect * maturityReadiness(state.maturityLevel) * readinessFactor * adoptionFactor * diminishingReturns * synergyMultiplier * portfolioEffect * fundingMultiplier * Math.max(.05, realisedBenefit) * Math.max(0, Math.min(1, gateMultiplier));
     metrics[metadata.primaryMetric] = clamp((metrics[metadata.primaryMetric] ?? definition.start) + effect, definition.min, definition.max);
   });
 
+  // Only capabilities that have actually received funding can be neglected.
+  // If multiple active initiatives affect one KPI, apply only the most
+  // material penalty for that KPI in this quarter rather than stacking all
+  // alternatives into one shared outcome.
+  const neglectedByMetric = new Map<string, { state: InitiativeState; penalty: number }>();
   Object.values(states).forEach((state) => {
-    if (selected.includes(state.id)) return;
+    if (selected.includes(state.id) || Number(state.quartersFunded) <= 0) return;
     const metadata = state.scenarioMetadata;
     if (!metadata || state.quartersSinceLastFund < metadata.neglect.penaltyThreshold) return;
     const definition = definitions.get(metadata.primaryMetric);
     if (!definition) return;
+    const penalty = Math.min(
+      metadata.neglect.penaltyAmount * 3,
+      metadata.neglect.penaltyAmount * metadata.neglect.decayRate * Math.max(1, state.quartersSinceLastFund - metadata.neglect.penaltyThreshold + 1),
+    );
+    const existing = neglectedByMetric.get(metadata.primaryMetric);
+    if (!existing || penalty > existing.penalty) neglectedByMetric.set(metadata.primaryMetric, { state, penalty });
+  });
+  neglectedByMetric.forEach(({ state, penalty }) => {
+    const metadata = state.scenarioMetadata;
+    if (!metadata) return;
+    const definition = definitions.get(metadata.primaryMetric);
+    if (!definition) return;
     const direction = metadata.baseEffect >= 0 ? -1 : 1;
-    const penalty = metadata.neglect.penaltyAmount * metadata.neglect.decayRate * Math.max(1, state.quartersSinceLastFund - metadata.neglect.penaltyThreshold + 1);
     metrics[metadata.primaryMetric] = clamp((metrics[metadata.primaryMetric] ?? definition.start) + direction * penalty, definition.min, definition.max);
   });
 

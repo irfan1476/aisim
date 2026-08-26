@@ -33,8 +33,8 @@ const allocationLabels: Record<string, [string, string]> = {
 function number(value: unknown, fallback = 0) { const parsed = Number(value); return Number.isFinite(parsed) ? parsed : fallback; }
 function historyOf(state: GameViewState) { return Array.isArray(state.history) ? state.history as any[] : []; }
 function spendOf(entry: any, previous: any) {
-  if (Number.isFinite(Number(entry?.fixedInitiativeSpend))) return number(entry.fixedInitiativeSpend);
   if (Number.isFinite(Number(entry?.deployedAmount))) return number(entry.deployedAmount);
+  if (Number.isFinite(Number(entry?.fixedInitiativeSpend))) return number(entry.fixedInitiativeSpend);
   return Math.max(0, number(entry?.metrics?.spent) - number(previous?.metrics?.spent));
 }
 

@@ -1,5 +1,5 @@
-import { calculateCapitalPlan } from './capital';
-import { resolveQuarter, deriveScore } from './engine';
+import { calculateActionCapitalPlan } from './capital';
+import { resolveQuarter } from './engine';
 import { describeSynergies } from './generator';
 import { generateCrisis } from './crises';
 import { causalChain } from './metrics';
@@ -8,9 +8,14 @@ import { generateProactiveRecommendations } from './recommendations';
 import { calculateProgressPercentages, calculateScenarioProgress } from '../scenarios/progress';
 import { getScenario } from '../scenarios/registry';
 import { quarterlyDeploymentCap, type Allocation, type GameState } from './state';
+import type { InitiativeActionSet } from './businessModel';
+import { validatePortfolioCapacity } from './capacity';
+import { updateFinancialLedger } from './economics';
+import { composeCampaignScore, realisedFinancialValueScore } from './scoring';
 
 export type TurnDecision = {
   selected: string[];
+  initiativeActions?: InitiativeActionSet;
   alloc: Allocation;
   deploymentAmount: number;
 };
@@ -23,6 +28,17 @@ export type CrisisResponse = {
 export type TurnResolution =
   | { accepted: false; nextState: GameState; reason: string }
   | { accepted: true; nextState: GameState; decision: TurnDecision };
+
+/** Return the maximum crisis-response cost that can be charged to the purse. */
+export function affordableCrisisResponseCost(source: GameState, requestedCost: number | undefined): number {
+  const state = normalizeGameState(source);
+  const requested = Math.max(0, Number(requestedCost) || 0);
+  const campaignBudget = Math.max(0, Number(state.campaignBudget) || 0);
+  const spent = Math.max(0, Number(state.spent) || 0);
+  const recordedRemaining = Math.max(0, Number(state.campaignBudgetRemaining) || 0);
+  const remaining = Math.max(0, Math.min(recordedRemaining, campaignBudget - spent));
+  return Math.min(requested, remaining);
+}
 
 function crisisRoll(seed: number, quarter: number): number {
   let value = ((seed >>> 0) + quarter * 2654435761) >>> 0;
@@ -37,38 +53,66 @@ function crisisRoll(seed: number, quarter: number): number {
  */
 export function applyTurnDecision(source: GameState, input: TurnDecision): TurnResolution {
   const state = normalizeGameState(source);
-  const selected = Array.from(new Set(input.selected)).slice(0, 3);
+  const selected = Array.from(new Set(input.selected || [])).slice(0, 3);
+  const initiativeActions: InitiativeActionSet = Object.keys(input.initiativeActions || {}).length
+    ? { ...input.initiativeActions }
+    : Object.keys(state.initiativeActions || {}).length
+      ? { ...state.initiativeActions }
+      : Object.fromEntries(selected.map((id) => [id, 'scale']));
+  selected.forEach((id) => { initiativeActions[id] = initiativeActions[id] || 'scale'; });
+  const deliveryIds = Object.entries(initiativeActions)
+    .filter(([id, action]) => Boolean(state.initiativeStates[id]) && (action === 'pilot' || action === 'scale'))
+    .map(([id]) => id)
+    .slice(0, 3);
   const scenario = state.scenarioMode ? getScenario(state.scenarioId) : undefined;
-  const discovery = describeSynergies(selected, state.initiativeStates, scenario?.synergies);
+  const capacityValidation = validatePortfolioCapacity(initiativeActions, state.initiativeStates, input.alloc, scenario);
+  // Capacity is a hard operating limit. Readiness is deliberately not: a
+  // learner may run a constrained experiment and see the slower, riskier
+  // result rather than being prevented from learning by the interface.
+  if (capacityValidation.issues.length > 0) {
+    const reason = capacityValidation.issues[0]?.message || 'This delivery plan exceeds the available operating capacity.';
+    return { accepted: false, nextState: { ...state, feedback: reason }, reason };
+  }
+  const discovery = describeSynergies(deliveryIds, state.initiativeStates, scenario?.synergies);
+  const constrainedExperiments = Object.entries(capacityValidation.gates)
+    .filter(([, gate]) => gate.status !== 'ready')
+    .map(([id]) => state.initiativeStates[id]?.name || id);
   const synergyCostReduction = Math.min(0.15, discovery?.effects.reduce((sum, effect) => sum + effect.costReduction, 0) || 0);
-  const selectedCost = selected.reduce((sum, id) => {
-    const initiative = state.initiativeStates[id];
-    return sum + Number(initiative?.currentCost ?? initiative?.baseCost ?? initiative?.cost ?? 0);
-  }, 0) * (1 - synergyCostReduction);
   const campaignRemaining = Number(state.campaignBudgetRemaining ?? state.campaignBudget ?? state.quarterlyBudget * 12);
   const deploymentCap = quarterlyDeploymentCap(state.campaignBudget, campaignRemaining, state.quarterlyBudget, state.q, state.spent);
   const deploymentAmount = Math.min(deploymentCap, Math.max(0, Number(input.deploymentAmount) || 0));
-  const capitalPlan = calculateCapitalPlan(state, selected, selectedCost, deploymentAmount);
+  const capitalPlan = calculateActionCapitalPlan(state, initiativeActions, deploymentAmount);
 
-  if (selected.length > 0 && capitalPlan.requiredCapital > deploymentAmount + 1e-9) {
-    const reason = `This portfolio needs ${capitalPlan.requiredCapital.toFixed(2)} this quarter: ${selectedCost.toFixed(2)} for the initiatives and ${capitalPlan.maintenanceSpend.toFixed(2)} to continue existing work. You have released ${deploymentAmount.toFixed(2)}. Increase deployment, choose fewer initiatives, or keep the reserve.`;
+  if (capitalPlan.requiredCapital > deploymentAmount + 1e-9) {
+    const reason = `This lifecycle plan needs ${capitalPlan.requiredCapital.toFixed(2)} this quarter, including delivery, run, and exit commitments. You have released ${deploymentAmount.toFixed(2)}. Increase deployment or change the initiative actions.`;
     return { accepted: false, nextState: { ...state, feedback: reason }, reason };
   }
 
-  const actualDeployment = selected.length ? deploymentAmount : 0;
-  const deliveryCapital = selected.length ? capitalPlan.deliveryCapital : 0;
+  const actualDeployment = capitalPlan.totalReleased;
+  const deliveryCapital = capitalPlan.deliveryCapital;
   const result = resolveQuarter(state, {
-    selected,
+    selected: deliveryIds,
+    initiativeActions,
     alloc: input.alloc,
     deploymentAmount: deliveryCapital,
-    continuityAllocations: selected.length ? capitalPlan.continuityAllocations : undefined,
+    fundingByInitiative: capitalPlan.byInitiative,
+    gateResults: capacityValidation.gates,
   });
   const adjustedMetrics = {
     ...result.metrics,
     spent: state.spent + actualDeployment,
     risk: Math.min(95, Number(result.metrics.risk ?? state.risk)),
   };
-  const resolvedState = { ...state, ...adjustedMetrics, initiativeStates: result.initiativeStates, scenarioState: result.scenarioState };
+  const grossBenefit = Object.values(result.initiativeStates)
+    .filter((initiative) => ['pilot', 'scale', 'run'].includes(initiative.lifecycle))
+    .reduce((sum, initiative) => sum + Number(initiative.currentCost || 0) * (Number(initiative.currentRoi || 0) / 100) * Number(initiative.benefitRealization || 0), 0);
+  const financialLedger = updateFinancialLedger(state.financialLedger, {
+    investment: Math.max(0, actualDeployment - capitalPlan.maintenanceSpend),
+    runCost: capitalPlan.maintenanceSpend,
+    grossBenefit,
+    quarter: state.q,
+  });
+  const resolvedState = { ...state, ...adjustedMetrics, initiativeActions, financialLedger, initiativeStates: result.initiativeStates, scenarioState: result.scenarioState };
   const discoveredSynergies = Array.from(new Set([
     ...state.discoveredSynergies,
     ...(discovery?.effects.map((effect) => effect.key) || []),
@@ -78,9 +122,15 @@ export function applyTurnDecision(source: GameState, input: TurnDecision): TurnR
   const scenarioProgress = scenario
     ? (result.scenarioState?.progress || calculateScenarioProgress(resolvedState, scenario)?.values)
     : state.scenarioProgress;
-  const scenarioBonus = state.scenarioMode && state.q >= 12 && scenario
-    ? Math.round((calculateScenarioProgress(resolvedState, scenario)?.overall || 0) / 20)
-    : state.scenarioBonus;
+  const scenarioOverall = scenario ? (calculateScenarioProgress(resolvedState, scenario)?.overall || 0) : 0;
+  const operatingHealth = (Number(adjustedMetrics.adoption ?? state.adoption) + Number(adjustedMetrics.efficiency ?? state.efficiency) + Number(adjustedMetrics.data ?? state.data) + (100 - Number(adjustedMetrics.risk ?? state.risk))) / 4;
+  const executionDiscipline = Math.min(100, (capacityValidation.status === 'valid' ? 65 : 40) + Math.min(25, state.q * 2) + Math.min(10, deliveryIds.length * 3));
+  const responsibleAI = (Number(input.alloc.compliance || 0) * 2 + (Object.values(result.initiativeStates).reduce((sum, item) => sum + Number(item.controlMaturity || 0), 0) / Math.max(1, Object.keys(result.initiativeStates).length)) * 30);
+  const scoreModel = composeCampaignScore({
+    scenarioMode: Boolean(scenario), scenarioTargetProgress: scenarioOverall,
+    realisedFinancialValue: realisedFinancialValueScore(financialLedger), operatingHealth,
+    executionDiscipline, responsibleAI,
+  });
   const scenarioCrisis = scenario && state.q % 3 === 0 && crisisRoll(state.initiativeGeneration.seed, state.q) < crisisProbability
     ? scenario.crises[Math.abs(state.initiativeGeneration.seed + state.q) % scenario.crises.length]
     : null;
@@ -89,11 +139,11 @@ export function applyTurnDecision(source: GameState, input: TurnDecision): TurnR
     : state.q % 3 === 0 && crisisRoll(state.initiativeGeneration.seed, state.q) < crisisProbability
       ? generateCrisis(state.initiativeGeneration.seed + state.q)
       : null;
-  const nextCausalChain = causalChain(state, selected, result.initiativeStates, deliveryCapital);
+  const nextCausalChain = causalChain(state, deliveryIds, result.initiativeStates, deliveryCapital, result.snapshot.portfolio);
   const nextRecommendations = generateProactiveRecommendations(resolvedState);
   const nextState: GameState = {
     ...resolvedState,
-    score: Math.min(100, deriveScore(state, adjustedMetrics) + scenarioBonus),
+    score: Math.round(scoreModel.score),
     scenarioProgress,
     scenarioState: result.scenarioState,
     portfolio: result.snapshot.portfolio,
@@ -109,21 +159,27 @@ export function applyTurnDecision(source: GameState, input: TurnDecision): TurnR
     scenarioBudgetRemaining: state.scenarioMode
       ? Math.max(0, state.quarterlyBudget - actualDeployment)
       : state.scenarioBudgetRemaining,
-    scenarioBonus,
+    scenarioBonus: 0,
     stage: 'results',
     crisis: nextCrisis,
     causalChain: nextCausalChain,
     proactiveRecommendations: nextRecommendations,
     discoveredSynergies,
-    feedback: discovery?.message || (selected.length === 0
-      ? `Quarter ${state.q} resolved with no new funding. Reserve was preserved; previously funded initiatives will now be tested by neglect dynamics.`
+    feedback: constrainedExperiments.length
+      ? `Experiment recorded: ${constrainedExperiments.join(', ')} moved ahead before all readiness conditions were met. The outcome includes slower delivery and additional risk—use the result to refine the next hypothesis.`
+      : discovery?.message || (deliveryIds.length === 0
+      ? `Quarter ${state.q} resolved with no new funding for delivery. Run, pause, and retirement actions were recorded.`
       : `Quarter ${state.q} resolved. ${capitalPlan.accelerationSpend > 0 ? `Scale-up capital increased delivery intensity to ${result.snapshot.fundingIntensity?.toFixed(2)}×.` : 'Your portfolio is now showing the consequences of this allocation.'}`),
     history: [...state.history, {
       ...result.snapshot,
+      initiativeActions,
+      initiativeFunding: capitalPlan.byInitiative,
+      financialLedger,
+      capacity: capacityValidation.capacity,
       deployedAmount: actualDeployment,
-      fixedInitiativeSpend: selectedCost,
-      maintenanceSpend: selected.length ? capitalPlan.maintenanceSpend : 0,
-      accelerationSpend: selected.length ? capitalPlan.accelerationSpend : 0,
+      fixedInitiativeSpend: capitalPlan.initiativeMinimum,
+      maintenanceSpend: capitalPlan.maintenanceSpend,
+      accelerationSpend: capitalPlan.accelerationSpend,
       crisisResponseSpend: state.quarterlyCrisisCost,
       remainingReserve: Math.max(0, campaignRemaining - actualDeployment),
       budgetProvenance: 'campaign-purse-with-guided-acceleration',
@@ -133,13 +189,20 @@ export function applyTurnDecision(source: GameState, input: TurnDecision): TurnR
       recommendations: nextRecommendations,
     }],
   };
-  return { accepted: true, nextState, decision: { selected, alloc: { ...input.alloc }, deploymentAmount } };
+  return { accepted: true, nextState, decision: { selected: deliveryIds, initiativeActions, alloc: { ...input.alloc }, deploymentAmount } };
 }
 
 /** Apply a learner-selected response to the crisis created by a resolved turn. */
 export function applyCrisisResponse(source: GameState, response: CrisisResponse): GameState {
   const state = normalizeGameState(source);
-  const cost = Math.max(0, Number(response.cost) || 0);
+  const requestedCost = Math.max(0, Number(response.cost) || 0);
+  const cost = affordableCrisisResponseCost(state, requestedCost);
+  if (requestedCost > cost + 1e-9) {
+    return {
+      ...state,
+      feedback: `That response requires ${requestedCost.toFixed(2)} of campaign capital, but only ${cost.toFixed(2)} is available. Choose an affordable response or preserve the remaining purse.`,
+    };
+  }
   const scenario = state.scenarioMode ? getScenario(state.scenarioId) : undefined;
   const scenarioKeys = new Set(scenario?.progress.map((definition) => definition.key) || []);
   const nativeImpact = Object.fromEntries(Object.entries(response.impact).filter(([key]) => !scenarioKeys.has(key)));
@@ -175,11 +238,18 @@ export function applyCrisisResponse(source: GameState, response: CrisisResponse)
     }),
   };
   const nextCausalChain = [...(state.causalChain || []), crisisCausalItem];
-  const remaining = Math.max(0, Number(state.campaignBudgetRemaining ?? state.campaignBudget ?? state.quarterlyBudget * 12) - cost);
+  const campaignRemaining = Math.max(
+    0,
+    Math.min(Number(state.campaignBudgetRemaining) || 0, (Number(state.campaignBudget) || 0) - (Number(state.spent) || 0)),
+  );
+  const remaining = Math.max(0, campaignRemaining - cost);
+  const nextSpent = Math.min(Number(state.campaignBudget) || 0, state.spent + cost);
+  const financialLedger = updateFinancialLedger(state.financialLedger, { crisisCost: cost, quarter: state.q });
   const next = {
     ...state,
     ...nativeImpact,
-    spent: state.spent + cost,
+    spent: nextSpent,
+    financialLedger,
     campaignBudgetRemaining: remaining,
     scenarioBudgetRemaining: state.scenarioMode ? Math.max(0, state.scenarioBudgetRemaining - cost) : state.scenarioBudgetRemaining,
     quarterlyDeploymentCap: quarterlyDeploymentCap(state.campaignBudget, remaining, state.quarterlyBudget, state.q, state.spent + cost),
@@ -198,6 +268,7 @@ export function applyCrisisResponse(source: GameState, response: CrisisResponse)
         scenarioState: nextScenarioState,
         crisisResponse: response.impact,
         crisisResponseSpend: cost,
+        financialLedger,
         causalChain: nextCausalChain,
         metrics: { ...next.history[next.history.length - 1].metrics, spent: next.spent },
       }]
@@ -219,6 +290,11 @@ export function advanceTurn(source: GameState): GameState {
     q: state.q + 1,
     stage: 'decide',
     selected: [],
+    initiativeActions: Object.fromEntries(Object.values(state.initiativeStates || {}).flatMap<[string, 'maintain' | 'pause']>((initiative) => {
+      if (initiative.lifecycle === 'run') return [[initiative.id, 'maintain']];
+      if (initiative.lifecycle === 'paused') return [[initiative.id, 'pause']];
+      return [];
+    })),
     crisis: null,
     causalChain: [],
     proactiveRecommendations: [],

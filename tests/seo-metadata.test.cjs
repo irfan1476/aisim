@@ -7,7 +7,7 @@ const root = path.resolve(__dirname, '..');
 const read = (...segments) => fs.readFileSync(path.join(root, ...segments), 'utf8');
 const exists = (...segments) => fs.existsSync(path.join(root, ...segments));
 
-const canonicalDomain = 'https://aisim1.teachmeai.in';
+const canonicalDomain = 'https://aisim.teachmeai.in';
 const socialImage = '/aisim.teachmeai.png';
 
 test('SEO metadata uses the live canonical domain and share image', () => {
@@ -58,7 +58,7 @@ test('search and agent discovery files exist with useful crawl guidance', () => 
 
   assert.match(robots, /allow:\s*['\"]\/['\"]/i, 'robots policy must allow the public site');
   assert.match(robots, /sitemap/i, 'robots policy must advertise the sitemap');
-  assert.match(sitemap, /aisim1\.teachmeai\.in/, 'sitemap must use the live production domain');
+  assert.match(sitemap, /aisim\.teachmeai\.in/, 'sitemap must use the live production domain');
   assert.match(llms, /^#\s+The AI Investment Challenge/m, 'llms.txt must identify the product');
   assert.match(llms, /12[ -]quarters?/i, 'llms.txt must explain the core learning loop');
   assert.match(llms, /scenario/i, 'llms.txt must describe the available scenario system');

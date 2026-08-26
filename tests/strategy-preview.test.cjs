@@ -109,3 +109,14 @@ test('additional deployment accelerates a selected portfolio with bounded return
   assert.ok(accelerated.alternative.metrics.efficiency > baseline.alternative.metrics.efficiency);
   assert.ok(accelerated.alternative.initiativeStates.maintenance.totalInvestment > baseline.alternative.initiativeStates.maintenance.totalInvestment);
 });
+
+test('preview includes continuity commitments and rejects an underfunded plan', () => {
+  const state = initialGameState(undefined, { campaignBudget: 24, quarterlyBudget: 2 });
+  state.initiativeStates.energy = { ...state.initiativeStates.energy, quartersFunded: 2, currentCost: 2 };
+  const result = previewStrategy(state, { selected: ['demand'], alloc: allocation, deploymentAmount: 1.5 });
+  assert.equal(result.valid, false);
+  assert.match(result.warning, /continuity/);
+  assert.equal(result.alternative.spend.portfolioCost, state.initiativeStates.demand.currentCost);
+  assert.equal(result.alternative.initiativeStates.energy.continuityInvestment, 0.16);
+  assert.equal(result.alternative.initiativeStates.energy.quartersSinceLastFund, 0);
+});

@@ -1,6 +1,7 @@
 import type { Initiative } from '../game/initiatives';
 import type { Allocation } from '../game/state';
 import type { MaturityLevel } from '../game/initiativeState';
+import type { CapacityState, InitiativeRequirements } from '../game/businessModel';
 
 export type CurrencyMode = '$' | '₹';
 export type ScenarioDirection = 'higher-is-better' | 'lower-is-better';
@@ -30,6 +31,16 @@ export type ScenarioNeglectConfig = {
   decayRate: number;
   penaltyThreshold: number;
   penaltyAmount: number;
+};
+
+/**
+ * Optional delivery constraints authored by a scenario pack.  All fields are
+ * partial so existing scenarios retain the historical, allocation-derived
+ * capacity behaviour until they opt into a more specific operating model.
+ */
+export type ScenarioCapacityConfig = {
+  capacity?: Partial<CapacityState>;
+  initiativeRequirements?: Record<string, Partial<InitiativeRequirements>>;
 };
 
 /** Explicit 0-100 capability coverage authored by each scenario pack. */
@@ -92,6 +103,8 @@ export interface ScenarioDefinition {
   company: { name: string; revenue: string; employees: string; locations: string; description: string };
   challenges: ScenarioChallenge[];
   startingState: { budget: number; defaultAllocation: Allocation; startingMetrics: ScenarioMetrics };
+  /** Optional capacity and gate rules; omitted for backwards compatibility. */
+  capacity?: ScenarioCapacityConfig;
   progress: ScenarioProgressDefinition[];
   initiatives?: ScenarioInitiative[];
   synergies?: ScenarioSynergyDefinition[];

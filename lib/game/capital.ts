@@ -1,4 +1,5 @@
 import { deploymentCapacity, type GameState } from './state';
+import type { InitiativeAction, InitiativeActionSet, InitiativeFunding } from './businessModel';
 
 /**
  * Continuity is deliberately modest. It represents keeping previously funded
@@ -15,6 +16,8 @@ type CapitalState = Pick<
 const finite = (value: unknown) => Math.max(0, Number(value) || 0);
 
 export type CapitalPlan = {
+  /** Per-initiative cash attribution. This is additive to the legacy aggregates. */
+  byInitiative: Record<string, InitiativeFunding>;
   initiativeMinimum: number;
   maintenanceSpend: number;
   continuityAllocations: Record<string, number>;
@@ -25,6 +28,104 @@ export type CapitalPlan = {
   totalReleased: number;
   remainingAfterPlan: number;
 };
+
+const emptyFunding = (): InitiativeFunding => ({ discovery: 0, delivery: 0, scaleUp: 0, run: 0, continuity: 0, retirement: 0, total: 0 });
+const round = (value: number) => Number(value.toFixed(2));
+
+function fundingFor(state: CapitalState, id: string): InitiativeFunding {
+  const initiative = state.initiativeStates?.[id];
+  const currentCost = finite(initiative?.currentCost ?? initiative?.baseCost ?? initiative?.cost);
+  return { ...emptyFunding(), delivery: currentCost, total: currentCost };
+}
+
+/**
+ * Action-aware capital planning. `requestedDeployment` is the total campaign
+ * release for the quarter, including the current crisis response cost. Unlike
+ * the compatibility API below, continuity is created only for explicit
+ * `maintain` actions; paused/discovery initiatives receive no hidden charge.
+ */
+export function calculateActionCapitalPlan(
+  state: CapitalState,
+  actions: InitiativeActionSet,
+  requestedDeployment: number,
+  crisisResponseSpend = state.quarterlyCrisisCost,
+): CapitalPlan {
+  const remaining = finite(state.campaignBudgetRemaining);
+  const hasInitiativeAction = Object.values(actions || {}).some((action) => action === 'discover' || action === 'pilot' || action === 'scale' || action === 'maintain' || action === 'retire');
+  // A no-op/observation action cannot release unallocated initiative cash.
+  // Crisis spend may still consume the purse when explicitly present.
+  const totalReleased = Math.min(remaining, finite(requestedDeployment), hasInitiativeAction ? Number.POSITIVE_INFINITY : finite(crisisResponseSpend));
+  const crisis = Math.min(totalReleased, finite(crisisResponseSpend));
+  const initiativeCapacity = Math.max(0, totalReleased - crisis);
+  const byInitiative: Record<string, InitiativeFunding> = {};
+  let fixedCapital = 0;
+  const deliveryIds: string[] = [];
+  Object.entries(state.initiativeStates || {}).forEach(([id, initiative]) => {
+    const action = actions[id] as InitiativeAction | undefined;
+    const cost = finite(initiative.currentCost ?? initiative.baseCost ?? initiative.cost);
+    const funding = emptyFunding();
+    if (action === 'discover') funding.discovery = round(cost * .1);
+    else if (action === 'pilot') { funding.delivery = round(cost * .6); deliveryIds.push(id); }
+    else if (action === 'scale') { funding.delivery = round(cost); deliveryIds.push(id); }
+    else if (action === 'maintain') funding.run = round(finite(initiative.runCost) || cost * CONTINUITY_RATE);
+    else if (action === 'retire') funding.retirement = round(cost * .15);
+    funding.total = round(funding.discovery + funding.delivery + funding.run + funding.retirement);
+    fixedCapital += funding.total;
+    byInitiative[id] = funding;
+  });
+  // Keep the unscaled commitment for the decision gate. Scaling the
+  // attribution below is useful only after a valid release is known; using it
+  // for validation would silently make an underfunded plan look affordable.
+  const requiredCommitment = round(fixedCapital + crisis);
+  // A plan can be underfunded; fixed commitments are reduced proportionally
+  // rather than inventing spend. Any remaining release is explicit scale-up.
+  if (fixedCapital > initiativeCapacity && fixedCapital > 0) {
+    const factor = initiativeCapacity / fixedCapital;
+    Object.values(byInitiative).forEach((funding) => {
+      funding.discovery = round(funding.discovery * factor);
+      funding.delivery = round(funding.delivery * factor);
+      funding.run = round(funding.run * factor);
+      funding.retirement = round(funding.retirement * factor);
+      funding.total = round(funding.discovery + funding.delivery + funding.run + funding.retirement);
+    });
+    fixedCapital = Object.values(byInitiative).reduce((sum, funding) => sum + funding.total, 0);
+  }
+  const scaleUp = Math.max(0, initiativeCapacity - fixedCapital);
+  const deliveryBase = deliveryIds.reduce((sum, id) => sum + (byInitiative[id]?.delivery || 0), 0);
+  if (scaleUp > 0 && deliveryBase > 0) {
+    deliveryIds.forEach((id) => {
+      const funding = byInitiative[id];
+      funding.scaleUp = round(scaleUp * (funding.delivery / deliveryBase));
+      funding.total = round(funding.total + funding.scaleUp);
+    });
+  }
+  // Rounding can leave a cent-level discrepancy. Allocate it to the first
+  // delivery action so the ledger is exactly reconciled for reporting/tests.
+  const targetInitiativeSpend = round(Math.max(0, initiativeCapacity));
+  const actualInitiativeSpend = Object.values(byInitiative).reduce((sum, funding) => sum + funding.total, 0);
+  const correction = round(targetInitiativeSpend - actualInitiativeSpend);
+  const correctionId = deliveryIds[0] || Object.keys(byInitiative).find((id) => byInitiative[id].total > 0);
+  if (correctionId && correction !== 0) {
+    byInitiative[correctionId].scaleUp = round(Math.max(0, byInitiative[correctionId].scaleUp + correction));
+    byInitiative[correctionId].total = round(byInitiative[correctionId].total + correction);
+  }
+  const initiativeMinimum = round(Object.values(byInitiative).reduce((sum, funding) => sum + funding.discovery + funding.delivery, 0));
+  const maintenanceSpend = round(Object.values(byInitiative).reduce((sum, funding) => sum + funding.run, 0));
+  const accelerationSpend = round(Object.values(byInitiative).reduce((sum, funding) => sum + funding.scaleUp, 0));
+  const retirementSpend = round(Object.values(byInitiative).reduce((sum, funding) => sum + funding.retirement, 0));
+  return {
+    byInitiative,
+    initiativeMinimum,
+    maintenanceSpend,
+    continuityAllocations: Object.fromEntries(Object.entries(byInitiative).filter(([, funding]) => funding.continuity > 0).map(([id, funding]) => [id, funding.continuity])),
+    accelerationSpend,
+    deliveryCapital: round(initiativeMinimum + accelerationSpend),
+    crisisResponseSpend: crisis,
+    requiredCapital: requiredCommitment,
+    totalReleased: round(totalReleased),
+    remainingAfterPlan: round(Math.max(0, remaining - totalReleased)),
+  };
+}
 
 export function calculateContinuityAllocations(state: CapitalState, selectedIds: string[]): Record<string, number> {
   const selected = new Set(selectedIds);
@@ -56,6 +157,16 @@ export function calculateCapitalPlan(
   );
   const deliveryCapital = Math.max(0, totalReleased - maintenanceSpend);
   return {
+    byInitiative: Object.fromEntries(Object.entries(state.initiativeStates || {}).map(([id, initiative]) => {
+      const funding = fundingFor(state, id);
+      if (!selectedIds.includes(id)) {
+        const continuity = continuityAllocations[id] || 0;
+        funding.delivery = 0;
+        funding.continuity = continuity;
+        funding.total = continuity;
+      }
+      return [id, funding];
+    })),
     initiativeMinimum: initiativeFloor,
     maintenanceSpend,
     continuityAllocations,

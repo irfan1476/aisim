@@ -6,6 +6,7 @@ import { initialGameState, normalizeDeploymentAmount, quarterlyDeploymentCap, ty
 import { getScenario } from '../lib/scenarios/registry';
 import { scenarioInitiativesToStates } from '../lib/game/initiativeAdapter';
 import { advanceTurn, applyCrisisResponse, applyTurnDecision } from '../lib/game/turnResolver';
+import type { InitiativeAction } from '../lib/game/businessModel';
 import { clearActiveCounterfactualTrace, createCounterfactualTrace, readActiveCounterfactualTrace, recordCrisisResponse, recordDecision, writeActiveCounterfactualTrace } from '../lib/counterfactual';
 import {
   clearPersistedCampaign,
@@ -28,6 +29,7 @@ import {
 type GameStore = GameState & {
   startGame: () => void;
   selectInitiatives: (ids: string[]) => void;
+  setInitiativeAction: (id: string, action: InitiativeAction) => void;
   updateAllocation: (key: keyof GameState['alloc'], value: number) => void;
   setDeploymentAmount: (amount: number) => void;
   confirmDecisions: () => void;
@@ -157,6 +159,7 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
       scenarioState: { metrics: startingMetrics, progress, flags: {} },
       alloc: { ...scenario.startingState.defaultAllocation },
       selected: [],
+      initiativeActions: {},
       stage: 'decide',
       initiativeStates: scenario.initiatives ? scenarioInitiativesToStates(scenario.initiatives) : state.initiativeStates,
       ...nativeMetrics,
@@ -166,7 +169,27 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
     if (nextState) saveCampaignCheckpoint(nextState, 'Quarter 1 decision point');
   },
 
-  selectInitiatives: (ids) => set({ selected: Array.from(new Set(ids)).slice(0, 3) }),
+  selectInitiatives: (ids) => set((state) => {
+    const selected = Array.from(new Set(ids)).slice(0, 3);
+    const initiativeActions = { ...state.initiativeActions };
+    selected.forEach((id) => { initiativeActions[id] = initiativeActions[id] === 'pilot' ? 'pilot' : 'scale'; });
+    Object.entries(initiativeActions).forEach(([id, action]) => {
+      if (!selected.includes(id) && (action === 'pilot' || action === 'scale')) initiativeActions[id] = 'pause';
+    });
+    return { selected, initiativeActions };
+  }),
+
+  setInitiativeAction: (id, action) => set((state) => {
+    if (!state.initiativeStates[id]) return {};
+    const initiativeActions = { ...state.initiativeActions, [id]: action };
+    // Discovery is a genuine portfolio investment: it consumes capital and
+    // should count toward the three-initiative focus limit even though it
+    // does not yet create delivery outcomes.
+    const selected = ['discover', 'pilot', 'scale'].includes(action)
+      ? Array.from(new Set([...state.selected.filter((item) => item !== id), id])).slice(0, 3)
+      : state.selected.filter((item) => item !== id);
+    return { initiativeActions, selected };
+  }),
 
   updateAllocation: (key, value) => set((state) => ({ alloc: { ...state.alloc, [key]: value } })),
 
@@ -178,6 +201,7 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
     const before = normalizeGameState(get());
     const resolution = applyTurnDecision(before, {
       selected: before.selected,
+      initiativeActions: before.initiativeActions,
       alloc: before.alloc,
       deploymentAmount: before.deploymentAmount,
     });

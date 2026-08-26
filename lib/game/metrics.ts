@@ -1,4 +1,4 @@
-import type { GameState } from "./state";
+import type { GameState, PortfolioSnapshot } from "./state";
 import { evaluateSynergies } from "./generator";
 import { getScenario } from "../scenarios/registry";
 import { allocationToReadiness } from "./allocation";
@@ -104,6 +104,7 @@ export function causalChain(
   selected: string[],
   resolvedInitiativeStates: GameState["initiativeStates"] = state.initiativeStates,
   deploymentAmount?: number,
+  portfolioContext?: PortfolioSnapshot,
 ) {
   const scenario = state.scenarioMode ? getScenario(state.scenarioId) : undefined;
   if (scenario) {
@@ -113,10 +114,9 @@ export function causalChain(
     const readiness = allocationToReadiness(state.alloc);
     const readinessFactor = 0.55 + readiness.data * 0.2 + readiness.people * 0.15 + readiness.governance * 0.1;
     const adoptionFactor = 0.7 + Math.max(0, Math.min(1, state.adoption / 100)) * 0.3;
-    const portfolio = calculatePortfolioDynamics(
+    const portfolio = portfolioContext || calculatePortfolioDynamics(
       selected.length,
-      3,
-      Math.max(0, Object.keys(resolvedInitiativeStates || {}).length - selected.length),
+      Object.keys(resolvedInitiativeStates || {}).length,
     );
     const portfolioEffect = portfolio.focusMultiplier * (1 - portfolio.coordinationPressure / 100);
     const minimumPortfolioCost = selected.reduce(

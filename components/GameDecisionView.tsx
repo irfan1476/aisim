@@ -26,8 +26,10 @@ import InitiativeEvolution from "./InitiativeEvolution";
 import LearningRetrospective from "./LearningRetrospective";
 import LLMSettings from "./LLMSettings";
 import StrategyDNA from "./StrategyDNA";
-import { deploymentCapacity } from "../lib/game/state";
-import { calculateCapitalPlan, calculateCapitalRunway } from "../lib/game/capital";
+import { deploymentCapacity, type Allocation } from "../lib/game/state";
+import { calculateActionCapitalPlan, calculateCapitalRunway } from "../lib/game/capital";
+import { validatePortfolioCapacity } from "../lib/game/capacity";
+import type { InitiativeActionSet } from "../lib/game/businessModel";
 import { downloadExport } from "../lib/exportGameplay";
 import { useGameStore } from "../stores/gameStore";
 import QuarterRoadmap from "./QuarterRoadmap";
@@ -78,6 +80,7 @@ export default function GameDecisionView({
   const [savedNotice, setSavedNotice] = useState(false);
   const [accelerateConfirmOpen, setAccelerateConfirmOpen] = useState(false);
   const saveCampaign = useGameStore((store) => store.saveCampaign);
+  const setInitiativeAction = useGameStore((store) => store.setInitiativeAction);
   const restoreLatestViableCheckpoint = useGameStore((store) => store.restoreLatestViableCheckpoint);
   const capacity = deploymentCapacity(
     state.campaignBudget,
@@ -88,20 +91,14 @@ export default function GameDecisionView({
   );
   const selectedInitiatives = initiatives.filter((initiative) => state.selected.includes(initiative.id));
   const selectedIds = selectedInitiatives.map((initiative) => initiative.id);
-  const declaredCostReduction = Math.min(
-    0.15,
-    (scenario?.synergies || [])
-      .filter((synergy) => synergy.initiativeIds.every((id) => selectedIds.includes(id)))
-      .reduce((sum, synergy) => sum + synergy.costReduction, 0),
-  );
-  const requiredDeployment = selectedInitiatives.reduce(
-    (sum, initiative) => sum + Number(state.initiativeStates?.[initiative.id]?.currentCost ?? initiative.cost ?? 0),
-    0,
-  ) * (1 - declaredCostReduction);
   const deployment = Math.min(Number(state.deploymentAmount || 0), capacity.maximumDeployment);
-  const capitalPlan = calculateCapitalPlan(state, selectedIds, requiredDeployment, deployment);
+  const initiativeActions: InitiativeActionSet = Object.keys(state.initiativeActions || {}).length
+    ? state.initiativeActions
+    : Object.fromEntries(selectedIds.map((id) => [id, "scale" as const]));
+  const capitalPlan = calculateActionCapitalPlan(state, initiativeActions, deployment);
+  const capacityValidation = validatePortfolioCapacity(initiativeActions, state.initiativeStates, state.alloc as Allocation, scenario);
   const runway = calculateCapitalRunway(state, deployment);
-  const requiresMoreDeployment = selectedInitiatives.length > 0 && capitalPlan.requiredCapital > deployment + 1e-9;
+  const requiresMoreDeployment = capitalPlan.requiredCapital > deployment + 1e-9;
   const portfolioFitsThisQuarter = capitalPlan.requiredCapital <= capacity.maximumDeployment + 1e-9;
   const isAccelerating = selectedInitiatives.length > 0 && deployment > capacity.recommendedAuthority + 0.05;
   const reserveExhausted = capacity.maximumDeployment <= 0.01;
@@ -189,19 +186,19 @@ export default function GameDecisionView({
               <div>
                 <h2 className="text-lg font-bold">Choose initiatives</h2>
                 <p className="mt-1 text-sm text-ink/50">
-                  Fund up to three bets. Their capability and risk will evolve
-                  as you invest.
+                  Choose up to three bets. Discovery, piloting, and scaling are
+                  all investments; choose the action for each selected bet.
                 </p>
-                <p className="mt-2 text-xs font-medium text-[#57606a]">Click anywhere on a card to select it. A selected card turns green and shows “Selected”.</p>
+                <p className="mt-2 text-xs font-medium text-[#57606a]">Select up to three initiatives, then choose Discover, Pilot, Scale, or another lifecycle action. Discovery counts as a selected investment.</p>
               </div>
               <span className="rounded-full bg-[#dafbe1] px-3 py-1 text-xs font-bold text-[#1a7f37]">
                 {state.selected.length} / 3 selected
               </span>
             </div>
             <div className="mt-4 grid gap-2 rounded-2xl border border-[#d0d7de] bg-[#f6f8fa] p-3 text-xs sm:grid-cols-4">
-              <span><b className="block text-[#57606a]">Initiative floor</b><strong className="mt-1 block text-base text-[#24292f]">{formatCurrency(capitalPlan.initiativeMinimum, state.currencyMode)}</strong></span>
-              <span><b className="block text-[#57606a]">Continuity commitment</b><strong className="mt-1 block text-base text-[#24292f]">{formatCurrency(capitalPlan.maintenanceSpend, state.currencyMode)}</strong></span>
-              <span><b className="block text-[#57606a]">Released this quarter</b><strong className="mt-1 block text-base text-[#24292f]">{formatBudget(deployment, state.currencyMode)}</strong></span>
+              <span><b className="block text-[#57606a]">Delivery & discovery</b><strong className="mt-1 block text-base text-[#24292f]">{formatCurrency(capitalPlan.initiativeMinimum, state.currencyMode)}</strong></span>
+              <span><b className="block text-[#57606a]">Run / exit commitments</b><strong className="mt-1 block text-base text-[#24292f]">{formatCurrency(capitalPlan.maintenanceSpend + Object.values(capitalPlan.byInitiative).reduce((sum, item) => sum + Number(item.retirement || 0), 0), state.currencyMode)}</strong></span>
+              <span><b className="block text-[#57606a]">Campaign capital to release this quarter</b><strong className="mt-1 block text-base text-[#24292f]">{formatBudget(deployment, state.currencyMode)}</strong></span>
               <span><b className="block text-[#57606a]">Reserve available</b><strong className="mt-1 block text-base text-[#0969da]">{formatBudget(capacity.maximumDeployment, state.currencyMode)}</strong></span>
             </div>
             <div className="mt-5 grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(360px,420px)]">
@@ -235,7 +232,7 @@ export default function GameDecisionView({
                 const baseRoi = Number((live as any).baseRoi ?? initiative.roi);
                 const baseData = Number((live as any).baseData ?? initiative.data);
                 return (
-                  <button
+                  <article
                     key={initiative.id}
                     data-testid={`initiative-${initiative.id}`}
                     data-base-roi={Number((live as any).roi ?? initiative.roi)}
@@ -244,9 +241,6 @@ export default function GameDecisionView({
                     )}
                     data-risk-score={riskScore}
                     data-selected={selected ? "true" : "false"}
-                    aria-pressed={selected}
-                    aria-label={`${selected ? "Deselect" : "Select"} ${initiative.name}`}
-                    onClick={() => onToggleInitiative(initiative.id)}
                     className={`group relative rounded-xl border p-3 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1a7f37] focus-visible:ring-offset-2 ${selected ? "border-[#1a7f37] bg-[#dafbe1] shadow-lg shadow-[#1a7f37]/10 ring-1 ring-[#1a7f37]/35" : "border-ink/8 bg-mist hover:-translate-y-0.5 hover:border-[#1a7f37]/55 hover:bg-white"}`}
                   >
                     <div className="flex items-start justify-between gap-3">
@@ -262,9 +256,15 @@ export default function GameDecisionView({
                         <Check size={14} />
                       </div>
                     </div>
-                    <span className={`mt-3 inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-bold uppercase tracking-wider transition ${selected ? "bg-[#1a7f37] text-white" : "bg-ink/5 text-ink/45 group-hover:bg-[#dafbe1] group-hover:text-[#1a7f37]"}`}>
+                    <button type="button" aria-pressed={selected} aria-label={`${selected ? "Deselect" : "Select"} ${initiative.name}`} onClick={() => onToggleInitiative(initiative.id)} className={`mt-3 inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-bold uppercase tracking-wider transition ${selected ? "bg-[#1a7f37] text-white" : "bg-ink/5 text-ink/45 hover:bg-[#dafbe1] hover:text-[#1a7f37]"}`}>
                       <Check size={11} className={selected ? "opacity-100" : "opacity-0"} />{selected ? "Selected" : "Click to select"}
-                    </span>
+                    </button>
+                    <label className="mt-3 block text-[10px] font-bold uppercase tracking-wider text-ink/45" onClick={(event) => event.stopPropagation()}>
+                      This-quarter action
+                      <select aria-label={`Action for ${initiative.name}`} value={state.initiativeActions?.[initiative.id] || (selectedIds.includes(initiative.id) ? "scale" : funded ? "maintain" : "discover")} onChange={(event) => setInitiativeAction(initiative.id, event.target.value as any)} className="mt-1 block w-full rounded-md border border-ink/15 bg-white px-2 py-1.5 text-xs font-bold normal-case tracking-normal text-ink">
+                        <option value="discover">Discover</option><option value="pilot">Pilot</option><option value="scale">Scale</option><option value="maintain">Run / maintain</option><option value="pause">Pause</option><option value="retire">Retire</option>
+                      </select>
+                    </label>
                     <div
                       title={baselineTitle}
                       className="mt-4 grid grid-cols-2 gap-2 border-t border-ink/8 pt-3 text-[11px] sm:grid-cols-5"
@@ -273,7 +273,7 @@ export default function GameDecisionView({
                         <b className="block text-ink">
                           {formatCurrency(Number(live.currentCost ?? initiative.cost), state.currencyMode)}
                         </b>
-                        <small className="text-ink/40">investment</small>
+                        <small className="text-ink/40">minimum quarterly funding</small>
                       </span>
                       <span>
                         <b className="block text-emerald">
@@ -325,19 +325,36 @@ export default function GameDecisionView({
                         style={{ width: `${evolution}%` }}
                       />
                     </div>
-                  </button>
+                  </article>
                 );
                 })}
               </div>
               <aside className="order-last xl:sticky xl:top-24 xl:order-none" aria-label="Quarter decision configuration">
-                <OperatingSystemControls state={state} onAllocationChange={onAllocationChange} onDeploymentChange={onDeploymentChange} minimumInitiativeCost={requiredDeployment} compact />
+                <OperatingSystemControls state={state} onAllocationChange={onAllocationChange} onDeploymentChange={onDeploymentChange} compact />
               </aside>
+              <section className="xl:col-span-2 rounded-2xl border border-[#8c959f] bg-[#eef1f3] p-4" aria-label="Decision outcome preview">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-[.18em] text-[#1a7f37]">Before you commit</p>
+                    <h3 className="mt-1 text-base font-bold text-[#24292f]">What this decision will do</h3>
+                  </div>
+                  <span className="rounded-full border border-[#8c959f] bg-white px-2 py-1 text-[10px] font-bold text-[#57606a]">{selectedInitiatives.length || 0} active · {formatBudget(capitalPlan.requiredCapital, state.currencyMode)} required</span>
+                </div>
+                <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                  <div className="rounded-xl border border-[#d0d7de] bg-white p-3"><p className="text-[10px] font-bold uppercase tracking-wide text-[#57606a]">Selected actions</p><p className="mt-1 text-sm font-bold text-[#24292f]">{selectedInitiatives.length ? selectedInitiatives.map((item) => `${item.name}: ${state.initiativeActions?.[item.id] || 'scale'}`).join(' · ') : 'Observation quarter'}</p></div>
+                  <div className="rounded-xl border border-[#d0d7de] bg-white p-3"><p className="text-[10px] font-bold uppercase tracking-wide text-[#57606a]">Delivery / discovery</p><p className="mt-1 text-sm font-bold text-[#24292f]">{formatBudget(capitalPlan.initiativeMinimum, state.currencyMode)}</p><p className="mt-1 text-[10px] text-[#57606a]">Discovery uses 10% of an initiative&apos;s current cost.</p></div>
+                  <div className="rounded-xl border border-[#d0d7de] bg-white p-3"><p className="text-[10px] font-bold uppercase tracking-wide text-[#57606a]">Capital runway</p><p className="mt-1 text-sm font-bold text-[#24292f]">{formatBudget(Math.max(0, state.campaignBudgetRemaining - deployment), state.currencyMode)} after release</p><p className="mt-1 text-[10px] text-[#57606a]">Unused reserve carries forward.</p></div>
+                  <div className="rounded-xl border border-[#d0d7de] bg-white p-3"><p className="text-[10px] font-bold uppercase tracking-wide text-[#57606a]">Trade-off</p><p className="mt-1 text-sm font-bold text-[#24292f]">{selectedInitiatives.length === 3 ? 'Broader portfolio' : selectedInitiatives.length === 2 ? 'Focused balance' : selectedInitiatives.length === 1 ? 'Deep focus' : 'Preserve capacity'}</p><p className="mt-1 text-[10px] text-[#57606a]">More bets increase breadth; fewer bets concentrate capability.</p></div>
+                </div>
+              </section>
             </div>
             <p className="mt-4 flex items-center gap-2 text-[11px] text-ink/45">
               <Info size={13} /> Values shown are current operating conditions.
               Funding changes the initiative over time. Hover a metric row to
               compare against its campaign baseline.
             </p>
+            {capacityValidation.issues.length > 0 && <p role="status" className="mt-3 rounded-xl bg-[#ffebe9] px-3 py-2 text-xs font-bold text-[#cf222e]">{capacityValidation.issues[0]?.message || "This action plan exceeds available operating capacity."}</p>}
+            {!capacityValidation.issues.length && Object.values(capacityValidation.gates).some((gate) => gate.status !== "ready") && <p className="mt-3 rounded-xl bg-[#fff8c5] px-3 py-2 text-xs font-medium text-[#57606a]">Experiment mode: this portfolio has readiness gaps. You can proceed, but results will be slower and riskier—then capture what you learned in the quarter log.</p>}
           </div>
           <div className="order-6 mt-5 flex flex-col items-end gap-3">
             {requiresMoreDeployment && (
@@ -347,7 +364,7 @@ export default function GameDecisionView({
                 {portfolioFitsThisQuarter && <button type="button" onClick={() => onDeploymentChange(Number(capitalPlan.requiredCapital.toFixed(1)))} className="mt-3 rounded-lg bg-[#24292f] px-3 py-2 text-xs font-bold text-white transition hover:bg-[#0969da]">Fund this plan</button>}
               </div>
             )}
-            {state.feedback.startsWith("This portfolio needs") && <p role="status" className="w-full rounded-xl bg-[#ffebe9] px-3 py-2 text-right text-xs font-bold text-[#cf222e]">{state.feedback}</p>}
+            {(state.feedback.startsWith("This portfolio needs") || state.feedback.startsWith("This lifecycle plan")) && <p role="status" className="w-full rounded-xl bg-[#ffebe9] px-3 py-2 text-right text-xs font-bold text-[#cf222e]">{state.feedback}</p>}
             {reserveExhausted && (
               <div className="w-full rounded-2xl border border-[#bf8700]/35 bg-[#fff8c5] p-4 text-left sm:max-w-2xl">
                 <p className="text-sm font-bold text-[#24292f]">Campaign reserve exhausted.</p>

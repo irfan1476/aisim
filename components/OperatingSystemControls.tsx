@@ -1,15 +1,15 @@
 import { SlidersHorizontal, Wallet } from "lucide-react";
 import { formatBudget, formatCurrency } from "../lib/currency";
-import { calculateCapitalPlan, calculateCapitalRunway } from "../lib/game/capital";
+import { calculateActionCapitalPlan, calculateCapitalRunway } from "../lib/game/capital";
 import { fundingIntensityFor } from "../lib/game/effectResolver";
 import { deploymentCapacity } from "../lib/game/state";
 import type { GameViewState } from "./gameViewTypes";
+import type { InitiativeActionSet } from "../lib/game/businessModel";
 
 type Props = {
   state: GameViewState;
   onAllocationChange: (key: string, value: number) => void;
   onDeploymentChange: (amount: number) => void;
-  minimumInitiativeCost?: number;
   compact?: boolean;
 };
 
@@ -23,7 +23,6 @@ export default function OperatingSystemControls({
   state,
   onAllocationChange,
   onDeploymentChange,
-  minimumInitiativeCost = 0,
   compact = false,
 }: Props) {
   const total = Object.values(state.alloc).reduce((sum, value) => sum + Number(value || 0), 0);
@@ -39,7 +38,10 @@ export default function OperatingSystemControls({
     capacity.maximumDeployment,
   );
   const suggestedDeployment = Math.min(capacity.maximumDeployment, capacity.basePace * 0.6);
-  const plan = calculateCapitalPlan(state, state.selected, minimumInitiativeCost, deployment);
+  const initiativeActions: InitiativeActionSet = Object.keys(state.initiativeActions || {}).length
+    ? state.initiativeActions
+    : Object.fromEntries(state.selected.map((id) => [id, "scale" as const]));
+  const plan = calculateActionCapitalPlan(state, initiativeActions, deployment);
   const runway = calculateCapitalRunway(state, deployment);
   const deliveryIntensity = fundingIntensityFor(plan.deliveryCapital, plan.initiativeMinimum);
   const additionalMaturityCredit = plan.initiativeMinimum > 0

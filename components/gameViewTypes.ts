@@ -2,6 +2,7 @@ import type { InitiativeState } from '../lib/game/initiativeState';
 import type { InitiativeGeneration } from '../lib/game/generator';
 import type { UserReflections } from '../lib/game/state';
 import type { CurrencyMode } from '../lib/scenarios/types';
+import type { FinancialLedger, InitiativeActionSet } from '../lib/game/businessModel';
 
 export type MetricColor = 'gold' | 'emerald' | 'blue' | 'purple' | 'red' | 'cyan';
 
@@ -28,6 +29,7 @@ export interface GameViewState {
   q: number;
   stage: 'decide' | 'results' | 'done';
   selected: string[];
+  initiativeActions: InitiativeActionSet;
   alloc: Record<string, number>;
   roi: number;
   revenue: number;
@@ -42,6 +44,7 @@ export interface GameViewState {
   innovation: number;
   spent: number;
   score: number;
+  financialLedger: FinancialLedger;
   history: unknown[];
   achievements: string[];
   crisis: GameCrisis | null;

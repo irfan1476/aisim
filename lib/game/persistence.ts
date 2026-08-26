@@ -1,8 +1,11 @@
 import { initialGameState, normalizeDeploymentAmount, quarterlyDeploymentCap, type Allocation, type GameState, type MetricKey, type PortfolioSnapshot, type QuarterSnapshot } from './state';
-import { initializeInitiativeStates, type InitiativeState } from './initiativeState';
+import { initializeInitiativeStates, migrateInitiativeState, type InitiativeState } from './initiativeState';
 import { createInitiativeGeneration, generateInitiatives, inferArchetypeFromDecisions, type InitiativeGeneration, type ScenarioArchetype } from './generator';
 import { getScenario } from '../scenarios/registry';
 import { scenarioInitiativesToStates } from './initiativeAdapter';
+import { emptyFinancialLedger } from './economics';
+import { isInitiativeAction } from './initiativeState';
+import type { InitiativeActionSet } from './businessModel';
 
 export const GAME_STORAGE_KEY = 'ai-investment-game';
 export const LEGACY_GAME_STORAGE_KEY = 'ai-investment-save';
@@ -10,7 +13,7 @@ export const WHAT_IF_STORAGE_KEY = 'ai-whatif-applied';
 export const LEADERBOARD_STORAGE_KEY = 'ai_simulation_leaderboard';
 export const LEGACY_MIGRATION_KEY = 'ai-investment-legacy-migrated';
 export const CAMPAIGN_CHECKPOINTS_STORAGE_KEY = 'ai-investment-campaign-checkpoints';
-export const GAME_PERSISTENCE_VERSION = 6;
+export const GAME_PERSISTENCE_VERSION = 7;
 
 export type CampaignCheckpoint = {
   id: string;
@@ -96,9 +99,9 @@ function normalizeInitiativeStates(value: unknown, fallback: Record<string, Init
   const source = isRecord(value) ? value : {};
   return Object.fromEntries(Object.entries(fallback).map(([id, base]) => {
     const saved = isRecord(source[id]) ? source[id] : {};
+    const migrated = migrateInitiativeState(saved as Partial<InitiativeState>, base);
     return [id, {
-      ...base,
-      ...saved,
+      ...migrated,
       currentData: numberOr(saved.currentData, base.currentData),
       currentRoi: numberOr(saved.currentRoi, base.currentRoi),
       currentCost: numberOr(saved.currentCost, base.currentCost),
@@ -173,6 +176,12 @@ function normalizeSnapshot(
   if (value.crisisResponseSpend !== undefined) snapshot.crisisResponseSpend = Math.max(0, numberOr(value.crisisResponseSpend, 0));
   if (value.remainingReserve !== undefined) snapshot.remainingReserve = Math.max(0, numberOr(value.remainingReserve, 0));
   if (value.fundingIntensity !== undefined) snapshot.fundingIntensity = Math.max(1, numberOr(value.fundingIntensity, 1));
+  if (isRecord(value.initiativeActions)) {
+    snapshot.initiativeActions = Object.fromEntries(Object.entries(value.initiativeActions).filter(([, action]) => isInitiativeAction(action))) as InitiativeActionSet;
+  }
+  if (isRecord(value.initiativeFunding)) snapshot.initiativeFunding = value.initiativeFunding as QuarterSnapshot['initiativeFunding'];
+  if (isRecord(value.financialLedger)) snapshot.financialLedger = value.financialLedger as QuarterSnapshot['financialLedger'];
+  if (isRecord(value.capacity)) snapshot.capacity = value.capacity as QuarterSnapshot['capacity'];
   if (
     value.budgetProvenance === 'campaign-purse-with-two-quarter-cap'
     || value.budgetProvenance === 'campaign-purse-with-carry-forward-cap'
@@ -227,6 +236,22 @@ export function normalizeGameState(value: unknown): GameState {
   next.initiativeStates = hasCurrentInitiativeStates
     ? normalizeInitiativeStates(source.initiativeStates, generatedDefaults)
     : (next.history.at(-1)?.initiativeStates || generatedDefaults);
+  next.initiativeActions = isRecord(source.initiativeActions)
+    ? Object.fromEntries(Object.entries(source.initiativeActions).filter(([, action]) => isInitiativeAction(action))) as InitiativeActionSet
+    : Object.fromEntries(next.selected.map((id) => [id, 'scale']));
+  const financialSource = isRecord(source.financialLedger) ? source.financialLedger : {};
+  next.financialLedger = {
+    ...emptyFinancialLedger(),
+    investment: Math.max(0, numberOr(financialSource.investment, 0)),
+    runCost: Math.max(0, numberOr(financialSource.runCost, 0)),
+    crisisCost: Math.max(0, numberOr(financialSource.crisisCost, 0)),
+    grossBenefit: Math.max(0, numberOr(financialSource.grossBenefit, 0)),
+    netBenefit: numberOr(financialSource.netBenefit, 0),
+    cumulativeInvestment: Math.max(0, numberOr(financialSource.cumulativeInvestment, 0)),
+    cumulativeNetBenefit: numberOr(financialSource.cumulativeNetBenefit, 0),
+    paybackQuarter: financialSource.paybackQuarter === undefined ? undefined : Math.max(0, Math.round(numberOr(financialSource.paybackQuarter, 0))) || undefined,
+    realisedROI: numberOr(financialSource.realisedROI, 0),
+  };
   next.achievements = stringArrayOr(source.achievements, defaults.achievements);
   next.crisis = source.crisis ?? defaults.crisis;
   next.feedback = typeof source.feedback === 'string' ? source.feedback : defaults.feedback;
@@ -235,6 +260,16 @@ export function normalizeGameState(value: unknown): GameState {
   next.userReflections = {
     q1: reflections.q1 === 'yes' || reflections.q1 === 'partial' || reflections.q1 === 'no' ? reflections.q1 : undefined,
     q6: typeof reflections.q6 === 'string' ? reflections.q6.slice(0, 500) : undefined,
+    experimentRatings: isRecord(reflections.experimentRatings)
+      ? Object.fromEntries(Object.entries(reflections.experimentRatings).flatMap(([quarter, rating]) => {
+          const value = Math.round(numberOr(rating, 0));
+          return value >= 1 && value <= 5 ? [[quarter, value as 1 | 2 | 3 | 4 | 5]] : [];
+        }))
+      : {},
+    experimentNotes: isRecord(reflections.experimentNotes)
+      ? Object.fromEntries(Object.entries(reflections.experimentNotes).flatMap(([quarter, note]) =>
+          typeof note === 'string' ? [[quarter, note.slice(0, 500)]] : []))
+      : {},
   };
   next.scenarioMode = source.scenarioMode === true;
   next.scenarioId = typeof source.scenarioId === 'string' ? source.scenarioId : undefined;

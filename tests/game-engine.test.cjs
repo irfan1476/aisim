@@ -426,7 +426,7 @@ test('scenario initialization clears Standard-mode default selections', () => {
 test('maturity and allocation helpers stay bounded and deterministic', () => {
   assert.equal(maturityMultiplier('nascent'), 0.72);
   assert.equal(maturityMultiplier('optimized'), 1.08);
-  assert.equal(allocationToReadiness({ infra: 0, data: 0, people: 0, mlops: 0, compliance: 0, innovation: 100 }).data, 0.3);
+  assert.equal(allocationToReadiness({ infra: 0, data: 0, people: 0, mlops: 0, compliance: 0, innovation: 100 }).data, 0);
   assert.equal(allocationToReadiness({ infra: 50, data: 30, people: 25, mlops: 50, compliance: 20, innovation: 0 }).technical, 1);
   assert.equal(allocationToReadiness({ infra: 50, data: 30, people: 25, mlops: 50, compliance: 20, innovation: 0 }).governance, 1);
 });
@@ -487,9 +487,16 @@ test('scenario neglect applies an explicit penalty only after the configured thr
     },
   };
 
-  let state = initialState;
+  const funded = resolveQuarter(initialState, { selected: ['fraudDetection'], alloc: scenario.startingState.defaultAllocation });
+  let state = {
+    ...initialState,
+    initiativeStates: funded.initiativeStates,
+    scenarioState: funded.scenarioState,
+    q: 2,
+  };
+  const fundedPressure = state.scenarioState.metrics.fraudPressure;
   const pressureByQuarter = [];
-  for (let quarter = 1; quarter <= 4; quarter += 1) {
+  for (let quarter = 2; quarter <= 5; quarter += 1) {
     const result = resolveQuarter(state, { selected: [], alloc: scenario.startingState.defaultAllocation });
     pressureByQuarter.push(result.scenarioState.metrics.fraudPressure);
     state = {
@@ -501,14 +508,33 @@ test('scenario neglect applies an explicit penalty only after the configured thr
   }
 
   assert.equal(state.initiativeStates.fraudDetection.quartersSinceLastFund, 4);
-  assert.equal(pressureByQuarter[0], 80);
-  assert.equal(pressureByQuarter[1], 80);
-  assert.equal(pressureByQuarter[2], 80);
+  assert.equal(pressureByQuarter[0], fundedPressure);
+  assert.equal(pressureByQuarter[1], fundedPressure);
+  assert.equal(pressureByQuarter[2], fundedPressure);
   assert.ok(pressureByQuarter[3] > pressureByQuarter[2]);
 
   const fifth = resolveQuarter(state, { selected: [], alloc: scenario.startingState.defaultAllocation });
   assert.ok(fifth.scenarioState.metrics.fraudPressure > pressureByQuarter[3]);
   assert.equal(fifth.initiativeStates.fraudDetection.quartersSinceLastFund, 5);
+});
+
+test('never-funded alternatives do not create scenario neglect penalties', () => {
+  const scenario = getScenario('bankNext');
+  let state = {
+    ...initialGameState(undefined, {
+      scenarioMode: true,
+      scenarioId: scenario.id,
+      scenarioStartingMetrics: scenario.startingState.startingMetrics,
+    }),
+    initiativeStates: scenarioInitiativesToStates(scenario.initiatives),
+    scenarioState: { metrics: { ...scenario.startingState.startingMetrics }, progress: {}, flags: {} },
+  };
+  for (let quarter = 1; quarter <= 5; quarter += 1) {
+    const result = resolveQuarter(state, { selected: [], alloc: scenario.startingState.defaultAllocation });
+    assert.equal(result.scenarioState.metrics.fraudPressure, scenario.startingState.startingMetrics.fraudPressure);
+    state = { ...state, initiativeStates: result.initiativeStates, scenarioState: result.scenarioState, q: quarter + 1 };
+  }
+  assert.equal(state.initiativeStates.fraudDetection.quartersFunded, 0);
 });
 
 test('scenario metric effects clamp at both native boundaries', () => {
@@ -794,6 +820,9 @@ test('scenario quarter flow persists progress and resets only quarter-local cris
     scenarioState: { metrics: { ...scenario.startingState.startingMetrics }, progress: {}, flags: {} },
     scenarioBudgetRemaining: 5,
     quarterlyCrisisCost: 0.5,
+    // The crisis response is a real cash commitment: release enough capital
+    // to cover both the selected delivery actions and the response.
+    deploymentAmount: 3.2,
   });
 
   useGameStore.getState().confirmDecisions();
@@ -959,6 +988,22 @@ test('a crisis cost reduces usable campaign reserve without reinstating a quarte
   assert.equal(afterCrisis.campaignBudgetRemaining, 109.5);
 });
 
+test('an unaffordable paid crisis response is rejected without impact or spend', () => {
+  const base = initialGameState(undefined, { campaignBudget: 10, quarterlyBudget: 2 });
+  const state = {
+    ...base,
+    spent: 10,
+    campaignBudgetRemaining: 0,
+    crisis: { title: 'Budget test crisis', type: 'TEST', text: 'Test', options: [] },
+  };
+  const after = applyCrisisResponse(state, { impact: { risk: -20 }, cost: 0.5 });
+  assert.equal(after.spent, 10);
+  assert.equal(after.campaignBudgetRemaining, 0);
+  assert.equal(after.risk, state.risk);
+  assert.equal(after.crisis.title, state.crisis.title);
+  assert.match(after.feedback, /requires 0\.50/);
+});
+
 test('capital plan separates initiative floor, continuity, and optional acceleration', () => {
   const base = initialGameState(undefined, { campaignBudget: 60, quarterlyBudget: 5 });
   const evolved = {
@@ -1026,4 +1071,12 @@ test('a zero-funding quarter resolves and keeps the learner moving', () => {
   assert.equal(resolved.history.length, 1);
   assert.equal(resolved.history[0].deployedAmount, 0);
   assert.match(resolved.feedback, /no new funding/);
+});
+
+test('an observation quarter leaves native metrics unchanged', () => {
+  const state = initialGameState(undefined, { campaignBudget: 24, quarterlyBudget: 2 });
+  const result = resolveQuarter(state, { selected: [], alloc: allocation, deploymentAmount: 0 });
+  for (const key of ['roi', 'revenue', 'efficiency', 'adoption', 'risk', 'data', 'satisfaction', 'literacy', 'spent']) {
+    assert.equal(result.metrics[key], state[key]);
+  }
 });
