@@ -258,7 +258,7 @@ export default function GameDoneScreen({
           </button>
           <button
             onClick={exportReport}
-            className="flex items-center gap-2 rounded-full border border-[#d0d7de] bg-white px-4 py-2 text-sm font-bold shadow-sm hover:border-[#0969da]"
+            className="flex items-center gap-2 rounded-full border border-[#d0d7de] bg-white px-4 py-2 text-sm font-bold shadow-sm hover:border-[#1a7f37]"
           >
             <Download size={16} /> Export learning report
           </button>
@@ -317,12 +317,12 @@ export default function GameDoneScreen({
             ].map(([label, value, detail]) => (
               <div key={String(label)} className="rounded-2xl bg-[#f6f8fa] p-4">
                 <p className="text-xs font-bold uppercase tracking-wide text-[#656d76]">{label}</p>
-                <b className="mt-2 block text-2xl text-[#0969da]">{Number(value).toFixed(label === "Outcome movement" ? 1 : 0)}</b>
+                <b className="mt-2 block text-2xl text-[#1a7f37]">{Number(value).toFixed(label === "Outcome movement" ? 1 : 0)}</b>
                 <p className="mt-2 text-xs leading-5 text-[#656d76]">{detail}</p>
               </div>
             ))}
           </div>
-          {scenario ? <p className="mt-4 rounded-2xl border border-[#54aeff]/25 bg-[#ddf4ff] p-4 text-sm leading-6 text-[#57606a]">Scenario progress is capped at a small bonus. It rewards movement toward the domain targets without overpowering the core operating results.</p> : null}
+          {scenario ? <p className="mt-4 rounded-2xl border border-[#1a7f37]/20 bg-[#eef7f0] p-4 text-sm leading-6 text-[#57606a]">Scenario progress is capped at a small bonus. It rewards movement toward the domain targets without overpowering the core operating results.</p> : null}
         </section>
         <section className="mt-6 grid gap-6 lg:grid-cols-2">
           <div className="rounded-3xl border border-[#d0d7de] bg-white p-6 shadow-sm md:p-8">
@@ -361,7 +361,7 @@ export default function GameDoneScreen({
         <section className="mt-6 grid gap-6 lg:grid-cols-[1.35fr_.65fr]">
           <div className="rounded-3xl border border-[#d0d7de] bg-white p-6 shadow-sm md:p-8">
             <div className="flex items-center gap-3">
-              <Compass className="text-[#0969da]" />
+              <Compass className="text-[#1a7f37]" />
               <div>
                 <h2 className="text-2xl font-bold">
                   Your transformation compass
@@ -380,11 +380,11 @@ export default function GameDoneScreen({
                 <div key={label}>
                   <div className="flex items-end justify-between">
                     <p className="font-bold">{label}</p>
-                    <b className="text-xl text-[#0969da]">{n(value, 0)}%</b>
+                    <b className="text-xl text-[#1a7f37]">{n(value, 0)}%</b>
                   </div>
                   <div className="mt-3 h-3 rounded-full bg-[#eaeef2]">
                     <div
-                      className="h-3 rounded-full bg-[#0969da]"
+                      className="h-3 rounded-full bg-[#1a7f37]"
                       style={{ width: `${Math.min(100, Number(value))}%` }}
                     />
                   </div>
@@ -397,13 +397,13 @@ export default function GameDoneScreen({
             <div className="mt-7 rounded-2xl border border-[#d0d7de] bg-[#f6f8fa] p-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="text-sm font-bold">Pattern confidence</p>
-                <b className="text-[#0969da]">
+                <b className="text-[#1a7f37]">
                   {campaignInference.confidence}%
                 </b>
               </div>
               <div className="mt-2 h-2 rounded-full bg-[#d0d7de]">
                 <div
-                  className="h-2 rounded-full bg-[#0969da]"
+                  className="h-2 rounded-full bg-[#1a7f37]"
                   style={{ width: `${campaignInference.confidence}%` }}
                 />
               </div>
@@ -415,7 +415,7 @@ export default function GameDoneScreen({
           </div>
           <div className="rounded-3xl border border-[#d0d7de] bg-white p-6 shadow-sm md:p-8">
             <div className="flex items-center gap-3">
-              <Sparkles className="text-[#d4a72c]" />
+              <Sparkles className="text-[#1a7f37]" />
               <h2 className="text-2xl font-bold">The one big lesson</h2>
             </div>
             <p className="mt-6 text-xl font-semibold leading-8">
@@ -423,7 +423,7 @@ export default function GameDoneScreen({
                 ? "Value does not scale without people. Make adoption a first-class investment."
                 : "Governance is your multiplier. Reduce risk before scaling the biggest bets."}
             </p>
-            <div className="mt-6 rounded-2xl bg-[#fff8c5] p-4 text-sm leading-6 text-[#6e5620]">
+            <div className="mt-6 rounded-2xl border border-[#1a7f37]/20 bg-[#eef7f0] p-4 text-sm leading-6 text-[#57606a]">
               A strong strategy balances the model, the operating system, and
               the humans who make it real.
             </div>
@@ -439,7 +439,7 @@ export default function GameDoneScreen({
                 Quarter-by-quarter decisions and measurable movement.
               </p>
             </div>
-            <span className="rounded-full bg-[#ddf4ff] px-3 py-1 text-sm font-bold text-[#0969da]">
+            <span className="rounded-full bg-[#eef7f0] px-3 py-1 text-sm font-bold text-[#1a7f37]">
               {history.length} quarters captured
             </span>
           </div>
@@ -527,7 +527,7 @@ export default function GameDoneScreen({
                 ],
               ].map(([num, title, body]) => (
                 <div key={num} className="flex gap-4">
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#ddf4ff] text-sm font-bold text-[#0969da]">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#eef7f0] text-sm font-bold text-[#1a7f37]">
                     {num}
                   </span>
                   <div>
