@@ -157,8 +157,8 @@ export default function GameDecisionView({
       </header>
       <div className="grid w-full lg:grid-cols-[16rem_minmax(0,1fr)]">
       <div className="order-2 min-w-0 p-5 pb-28 sm:pb-5 lg:order-2">
-        <section>
-          <div className="mb-5 flex items-end justify-between">
+        <section className="flex flex-col">
+          <div className="order-1 mb-5 flex items-end justify-between">
             <div>
               <p className="text-xs font-bold uppercase tracking-[.22em] text-[#1a7f37]">
                 Decision window
@@ -174,13 +174,17 @@ export default function GameDecisionView({
               <Clock3 size={15} /> Self-paced mode
             </div>
           </div>
-          <GameCommandHUD state={state} metrics={metrics} />
-          <AnalyticsHub state={state} initiatives={initiatives} hideTrigger externalOpen={analyticsRequest} />
-          <div className={`mt-5 grid items-stretch gap-5 ${state.scenarioMode ? "2xl:grid-cols-2" : ""}`}>
+          <div className="order-2">
+            <GameCommandHUD state={state} metrics={metrics} />
+          </div>
+          <div className="order-3">
+            <AnalyticsHub state={state} initiatives={initiatives} hideTrigger externalOpen={analyticsRequest} />
+          </div>
+          <div className={`order-5 mt-5 grid items-stretch gap-5 ${state.scenarioMode ? "2xl:grid-cols-2" : ""} lg:order-4`}>
             {state.scenarioMode && <ScenarioProgress state={state} />}
             <DecisionDashboardVisuals state={state} />
           </div>
-          <div className="decision-workbench rounded-3xl border border-ink/8 bg-white p-5">
+          <div className="decision-workbench order-4 rounded-3xl border border-ink/8 bg-white p-5 lg:order-5">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-lg font-bold">Choose initiatives</h2>
@@ -325,7 +329,7 @@ export default function GameDecisionView({
                 );
                 })}
               </div>
-              <aside className="order-first sticky top-24 xl:order-none" aria-label="Quarter decision configuration">
+              <aside className="order-last xl:sticky xl:top-24 xl:order-none" aria-label="Quarter decision configuration">
                 <OperatingSystemControls state={state} onAllocationChange={onAllocationChange} onDeploymentChange={onDeploymentChange} minimumInitiativeCost={requiredDeployment} compact />
               </aside>
             </div>
@@ -335,7 +339,7 @@ export default function GameDecisionView({
               compare against its campaign baseline.
             </p>
           </div>
-          <div className="mt-5 flex flex-col items-end gap-3">
+          <div className="order-6 mt-5 flex flex-col items-end gap-3">
             {requiresMoreDeployment && (
               <div className="w-full rounded-2xl border border-[#bf8700]/35 bg-[#fff8c5] p-3 text-left sm:max-w-2xl">
                 <p className="text-sm font-bold text-[#24292f]">Your selected plan needs {formatBudget(capitalPlan.requiredCapital, state.currencyMode)} this quarter.</p>

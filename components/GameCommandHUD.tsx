@@ -1,4 +1,4 @@
-import { Activity, ArrowDownRight, ArrowUpRight, CircleDollarSign, Gauge, Target } from 'lucide-react';
+import { Activity, ArrowDownRight, ArrowUpRight, CircleDollarSign, Gauge, Target, TriangleAlert } from 'lucide-react';
 import type { GameViewState, Metric } from './gameViewTypes';
 import { formatBudget, formatCurrency } from '../lib/currency';
 import { getScenario } from '../lib/scenarios/registry';
@@ -12,6 +12,24 @@ function metricTone(label: string) {
   if (label.toLowerCase().includes('data')) return { bar: 'bg-[#2da44e]', tint: 'bg-[#eef7f0]', icon: Activity };
   if (label.toLowerCase().includes('efficiency')) return { bar: 'bg-[#1a7f37]', tint: 'bg-[#eef7f0]', icon: ArrowUpRight };
   return { bar: 'bg-[#6b746d]', tint: 'bg-[#f4f6f4]', icon: Target };
+}
+
+type KpiTarget = { target: number; direction: 'higher' | 'lower' };
+
+const KPI_TARGETS: Record<string, KpiTarget> = {
+  roi: { target: 40, direction: 'higher' },
+  adoption: { target: 70, direction: 'higher' },
+  efficiency: { target: 55, direction: 'higher' },
+  risk: { target: 25, direction: 'lower' },
+};
+
+function getKpiTarget(label: string) {
+  const lower = label.toLowerCase();
+  if (lower.includes('risk')) return KPI_TARGETS.risk;
+  if (lower.includes('adoption')) return KPI_TARGETS.adoption;
+  if (lower.includes('efficiency')) return KPI_TARGETS.efficiency;
+  if (lower.includes('roi')) return KPI_TARGETS.roi;
+  return undefined;
 }
 
 export default function GameCommandHUD({ state, metrics }: Props) {
@@ -39,18 +57,36 @@ export default function GameCommandHUD({ state, metrics }: Props) {
           const Icon = tone.icon;
           const value = Number(metric.value || 0);
           const width = Math.min(100, Math.max(6, metric.label.toLowerCase().includes('risk') ? 100 - value : value));
-          const cardClass = `rounded-2xl border border-[#d0d7de] p-3 ${tone.tint}`;
-          const iconClass = metric.label.toLowerCase().includes('risk') ? 'text-[#cf222e]' : 'text-[#6e40c9]';
+          const target = getKpiTarget(metric.label);
+          const attention = target
+            ? target.direction === 'lower'
+              ? value > target.target
+              : value < target.target
+            : false;
+          const targetText = target
+            ? `${target.direction === 'lower' ? '≤' : '≥'} ${target.target}${metric.unit || ''}`
+            : '';
+          const cardClass = attention
+            ? 'rounded-2xl border border-[#d29922] bg-[#fff8e1] p-3 ring-1 ring-[#d29922]/20'
+            : `rounded-2xl border border-[#d0d7de] p-3 ${tone.tint}`;
+          const statusClass = attention ? 'text-[#9a6700]' : 'text-[#1a7f37]';
           return (
             <article key={metric.label} className={cardClass}>
               <div className="flex items-center justify-between gap-2">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-[#57606a]">{metric.label}</span>
-                <Icon size={14} className="text-[#238636]" />
+                {attention ? <TriangleAlert size={14} className={statusClass} /> : <Icon size={14} className="text-[#238636]" />}
               </div>
               <p className="mt-2 text-2xl font-bold tracking-tight text-[#1f2328]">{value.toFixed(metric.label === 'ROI' ? 1 : 0)}{metric.unit}</p>
               <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-black/10">
                 <div className={`h-full rounded-full ${tone.bar}`} style={{ width: `${width}%` }} />
               </div>
+              {targetText && (
+                <div className={`mt-2 flex flex-wrap items-center gap-1 text-[10px] font-semibold ${statusClass}`}>
+                  {attention ? <TriangleAlert size={12} /> : <span aria-hidden="true">✓</span>}
+                  <span>{attention ? 'Needs attention' : 'On track'}</span>
+                  <span className="font-normal opacity-80">· target {targetText}</span>
+                </div>
+              )}
             </article>
           );
         })}
