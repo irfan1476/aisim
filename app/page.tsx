@@ -3,7 +3,6 @@
 import { ArrowRight, BarChart3, FileText, GitBranch, History, RefreshCw, ShieldCheck, Sparkles, Target } from "lucide-react";
 import { useEffect, useState } from "react";
 import Game from "../components/Game";
-import CampaignEvidenceReplayVisual from "../components/CampaignEvidenceReplayVisual";
 import HomepageVisualPanels from "../components/HomepageVisualPanels";
 import { hasCampaignProgress, readPersistedGameState } from "../lib/game/persistence";
 import { scenarioList } from "../lib/scenarios/registry";
@@ -153,7 +152,6 @@ export default function Home() {
           </div>
           <HomepageVisualPanels variant="replay" />
         </div>
-        <div className="mx-auto max-w-7xl px-6 pb-20"><CampaignEvidenceReplayVisual /></div>
       </section>
 
       <section className="bg-[#0d1117] text-white"><div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-6 px-6 py-12 md:flex-row md:items-center"><div className="flex max-w-3xl gap-4"><ShieldCheck className="mt-0.5 shrink-0 text-[#7ee787]" size={25}/><div><h2 className="text-2xl font-bold">Safe to experiment. Serious enough to matter.</h2><p className="mt-2 text-sm leading-6 text-white/60">Build a thesis, make the call, learn from the consequence, and return with a sharper next move.</p></div></div><button type="button" onClick={startSimulation} className="flex shrink-0 items-center gap-3 rounded-md bg-[#08872b] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#077324]">Start your transformation <ArrowRight size={17}/></button></div></section>
