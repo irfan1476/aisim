@@ -3,7 +3,6 @@
 import { ArrowRight, BarChart3, FileText, GitBranch, History, RefreshCw, ShieldCheck, Sparkles, Target } from "lucide-react";
 import { useEffect, useState } from "react";
 import Game from "../components/Game";
-import LearningLoopVisual from "../components/LearningLoopVisual";
 import CampaignEvidenceReplayVisual from "../components/CampaignEvidenceReplayVisual";
 import HomepageVisualPanels from "../components/HomepageVisualPanels";
 import { hasCampaignProgress, readPersistedGameState } from "../lib/game/persistence";
@@ -99,13 +98,17 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="how-it-works" className="scroll-mt-24 bg-[#f1f7f4]">
-        <div className="mx-auto max-w-7xl px-6 py-20 text-center">
+      <section id="how-it-works" className="scroll-mt-24 border-y border-[#c8d4ce] bg-[#f1f7f4]">
+        <div className="mx-auto max-w-7xl px-6 py-12 text-center md:py-14">
           <Eyebrow>How the learning works</Eyebrow>
-          <h2 className="mx-auto mt-4 max-w-4xl text-4xl font-bold tracking-[-.05em] text-[#101820] md:text-6xl">A strategy becomes visible only when it meets consequences.</h2>
-          <p className="mx-auto mt-6 max-w-2xl text-base leading-7 text-[#526159]">Each quarter connects your funding, portfolio action, operating allocation, readiness, and risk. The record becomes the material for the next decision.</p>
-          <div className="mt-10 overflow-hidden rounded-3xl border border-[#c9d6cf] bg-white p-3 text-left shadow-xl shadow-[#0d1117]/5 sm:p-6"><LearningLoopVisual /></div>
-          <div className="mx-auto mt-8 grid max-w-5xl gap-3 text-left md:grid-cols-4">{[["01", "Set context", "Choose the world and campaign purse."], ["02", "Make the call", "Set action, capital, and operating mix."], ["03", "Read evidence", "See outcome, risk, and value move."], ["04", "Adapt", "Record the learning and replay."]].map(([number, title, copy]) => <article key={number} className="rounded-xl border border-[#c9d6cf] bg-white p-4"><p className="text-[10px] font-bold tracking-[.18em] text-[#08872b]">{number}</p><h3 className="mt-3 font-bold text-[#16221b]">{title}</h3><p className="mt-1 text-xs leading-5 text-[#5b6a62]">{copy}</p></article>)}</div>
+          <h2 className="mx-auto mt-3 max-w-3xl text-3xl font-bold tracking-[-.05em] text-[#101820] md:text-5xl">Make the call. Read the outcome. Build the next thesis.</h2>
+          <p className="mx-auto mt-4 max-w-2xl text-sm leading-6 text-[#526159]">One compact loop connects a decision to a measurable consequence, an explicit reflection, and a deliberate replay.</p>
+          <div className="mx-auto mt-7 max-w-5xl rounded-2xl border border-[#30363d] bg-[#0d1117] p-4 text-left text-white shadow-xl shadow-[#0d1117]/10 sm:p-5">
+            <div className="grid gap-2 md:grid-cols-[1fr_auto_1fr_auto_1fr_auto_1fr] md:items-stretch">
+              {[["01", "Decide", "Action + capital", "Scale customer service"], ["02", "Observe", "Outcome + risk", "Adoption 67% · risk 24%"], ["03", "Reflect", "Learning score", "Trust gates slowed uptake"], ["04", "Replay", "One changed thesis", "Pilot one quarter longer"]].map(([number, title, label, detail], index) => <div key={title} className="contents"><article className={`rounded-xl border p-3 ${index === 2 ? "border-[#3fb950]/60 bg-[#3fb950]/10" : "border-white/10 bg-white/5"}`}><p className="text-[9px] font-bold tracking-[.16em] text-[#7ee787]">{number} · {label}</p><h3 className="mt-2 text-sm font-bold">{title}</h3><p className="mt-1 text-[11px] leading-4 text-white/55">{detail}</p></article>{index < 3 && <div className="hidden self-center text-center text-lg font-bold text-[#7ee787] md:block">→</div>}</div>)}
+            </div>
+            <div className="mt-3 flex items-center justify-between gap-3 border-t border-white/10 pt-3 text-[10px] text-white/45"><span>Every turn leaves evidence for the next one.</span><span className="font-bold text-[#7ee787]">Value · readiness · risk · learning</span></div>
+          </div>
         </div>
       </section>
 
