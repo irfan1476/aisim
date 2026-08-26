@@ -23,19 +23,24 @@ import { scenarioList } from "../lib/scenarios/registry";
 
 const moats = [
   [
-    Sparkles,
-    "Living system",
-    "Capital, initiative maturity, readiness, risk, and reserve carry forward. The next decision begins where the previous one left you.",
+    BarChart3,
+    "Capital truth, not a points counter",
+    "Every release is reconciled across delivery, run cost, retirement, crisis response, realised benefit, and payback. A $2.8M commitment cannot quietly become a $20M investment.",
   ],
   [
-    FileText,
-    "Decision evidence",
-    "Every quarter leaves a readable record: what you chose, deployed, deferred, changed, and learned—so outcomes are explainable rather than mysterious.",
+    GitBranch,
+    "Lifecycle economics",
+    "Discover, pilot, scale, run, pause, or retire. Initiative maturity, adoption, readiness, risk, and value evolve together instead of resetting every turn.",
+  ],
+  [
+    Sparkles,
+    "Productive experimentation",
+    "Readiness gaps create slower, riskier experiments—not dead ends. Players can make the call, see the consequence, score the learning, and adapt the next hypothesis.",
   ],
   [
     History,
-    "Replay laboratory",
-    "Save or export the campaign, keep the context steady, change one decision pattern, and compare the evidence from a more deliberate next run.",
+    "Replayable executive evidence",
+    "The decision ledger, causal chain, financial record, self-reflection, and counterfactual replay turn a campaign into a reusable leadership practice loop.",
   ],
 ];
 export default function Home() {
@@ -80,6 +85,9 @@ export default function Home() {
             <a href="#how-it-works" className="transition hover:text-white">
               How it works
             </a>
+            <a href="#why-it-compounds" className="transition hover:text-white">
+              Why it compounds
+            </a>
             <a href="#how-to-play" className="transition hover:text-white">
               How to play
             </a>
@@ -105,11 +113,18 @@ export default function Home() {
             you lead for real.
           </h1>
           <p className="mt-8 max-w-xl text-lg leading-8 text-[#656d76]">
-            Lead a living 12-quarter transformation across open play or four
-            domain scenarios. Set the campaign purse, choose your deployment
-            pace, see capability and risk respond, and learn from the record
-            your decisions create.
+            An executive AI investment simulator that makes strategy tangible:
+            release real campaign capital, run a portfolio through its
+            lifecycle, test a hypothesis, then learn from the evidence—not a
+            black-box score.
           </p>
+          <div className="mt-7 grid max-w-xl gap-2 sm:grid-cols-3">
+            {[
+              ["Real capital", "Delivery, run, exit & payback"],
+              ["Living portfolio", "Maturity, readiness & risk"],
+              ["Learning loop", "Experiment, reflect & replay"],
+            ].map(([title, copy]) => <div key={title} className="rounded-xl border border-[#d0d7de] bg-white/75 p-3 shadow-sm"><p className="text-xs font-bold text-[#1f2328]">{title}</p><p className="mt-1 text-[11px] leading-4 text-[#656d76]">{copy}</p></div>)}
+          </div>
           <button
             type="button"
             onClick={startSimulation}
@@ -284,9 +299,9 @@ export default function Home() {
 
           <div className="mt-8 grid gap-3 md:grid-cols-3">
             {[
-              ["Flexible capital", "Choose your purse, pace, and reserve."],
-              ["Living choices", "Funded and neglected work carries forward."],
-              ["Explainable outcomes", "See what changed and why it mattered."],
+              ["Capital you can explain", "See the full quarterly commitment before you release a dollar: delivery, operating continuity, retirement, and crisis response."],
+              ["Actions with a lifecycle", "Choose discovery, pilot, scale, run, pause, or retirement. Benefits arrive through adoption and readiness, not magic."],
+              ["Experiments that teach", "Try a bold move even when conditions are imperfect; the game makes the drag and risk visible, then asks what you learned."],
             ].map(([title, copy]) => (
               <div key={title} className="rounded-xl border border-[#d0d7de] bg-white p-5">
                 <p className="font-bold">{title}</p>
@@ -294,6 +309,25 @@ export default function Home() {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      <section id="why-it-compounds" className="scroll-mt-24 bg-[#0d1117] text-white">
+        <div className="mx-auto max-w-7xl px-6 py-16 md:py-20">
+          <div className="grid gap-8 lg:grid-cols-[.85fr_1.15fr] lg:items-end">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[.25em] text-[#7ee787]">Why it compounds</p>
+              <h2 className="mt-3 text-4xl font-bold tracking-[-.04em] md:text-5xl">A game is easy. A credible consequence system is not.</h2>
+            </div>
+            <p className="max-w-2xl text-base leading-7 text-white/65">Most simulations offer scenarios or scores. This one connects the underlying operating model, financial logic, decision evidence, and reflection loop so every replay becomes more valuable than the last.</p>
+          </div>
+          <div className="mt-9 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {moats.map(([Icon, title, copy], index) => {
+              const ToolIcon = Icon as typeof Sparkles;
+              return <article key={title as string} className="rounded-2xl border border-white/10 bg-[#161b22] p-5"><span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#3fb950]/15 text-[#7ee787]"><ToolIcon size={18}/></span><p className="mt-5 text-[10px] font-bold uppercase tracking-[.18em] text-white/40">0{index + 1}</p><h3 className="mt-2 text-lg font-bold">{title as string}</h3><p className="mt-2 text-sm leading-6 text-white/60">{copy as string}</p></article>;
+            })}
+          </div>
+          <div className="mt-8 rounded-2xl border border-[#3fb950]/25 bg-[#3fb950]/10 p-5 text-sm leading-6 text-white/75 md:flex md:items-center md:justify-between md:gap-8"><p><b className="text-[#7ee787]">The result:</b> a player does not merely finish a scenario. They leave with evidence of their investment thesis, the trade-offs it created, and a sharper next experiment.</p><a href="#how-to-play" className="mt-3 inline-flex shrink-0 items-center gap-2 font-bold text-[#7ee787] underline underline-offset-4 md:mt-0">See the replay loop <ArrowRight size={15}/></a></div>
         </div>
       </section>
 
@@ -332,7 +366,7 @@ export default function Home() {
               </div>
             </div>
             <div className="rounded-2xl border border-[#d0d7de] bg-white p-6">
-              <p className="text-xs font-bold uppercase tracking-[.22em] text-[#08872b]">The moats</p>
+              <p className="text-xs font-bold uppercase tracking-[.22em] text-[#08872b]">What makes the loop credible</p>
               <div className="mt-4 space-y-4">
                 {moats.map(([Icon, title, copy]) => {
                   const ToolIcon = Icon as typeof Sparkles;
@@ -347,7 +381,6 @@ export default function Home() {
             <div className="rounded-2xl border border-[#d0d7de] bg-white p-6 md:p-7">
               <p className="text-xs font-bold uppercase tracking-[.25em] text-[#08872b]">One connected record</p>
               <h3 className="mt-2 text-2xl font-bold">The campaign remembers.</h3>
-              <p className="mt-2 text-sm leading-6 text-[#656d76]">Your decisions are not isolated turns. Initiative condition, reserve, risk, operating maturity, recommendations, and reflections remain visible as the campaign evolves.</p>
               <div className="mt-6 grid grid-cols-2 gap-3">
                 {[[FileText, "Decision ledger"], [BarChart3, "Live evidence"], [GitBranch, "Causal links"], [History, "Replay record"]].map(([Icon, label]) => { const ToolIcon = Icon as typeof FileText; return <div key={label as string} className="flex min-w-0 items-center gap-2 rounded-lg bg-[#f6f8fa] p-3 text-sm font-semibold"><ToolIcon className="shrink-0 text-[#08872b]" size={17} /><span className="break-words">{label as string}</span></div>; })}
               </div>
