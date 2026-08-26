@@ -99,10 +99,78 @@ body{background:#eef2f5}
    than flooding the decision screen. Strong green is reserved for actions,
    selected controls, and status markers. */
 .scenario-active-panel{background:#e8f5ec!important;border-color:#9bd7aa!important;color:#0d1117!important}
-.scenario-active-panel .bg-white\/70{background:rgba(255,255,255,.72)!important}
+.scenario-active-panel .bg-white\/70,.scenario-active-panel .bg-white\/75{background:rgba(255,255,255,.74)!important}
+.scenario-active-panel select,.scenario-active-panel option{background:#fff!important;color:#0d1117!important}
 .scenario-active-panel .text-gold{color:#1a7f37!important}
 .scenario-active-panel .bg-gold\/15{background:rgba(45,164,78,.12)!important}
-.scenario-active-panel .text-ink\/45,.scenario-active-panel .text-ink\/50,.scenario-active-panel .text-ink\/55,.scenario-active-panel .text-ink\/60{color:#4b6352!important}
+
+/* Decision surface: distinguish operating health from outcome evidence while
+   staying within the existing ink/green palette. */
+.operating-surface {
+  background: rgba(45, 164, 78, 0.035);
+  border-color: rgba(45, 164, 78, 0.28);
+}
+
+.outcome-surface {
+  background: rgba(31, 41, 55, 0.025);
+  border-color: rgba(31, 41, 55, 0.18);
+}
+
+.decision-readout {
+  background: rgba(45, 164, 78, 0.055);
+  border: 1px solid rgba(45, 164, 78, 0.2);
+}
+
+.decision-readout strong,
+.decision-readout [data-emphasis="true"] {
+  color: #1a7f37;
+}
+
+/* Decision surface: distinguish operating health from outcome evidence with
+   restrained tints of the existing green and ink palette. */
+.operating-surface {
+  background: rgba(45, 164, 78, 0.035);
+  border-color: rgba(45, 164, 78, 0.28);
+}
+
+.outcome-surface {
+  background: rgba(31, 41, 55, 0.025);
+  border-color: rgba(31, 41, 55, 0.18);
+}
+
+.decision-readout {
+  background: rgba(45, 164, 78, 0.055);
+  border: 1px solid rgba(45, 164, 78, 0.2);
+}
+
+.decision-readout strong,
+.decision-readout [data-emphasis="true"] {
+  color: #1a7f37;
+}
+
+/* Decision surface: separate operating health from outcome evidence without
+   introducing a new colour family. These are deliberately low-contrast tints
+   of the existing green and ink palette so the content remains primary. */
+.operating-surface {
+  background: rgba(45, 164, 78, 0.035);
+  border-color: rgba(45, 164, 78, 0.28);
+}
+
+.outcome-surface {
+  background: rgba(31, 41, 55, 0.025);
+  border-color: rgba(31, 41, 55, 0.18);
+}
+
+.decision-readout {
+  background: rgba(45, 164, 78, 0.055);
+  border: 1px solid rgba(45, 164, 78, 0.2);
+}
+
+.decision-readout strong,
+.decision-readout [data-emphasis="true"] {
+  color: #1a7f37;
+}
+.scenario-active-panel .text-ink\/45,.scenario-active-panel .text-ink\/50,.scenario-active-panel .text-ink\/55,.scenario-active-panel .text-ink\/60,.scenario-active-panel .text-ink\/65,.scenario-active-panel .text-ink\/70{color:#405848!important}
 
 /* Gameplay chrome stays dark and high-contrast even though the decision
    workspace uses the softer light canvas. */
