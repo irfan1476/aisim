@@ -137,6 +137,15 @@ test('analytics spend uses evolved cumulative investment after advancing quarter
   assert.deepEqual(initiativeSpend(state), [{ id: 'successPredictor', name: 'AI Student Success Predictor', amount: 2.4 }]);
 });
 
+test('analytics recovers initiative spend from funding ledgers in legacy snapshots', () => {
+  const state = futureReadyState();
+  state.initiativeStates.successPredictor.totalInvestment = 0;
+  state.history[0].initiativeFunding = {
+    successPredictor: { discovery: 0.2, delivery: 0, scaleUp: 0.3, run: 0, continuity: 0, retirement: 0, total: 0.5 },
+  };
+  assert.deepEqual(initiativeSpend(state), [{ id: 'successPredictor', name: 'AI Student Success Predictor', amount: 0.5 }]);
+});
+
 test('store defensively limits direct initiative selection to three unique IDs', () => {
   useGameStore.getState().selectInitiatives(['a', 'b', 'a', 'c', 'd']);
   assert.deepEqual(useGameStore.getState().selected, ['a', 'b', 'c']);

@@ -119,6 +119,7 @@ function normalizeInitiativeStates(value: unknown, fallback: Record<string, Init
       currentCost: numberOr(saved.currentCost, base.currentCost),
       currentHuman: numberOr(saved.currentHuman, base.currentHuman),
       quartersFunded: numberOr(saved.quartersFunded, base.quartersFunded),
+      quartersInvested: numberOr(saved.quartersInvested, numberOr(saved.quartersFunded, base.quartersInvested)),
       maturityCredits: numberOr(saved.maturityCredits, numberOr(saved.quartersFunded, base.maturityCredits)),
       quartersSinceLastFund: numberOr(saved.quartersSinceLastFund, base.quartersSinceLastFund),
       totalInvestment: numberOr(saved.totalInvestment, base.totalInvestment),

@@ -21,7 +21,10 @@ import { aggregateAiRiskScore, evolveInitiativeForQuarter } from './lifecycleRes
 export type MaturityLevel = 'nascent' | 'developing' | 'mature' | 'optimized';
 export interface InitiativeState extends Initiative {
   currentData: number; currentRoi: number; currentRisk: 'LOW' | 'MED' | 'HIGH'; currentCost: number; currentHuman: number;
-  quartersFunded: number; /** Delivery-equivalent funding quarters; scale-up capital can add bounded extra progress. */ maturityCredits: number;
+  quartersFunded: number; /** Delivery-equivalent funding quarters; scale-up capital can add bounded extra progress. */
+  /** Calendar quarters in which this initiative received any attributable cash (discovery, delivery, run, or exit). */
+  quartersInvested: number;
+  maturityCredits: number;
   quartersSinceLastFund: number; totalInvestment: number; /** Spend used to preserve an active capability without advancing it. */ continuityInvestment: number;
   maturityLevel: MaturityLevel; dataInvestment: number; governanceInvestment: number; trainingInvestment: number;
   /** Explicit operating lifecycle. Legacy saves are migrated from quartersFunded. */ lifecycle: InitiativeLifecycle;
@@ -116,6 +119,7 @@ export function initializeInitiativeStates(generated: DynamicInitiative[] = init
       currentCost: init.cost,
       currentHuman: init.human,
       quartersFunded: 0,
+      quartersInvested: 0,
       maturityCredits: 0,
       quartersSinceLastFund: 0,
       totalInvestment: 0,
@@ -180,6 +184,9 @@ export function migrateInitiativeState(saved: Partial<InitiativeState> | undefin
     ...base,
     ...source,
     quartersFunded,
+    quartersInvested: Number.isFinite(Number(source.quartersInvested))
+      ? Math.max(0, Number(source.quartersInvested))
+      : quartersFunded,
     currentCost,
     lifecycle,
     lifecycleQuarter: Math.max(0, Number.isFinite(Number(source.lifecycleQuarter)) ? Number(source.lifecycleQuarter) : (quartersFunded > 0 ? quartersFunded : base.lifecycleQuarter)),
@@ -303,6 +310,8 @@ export function updateInitiativeStatesForActions(
     // progress merely because the action map omitted it.
     const action = isInitiativeAction(actions[item.id]) ? actions[item.id] : (item.lifecycle === 'run' ? 'maintain' : 'pause');
     const funding = metrics.fundingByInitiative?.[item.id] || emptyFunding();
+    const attributableInvestment = Math.max(0, Number(funding.total) || 0);
+    if (attributableInvestment > 0) item.quartersInvested = Math.max(0, Number(item.quartersInvested) || 0) + 1;
     const priorLifecycle = isInitiativeLifecycle(item.lifecycle) ? item.lifecycle : (item.quartersFunded > 0 ? 'run' : 'discovery');
     const lifecycle = transitionInitiativeLifecycle(priorLifecycle, action);
     item.lifecycle = lifecycle;
@@ -324,6 +333,7 @@ export function updateInitiativeStatesForActions(
       // durable evidence/data readiness instead of leaving it unrepresented.
       item.dataInvestment = roundMetric(item.dataInvestment + (Number(initiativeAllocation.data || 0) / 14 + evidenceCapital / 10) * intensity);
       item.currentData = roundMetric(Math.min(5, item.currentData + (.04 + Number(initiativeAllocation.data || 0) / 110 + discoveryCapital / 100 + evidenceCapital / 20) * intensity));
+      item.totalInvestment = roundMetric(item.totalInvestment + attributableInvestment);
       item.quartersSinceLastFund += 1;
     } else if (action === 'pilot' || action === 'scale') {
       const delivery = Math.max(0, Number(funding.delivery) || Number(funding.total) || 0);
@@ -355,6 +365,9 @@ export function updateInitiativeStatesForActions(
       item.quartersSinceLastFund += 1;
       item.benefitRealization = 0;
       item.technicalDebt = roundMetric(Math.min(100, item.technicalDebt + 1));
+      // Retirement is still an attributable investment quarter: record the
+      // exit cost even though it produces no delivery progress.
+      if (action === 'retire') item.totalInvestment = roundMetric(item.totalInvestment + attributableInvestment);
     }
     item.dataReadiness = roundMetric(clamp(Number(item.currentData || 0) / 5 * 100, 0, 100));
     Object.assign(item, evolveInitiativeForQuarter(item, action, item.lifecycleQuarter, initiativeAllocation));
@@ -376,6 +389,7 @@ export function updateInitiativeStates(states: Record<string, InitiativeState>, 
         // It prevents neglect while leaving new capability progress to selected work.
         item.quartersSinceLastFund = 0;
         item.totalInvestment = roundMetric(item.totalInvestment + continuitySpend);
+        item.quartersInvested = Math.max(0, Number(item.quartersInvested) || 0) + 1;
         item.continuityInvestment = roundMetric((item.continuityInvestment || 0) + continuitySpend);
         item.maturityCredits = Number.isFinite(item.maturityCredits) ? item.maturityCredits : item.quartersFunded;
         item.maturityLevel = maturityFor(item.maturityCredits, 0);
@@ -393,7 +407,7 @@ export function updateInitiativeStates(states: Record<string, InitiativeState>, 
     // The next-quarter estimate may improve with maturity, but it cannot
     // retroactively change the cost of this quarter's decision.
     const fundedCost = item.currentCost * investmentMultiplier;
-    item.quartersSinceLastFund = 0; item.quartersFunded += 1;
+    item.quartersSinceLastFund = 0; item.quartersFunded += 1; item.quartersInvested = Math.max(0, Number(item.quartersInvested) || 0) + 1;
     const priorCredits = Number.isFinite(item.maturityCredits) ? item.maturityCredits : item.quartersFunded - 1;
     // At floor cost this is one delivery quarter. At 2x the floor (or more),
     // it earns at most one additional credit: fast, but never instant maturity.

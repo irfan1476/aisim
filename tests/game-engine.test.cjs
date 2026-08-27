@@ -35,7 +35,7 @@ Module._resolveFilename = function resolveTypeScriptImports(request, parent, isM
 };
 
 const { deriveScore, hydrateGameState, resolveQuarter } = require('../lib/game/engine.ts');
-const { initializeInitiativeStates, updateInitiativeStates } = require('../lib/game/initiativeState.ts');
+const { initializeInitiativeStates, updateInitiativeStates, updateInitiativeStatesForActions } = require('../lib/game/initiativeState.ts');
 const { initialGameState, quarterlyDeploymentCap, normalizeDeploymentAmount } = require('../lib/game/state.ts');
 const { createInferredGeneration, evaluateSynergies, generateInitiatives, inferArchetypeFromCampaign } = require('../lib/game/generator.ts');
 const { normalizeGameState } = require('../lib/game/persistence.ts');
@@ -207,6 +207,27 @@ test('initiative evolution advances maturity and compounds investment', () => {
   assert.equal(states.maintenance.quartersFunded, 2);
   assert.ok(states.maintenance.currentRoi > firstRoi);
   assert.equal(states.maintenance.quartersSinceLastFund, 0);
+});
+
+test('discovery cash is attributed as an invested quarter without pretending it is delivery', () => {
+  const initial = initializeInitiativeStates();
+  const next = updateInitiativeStatesForActions(
+    initial,
+    { maintenance: 'discover' },
+    allocation,
+    {
+      adoption: 38,
+      fundingIntensity: 1,
+      investmentMultiplier: 1,
+      fundingByInitiative: {
+        maintenance: { discovery: 0.2, delivery: 0, scaleUp: 0.4, run: 0, continuity: 0, retirement: 0, total: 0.6 },
+      },
+    },
+  );
+  assert.equal(next.maintenance.quartersFunded, 0);
+  assert.equal(next.maintenance.quartersInvested, 1);
+  assert.equal(next.maintenance.totalInvestment, 0.6);
+  assert.ok(next.maintenance.dataInvestment > 0);
 });
 
 test('neglected initiatives decay after three unfunded quarters', () => {
@@ -1077,10 +1098,16 @@ test('excess discovery capital becomes measurable evidence without operating val
   assert.ok(funding.scaleUp > 0, 'the excess release should be attributed to discovery evidence');
   assert.ok(after.dataInvestment > before.dataInvestment, 'discovery should increase durable evidence investment');
   assert.ok(after.currentData >= before.currentData, 'discovery should not reduce measurable data readiness');
+  assert.equal(after.quartersInvested, 1, 'discovery should count as an investment quarter');
+  assert.equal(after.totalInvestment, fundingTotal(funding), 'discovery cash should be recorded against the initiative');
   assert.equal(result.nextState.roi, state.roi, 'discovery should not create realised operating ROI');
   assert.equal(result.nextState.revenue, state.revenue, 'discovery should not create operating revenue');
   assert.equal(result.nextState.financialLedger.grossBenefit, 0, 'discovery should not create realised operating benefit');
 });
+
+function fundingTotal(funding) {
+  return Number(funding.total.toFixed(2));
+}
 
 test('scale-up capital earns bounded maturity credits and compounds initiative capability', () => {
   const allocation = { infra: 40, data: 20, people: 15, mlops: 10, compliance: 10, innovation: 5 };

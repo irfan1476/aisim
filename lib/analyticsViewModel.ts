@@ -234,10 +234,18 @@ export function initiativeSpend(state: GameState): InitiativeSpend[] {
   return ids.map((id) => {
     const current = currentStates[id];
     const latest = latestStates[id];
+    // Older saves may contain the attributable funding ledger without the
+    // newer cumulative totalInvestment field. Recover that spend from the
+    // recorded quarter snapshots so discovery/run/retirement cash is not
+    // silently omitted from Analytics.
+    const ledgerSpend = (state.history || []).reduce((sum, entry) => {
+      const funding = entry.initiativeFunding?.[id];
+      return sum + (funding ? Number(funding.total || 0) : 0);
+    }, 0);
     return {
       id,
       name: current?.name || latest?.name || id,
-      amount: Math.max(Number(current?.totalInvestment ?? 0), Number(latest?.totalInvestment ?? 0)),
+      amount: Math.max(Number(current?.totalInvestment ?? 0), Number(latest?.totalInvestment ?? 0), ledgerSpend),
     };
   }).filter((item) => item.amount > 0);
 }

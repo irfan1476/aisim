@@ -37,6 +37,20 @@ import { downloadExport } from "../lib/exportGameplay";
 import { useGameStore } from "../stores/gameStore";
 import QuarterRoadmap from "./QuarterRoadmap";
 
+const investmentActions = new Set(["discover", "pilot", "scale", "maintain", "retire"]);
+function completedInvestmentQuarters(state: any, initiativeId: string): number {
+  const persisted = Number(state.initiativeStates?.[initiativeId]?.quartersInvested);
+  if (Number.isFinite(persisted)) return Math.max(0, persisted);
+  const history = Array.isArray(state.history) ? state.history : [];
+  return history.filter((snapshot: any, index: number) => {
+    const action = snapshot.initiativeActions?.[initiativeId];
+    if (investmentActions.has(action)) return true;
+    const current = Number(snapshot.initiativeStates?.[initiativeId]?.totalInvestment || 0);
+    const previous = Number(history[index - 1]?.initiativeStates?.[initiativeId]?.totalInvestment || 0);
+    return current > previous;
+  }).length;
+}
+
 interface Props {
   state: GameViewState;
   initiatives: GameInitiative[];
@@ -336,6 +350,7 @@ export default function GameDecisionView({
                 const selected = state.selected.includes(initiative.id);
                 const maturity = (live as any).maturityLevel || "nascent";
                 const funded = Number((live as any).quartersFunded || 0);
+                const invested = completedInvestmentQuarters(state, initiative.id);
                 const maturityCredits = Number((live as any).maturityCredits ?? funded);
                 const evolution = Math.min(100, (maturityCredits / 6) * 100);
                 const riskScore = Number(
@@ -408,7 +423,7 @@ export default function GameDecisionView({
                     </label>
                     <div
                       title={baselineTitle}
-                      className="mt-4 grid grid-cols-2 gap-2 border-t border-ink/8 pt-3 text-[11px] sm:grid-cols-5"
+                      className="mt-4 grid grid-cols-2 gap-2 border-t border-ink/8 pt-3 text-[11px] sm:grid-cols-6"
                     >
                       <span>
                         <b className="block text-ink">
@@ -446,7 +461,11 @@ export default function GameDecisionView({
                       </span>
                       <span>
                         <b className="block text-ink">{funded}</b>
-                        <small className="text-ink/40">quarters invested</small>
+                        <small className="text-ink/40">delivery quarters</small>
+                      </span>
+                      <span>
+                        <b className="block text-ink">{invested}</b>
+                        <small className="text-ink/40">investment quarters</small>
                       </span>
                     </div>
                     <div className="mt-3 flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-ink/45">
@@ -455,8 +474,8 @@ export default function GameDecisionView({
                         {discoveredLink ? " · connected capability" : ""}
                       </span>
                       <span>
-                        {funded
-                          ? `${funded} quarter${funded === 1 ? "" : "s"} funded`
+                        {invested
+                          ? `${invested} quarter${invested === 1 ? "" : "s"} invested`
                           : "New capability"}
                       </span>
                     </div>
