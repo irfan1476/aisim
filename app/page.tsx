@@ -59,7 +59,7 @@ export default function Home() {
         </div>
       </nav>
 
-      <section id="top" className="mx-auto grid max-w-7xl gap-14 px-6 pb-20 pt-20 lg:grid-cols-[1.04fr_.96fr] lg:items-center">
+      <section id="top" className="homepage-hero-type mx-auto grid max-w-7xl gap-14 px-6 pb-20 pt-20 lg:grid-cols-[1.04fr_.96fr] lg:items-center">
         <div className="reveal">
           <div className="mb-7 inline-flex items-center gap-2 rounded-md border border-[#08872b]/30 bg-[#08872b]/8 px-3 py-2 text-xs font-bold uppercase tracking-widest text-[#08872b]"><Sparkles size={14}/> A strategic practice lab</div>
           <h1 className="max-w-3xl text-6xl font-bold leading-[.98] tracking-[-.06em] text-[#1f2328] md:text-8xl">Practice AI leadership <span className="serif font-normal italic text-[#08872b]">before</span> you lead for real.</h1>

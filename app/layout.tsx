@@ -1,5 +1,12 @@
 import './globals.css';
 import type { Metadata } from 'next';
+import { Space_Grotesk } from 'next/font/google';
+
+const spaceGrotesk = Space_Grotesk({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-space-grotesk',
+});
 
 const siteUrl = 'https://aisim.teachmeai.in';
 const socialImage = `${siteUrl}/aisim.teachmeai.png`;
@@ -178,7 +185,7 @@ const structuredData = [
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body>
+      <body className={spaceGrotesk.variable}>
         {children}
         <script
           type="application/ld+json"

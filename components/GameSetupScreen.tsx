@@ -64,7 +64,7 @@ export default function GameSetupScreen({
         <div className="setup-hero flex flex-wrap items-end justify-between gap-6 border-b border-ink/15 pb-6 lg:gap-10">
           <div>
             <p className="text-[11px] font-bold uppercase tracking-[.28em] text-emerald">Executive simulation · 01</p>
-            <h1 className="mt-3 text-5xl font-semibold tracking-[-.07em] text-ink sm:text-6xl lg:text-[4.5rem]">Set up your <span className="serif italic text-emerald">campaign.</span></h1>
+            <h1 className="mt-3 text-5xl font-semibold tracking-[-.07em] text-ink sm:text-6xl lg:text-[4.5rem]">Set up your <span className="italic text-emerald">campaign.</span></h1>
           </div>
           <p className="max-w-lg text-sm leading-6 text-ink/65 lg:pb-1">Choose your operating world, add your name, then answer five baseline questions. Your decisions shape what happens next.</p>
         </div>
