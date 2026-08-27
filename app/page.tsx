@@ -59,10 +59,10 @@ export default function Home() {
         </div>
       </nav>
 
-      <section id="top" className="homepage-hero-type mx-auto grid max-w-7xl gap-14 px-6 pb-20 pt-20 lg:grid-cols-[1.04fr_.96fr] lg:items-center">
+      <section id="top" className="mx-auto grid max-w-7xl gap-14 px-6 pb-20 pt-20 lg:grid-cols-[1.04fr_.96fr] lg:items-center">
         <div className="reveal">
           <div className="mb-7 inline-flex items-center gap-2 rounded-md border border-[#08872b]/30 bg-[#08872b]/8 px-3 py-2 text-xs font-bold uppercase tracking-widest text-[#08872b]"><Sparkles size={14}/> A strategic practice lab</div>
-          <h1 className="max-w-3xl text-6xl font-bold leading-[.98] tracking-[-.06em] text-[#1f2328] md:text-8xl">Practice AI leadership <span className="serif font-normal italic text-[#08872b]">before</span> you lead for real.</h1>
+          <h1 className="homepage-hero-type max-w-3xl text-6xl font-bold leading-[.98] tracking-[-.06em] text-[#1f2328] md:text-8xl">Practice AI leadership <span className="serif font-normal italic text-[#08872b]">before</span> you lead for real.</h1>
           <p className="mt-8 max-w-xl text-lg leading-8 text-[#656d76]">An executive AI investment simulator that makes strategy tangible: release real campaign capital, run a portfolio through its lifecycle, test a hypothesis, then learn from the evidence—not a black-box score.</p>
           <div className="mt-7 grid max-w-xl gap-2 sm:grid-cols-3">{heroProof.map(([title, copy]) => <div key={title} className="rounded-xl border border-[#d0d7de] bg-white/75 p-3 shadow-sm"><p className="text-xs font-bold text-[#1f2328]">{title}</p><p className="mt-1 text-[11px] leading-4 text-[#656d76]">{copy}</p></div>)}</div>
           <button type="button" onClick={startSimulation} className="mt-9 flex items-center gap-4 rounded-md bg-[#08872b] px-6 py-4 text-sm font-bold text-white shadow-lg shadow-[#08872b]/20 transition hover:-translate-y-0.5 hover:bg-[#077324]">Choose your simulation <ArrowRight size={17}/></button>
