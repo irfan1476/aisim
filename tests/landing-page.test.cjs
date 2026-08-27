@@ -49,6 +49,10 @@ test('decision screen keeps first-time controls progressive and explains lifecyc
   assert.match(decision, /Select this initiative to choose its next action/, 'unselected cards should not expose an active lifecycle selector');
   assert.match(decision, /not ready/, 'invalid lifecycle actions should be labelled rather than silently offered');
   assert.match(decision, /Build evidence and data readiness now/, 'discovery must explain that it is evidence work');
+  assert.match(decision, /Paused this quarter · no new investment/, 'default persisted pauses should have neutral card copy');
+  assert.match(decision, /Revisit, revise, or retire next quarter/, 'selected pause should explain its next decision');
+  assert.match(decision, /monitor performance and risk before changing course/, 'maintain should explain its next decision');
+  assert.doesNotMatch(decision, /follow the decision path below/, 'initiative cards should not use generic next-step copy');
   assert.match(decision, /Advanced: tailor each initiative/, 'per-initiative allocation should be behind an advanced disclosure');
   assert.match(controls, /Advanced controls: change the team support mix/, 'opening allocation controls should be progressive');
   assert.match(controls, /Money to invest/, 'capital labels should use learner language');

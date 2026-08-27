@@ -134,8 +134,16 @@ export default function GameDecisionView({
     pilot: "Run a bounded test now. Use the evidence to decide whether to scale next.",
     scale: "Put a validated capability into wider operational use this quarter.",
     maintain: "Protect the value already in operation while monitoring performance and risk.",
-    pause: "Stop active change this quarter and keep the option to revise the approach.",
+    pause: "No new investment this quarter. Revisit, revise, or retire next quarter.",
     retire: "Close this capability and stop further operating investment.",
+  }[action]);
+  const actionNextStep = (action: InitiativeAction) => ({
+    discover: "pilot once the evidence period is complete",
+    pilot: "review the pilot evidence before scaling",
+    scale: "run and monitor the capability",
+    maintain: "monitor performance and risk before changing course",
+    pause: "revisit, revise, or retire the approach next quarter",
+    retire: "review the closed capability in the campaign report",
   }[action]);
   const availableActionsFor = (live: any, currentAction: InitiativeAction) => {
     const actions: InitiativeAction[] = ["discover", "pilot", "scale", "maintain", "pause", "retire"];
@@ -402,7 +410,12 @@ export default function GameDecisionView({
                 const currentAction = actionFor(initiative.id, funded);
                 const actionOptions = availableActionsFor(live, currentAction);
                 const currentActionIssue = actionOptions.find((option) => option.current)?.reason;
-                const isManaged = Boolean(state.initiativeActions?.[initiative.id]);
+                // A persisted pause is the default state for untouched initiatives after
+                // a quarter resolves. It should not make every card look actively managed.
+                // Explicit non-pause actions, however, remain visible as managed work when
+                // the player comes back to review the portfolio.
+                const persistedAction = state.initiativeActions?.[initiative.id];
+                const isManaged = Boolean(persistedAction && persistedAction !== "pause");
                 const nextAction = state.scenarioMode && live
                   ? suggestedLifecycleAction(live, state.q)
                   : funded > 0 ? "maintain" as InitiativeAction : "discover" as InitiativeAction;
@@ -455,8 +468,8 @@ export default function GameDecisionView({
                       </select>
                       {currentActionIssue
                         ? <p className="mt-2 rounded-lg border border-[#bf8700]/35 bg-[#fff8c5] px-2 py-1.5 text-[10px] normal-case leading-4 text-[#6b4f00]">Not ready: {currentActionIssue} Choose {actionLabel(nextAction)} instead.</p>
-                        : <div className="mt-2 rounded-lg border border-[#b8d8c0] bg-[#f2f8f3] px-2 py-1.5 text-[10px] normal-case leading-4 text-[#176b36]"><b>{actionNarrative(currentAction)}</b><span className="block pt-1 text-[#57606a]">Next: {currentAction === "discover" ? "pilot once the evidence period is complete" : currentAction === "pilot" ? "review the pilot evidence before scaling" : currentAction === "scale" ? "run and monitor the capability" : "follow the decision path below"}.</span></div>}
-                    </label> : <p className="mt-3 rounded-lg border border-dashed border-ink/15 bg-white/65 px-2 py-2 text-[10px] leading-4 text-ink/55">Select this initiative to choose its next action. You can change the action later.</p>}
+                        : <div className="mt-2 rounded-lg border border-[#b8d8c0] bg-[#f2f8f3] px-2 py-1.5 text-[10px] normal-case leading-4 text-[#176b36]"><b>{actionNarrative(currentAction)}</b><span className="block pt-1 text-[#57606a]">Next: {actionNextStep(currentAction)}.</span></div>}
+                    </label> : persistedAction === "pause" ? <p className="mt-3 rounded-lg border border-dashed border-ink/15 bg-white/65 px-2 py-2 text-[10px] leading-4 text-ink/55">Paused this quarter · no new investment. Select to choose its next action.</p> : <p className="mt-3 rounded-lg border border-dashed border-ink/15 bg-white/65 px-2 py-2 text-[10px] leading-4 text-ink/55">Select this initiative to choose its next action. You can change the action later.</p>}
                     <div
                       title={baselineTitle}
                       className="mt-4 grid grid-cols-2 gap-2 border-t border-ink/8 pt-3 text-[11px] sm:grid-cols-6"
