@@ -288,6 +288,8 @@ export default function GameDecisionView({
     setSavedNotice(true);
     window.setTimeout(() => setSavedNotice(false), 1800);
   };
+  const quartersRemainingAfterCurrent = Math.max(0, 12 - state.q);
+  const campaignProgress = Math.min(100, Math.max(0, (state.q / 12) * 100));
   return (
     <>
       <header className="sticky top-0 z-10 border-b border-white/10 bg-[#0d1117] px-5 py-4 text-white shadow-[0_1px_0_rgba(255,255,255,.06)]">
@@ -303,19 +305,25 @@ export default function GameDecisionView({
               <p className="text-xs text-white/55">Chief AI Officer cockpit</p>
             </div>
           </div>
-          <div className="flex items-center gap-5">
-            <div className="hidden text-right sm:block">
-              <p className="text-xs text-white/55">Campaign progress</p>
-              <p className="text-sm font-bold">
+          <div className="flex items-center gap-3 sm:gap-5">
+            <div className="min-w-[9.5rem] rounded-xl border border-white/10 bg-white/[.04] px-3 py-2 text-right sm:min-w-[12rem]">
+              <div className="flex items-center justify-between gap-3 text-[10px] font-bold uppercase tracking-[.14em] text-white/55">
+                <span>Campaign progress</span>
+                <span className="text-[#7ee787]">{Math.round(campaignProgress)}%</span>
+              </div>
+              <p className="mt-0.5 text-sm font-bold leading-5">
                 <span data-testid="campaign-quarter">Quarter {state.q}</span>{" "}
                 <span className="font-normal text-white/50">of 12</span>
               </p>
-            </div>
-            <div className="h-2 w-28 overflow-hidden rounded-full bg-white/15">
+              <p className="text-[10px] text-white/45">
+                {quartersRemainingAfterCurrent === 0 ? "Final decision quarter" : `${quartersRemainingAfterCurrent} quarter${quartersRemainingAfterCurrent === 1 ? "" : "s"} after this`}
+              </p>
+              <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-white/15" role="progressbar" aria-label={`Campaign progress: quarter ${state.q} of 12`} aria-valuemin={0} aria-valuemax={12} aria-valuenow={state.q}>
               <div
                 className="h-full bg-[#2da44e]"
-                style={{ width: `${(state.q / 12) * 100}%` }}
+                style={{ width: `${campaignProgress}%` }}
               />
+              </div>
             </div>
             <button
               onClick={onReset}
