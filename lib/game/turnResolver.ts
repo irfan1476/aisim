@@ -12,7 +12,7 @@ import type { InitiativeActionSet } from './businessModel';
 import type { AdaptationInput, AdaptationSet, DeploymentModeInput, DeploymentModeSet, LifecycleReviewInput, LifecycleReviewSet } from './businessModel';
 import { validatePortfolioCapacity } from './capacity';
 import { updateFinancialLedger } from './economics';
-import { composeCampaignScore, realisedFinancialValueScore, validatedLearningScore } from './scoring';
+import { composeCampaignScore, realisedFinancialValueScore, refreshCampaignScore, validatedLearningScore } from './scoring';
 import { applyAdaptation, applyDeploymentMode, applyLifecycleReview, lifecycleActionError, normalizeLifecycleReviewInput } from './lifecycleResolver';
 import { allocationForInitiative, allocationTotal, derivePortfolioAllocation } from './initiativeAllocation';
 
@@ -89,11 +89,20 @@ export function applyTurnDecision(source: GameState, input: TurnDecision): TurnR
   });
   (input.adaptationDecisions || []).forEach((adaptation) => { state = applyAdaptation(state, adaptation); });
   const selected = Array.from(new Set(input.selected || [])).slice(0, 3);
-  const initiativeActions: InitiativeActionSet = Object.keys(input.initiativeActions || {}).length
+  const rawInitiativeActions: InitiativeActionSet = Object.keys(input.initiativeActions || {}).length
     ? { ...input.initiativeActions }
     : Object.keys(state.initiativeActions || {}).length
       ? { ...state.initiativeActions }
       : Object.fromEntries(selected.map((id) => [id, 'scale']));
+  // `selected` is authoritative for new work. A stale discover/pilot/scale
+  // action must not survive after its card is deselected (legacy saves and
+  // older clients can still submit that mismatched pair).
+  const selectedSet = new Set(selected);
+  const initiativeActions: InitiativeActionSet = Object.fromEntries(
+    Object.entries(rawInitiativeActions).filter(([id, action]) =>
+      selectedSet.has(id) || !['discover', 'pilot', 'scale'].includes(action),
+    ),
+  );
   selected.forEach((id) => { initiativeActions[id] = initiativeActions[id] || 'scale'; });
   const lifecycleBlock = state.scenarioMode
     ? Object.entries(initiativeActions).flatMap(([id, action]) => {
@@ -360,12 +369,13 @@ export function applyCrisisResponse(source: GameState, response: CrisisResponse)
         metrics: { ...next.history[next.history.length - 1].metrics, spent: next.spent },
       }]
     : next.history;
-  return {
+  const withProgress = {
     ...next,
     history,
     scenarioProgress: scenario ? calculateScenarioProgress(next, scenario)?.values : next.scenarioProgress,
     scenarioState: nextScenarioState,
   };
+  return refreshCampaignScore(withProgress);
 }
 
 /** Move a completed quarter to the next decision point without persistence side effects. */

@@ -46,7 +46,7 @@ export default function StrategySimulator({ state, initiatives, onClose }: Props
   const capacity = deploymentCapacity(n(state.campaignBudget, n(state.quarterlyBudget) * 12), n(state.campaignBudgetRemaining, n(state.campaignBudget, n(state.quarterlyBudget) * 12)), n(state.quarterlyBudget), n(state.q, 1), n(state.spent));
   const maxDeployment = capacity.maximumDeployment;
   const effectiveDeployment = Math.min(Math.max(0, deployment), maxDeployment);
-  const preview = useMemo<StrategyPreview>(() => previewStrategy(state, { selected, alloc, deploymentAmount: effectiveDeployment }), [state, selected, alloc, effectiveDeployment]);
+  const preview = useMemo<StrategyPreview>(() => previewStrategy(state, { selected, alloc, deploymentAmount: effectiveDeployment, initiativeActions: state.initiativeActions }), [state, selected, alloc, effectiveDeployment]);
   const scenarioMetricKeys = new Set(scenario?.progress.map((definition) => definition.key) || []);
   const keyOutcomes = scenario ? preview.metricDeltas.filter((item) => scenarioMetricKeys.has(item.key)) : preview.metricDeltas.slice(0, 5);
   const selectedNames = selected.map((id) => initiatives.find((item) => item.id === id)?.name).filter(Boolean);
@@ -58,7 +58,7 @@ export default function StrategySimulator({ state, initiatives, onClose }: Props
   const toggle = (id: string) => setSelected((current) => current.includes(id) ? current.filter((item) => item !== id) : current.length < 3 ? [...current, id] : current);
   const apply = () => {
     if (!preview.valid || total !== 100) return;
-    useGameStore.getState().applyWhatIfDraft({ name, selected, alloc, deploymentAmount: effectiveDeployment, projection: preview, quarter: state.q });
+    useGameStore.getState().applyWhatIfDraft({ name, selected, alloc, deploymentAmount: effectiveDeployment, initiativeActions: preview.alternative.decision?.initiativeActions, projection: preview, quarter: state.q });
     setApplied(true);
   };
   const reset = () => { setSelected([]); setAlloc({ ...state.alloc }); setDeployment(Math.min(n(state.deploymentAmount), maxDeployment)); setName('Untitled strategy'); setApplied(false); };

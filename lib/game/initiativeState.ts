@@ -298,7 +298,10 @@ export function updateInitiativeStatesForActions(
       metrics.initiativeAllocations,
       allocation,
     );
-    const action = isInitiativeAction(actions[item.id]) ? actions[item.id] : (item.lifecycle === 'run' ? 'maintain' : 'discover');
+    // An initiative with no explicit action is paused for this quarter. This
+    // prevents an unselected initiative from silently receiving discovery
+    // progress merely because the action map omitted it.
+    const action = isInitiativeAction(actions[item.id]) ? actions[item.id] : (item.lifecycle === 'run' ? 'maintain' : 'pause');
     const funding = metrics.fundingByInitiative?.[item.id] || emptyFunding();
     const priorLifecycle = isInitiativeLifecycle(item.lifecycle) ? item.lifecycle : (item.quartersFunded > 0 ? 'run' : 'discovery');
     const lifecycle = transitionInitiativeLifecycle(priorLifecycle, action);
@@ -315,8 +318,12 @@ export function updateInitiativeStatesForActions(
       item.technicalDebt = roundMetric(Math.min(100, item.technicalDebt + .5));
       // Discovery funds the evidence base. It can improve persistent data
       // readiness, but it never creates realised operating value on its own.
-      item.dataInvestment = roundMetric(item.dataInvestment + Number(initiativeAllocation.data || 0) / 14 * intensity);
-      item.currentData = roundMetric(Math.min(5, item.currentData + (.04 + Number(initiativeAllocation.data || 0) / 110) * intensity));
+      const discoveryCapital = Math.max(0, Number(funding.discovery) || 0);
+      const evidenceCapital = Math.max(0, Number(funding.scaleUp) || 0);
+      // Excess release is still a discovery investment: convert it into
+      // durable evidence/data readiness instead of leaving it unrepresented.
+      item.dataInvestment = roundMetric(item.dataInvestment + (Number(initiativeAllocation.data || 0) / 14 + evidenceCapital / 10) * intensity);
+      item.currentData = roundMetric(Math.min(5, item.currentData + (.04 + Number(initiativeAllocation.data || 0) / 110 + discoveryCapital / 100 + evidenceCapital / 20) * intensity));
       item.quartersSinceLastFund += 1;
     } else if (action === 'pilot' || action === 'scale') {
       const delivery = Math.max(0, Number(funding.delivery) || Number(funding.total) || 0);

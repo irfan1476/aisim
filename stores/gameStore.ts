@@ -221,7 +221,15 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
 
   selectInitiatives: (ids) => set((state) => {
     const selected = Array.from(new Set(ids)).slice(0, 3);
-    const initiativeActions = { ...state.initiativeActions };
+    // Selection is the portfolio scope for new delivery/discovery work. Drop
+    // stale delivery actions when a card is deselected; otherwise the resolver
+    // can still fund the old action even though the card is no longer chosen.
+    const selectedSet = new Set(selected);
+    const initiativeActions = Object.fromEntries(
+      Object.entries(state.initiativeActions).filter(([id, action]) =>
+        selectedSet.has(id) || action === 'maintain' || action === 'pause' || action === 'retire',
+      ),
+    );
     selected.forEach((id) => {
       const existing = initiativeActions[id];
       // Selection is a portfolio-scope choice, not a lifecycle decision.
@@ -376,6 +384,7 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
     set((state) => ({
       selected: normalized.selected,
       alloc: normalized.alloc,
+      initiativeActions: normalized.initiativeActions || state.initiativeActions,
       deploymentAmount: normalized.deploymentAmount === undefined
         ? state.deploymentAmount
         : normalizeDeploymentAmount(normalized.deploymentAmount, state.campaignBudget, state.campaignBudgetRemaining, state.quarterlyBudget, state.q, state.spent),

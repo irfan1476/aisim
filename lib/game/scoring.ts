@@ -128,6 +128,18 @@ export function explainScore(state: GameState, metrics: Partial<GameState> = sta
   });
 }
 
+/** Recalculate score after a post-quarter mutation such as a crisis response
+ * or lifecycle decision, which otherwise leaves the persisted breakdown stale. */
+export function refreshCampaignScore(state: GameState): GameState {
+  const progressValues = Object.values(state.scenarioProgress || {}).map(Number).filter(Number.isFinite);
+  const scenarioTargetProgress = progressValues.length ? progressValues.reduce((sum, value) => sum + value, 0) / progressValues.length : 0;
+  const operatingHealth = (Number(state.adoption || 0) + Number(state.efficiency || 0) + Number(state.data || 0) + (100 - Number(state.risk || 0))) / 4;
+  const executionDiscipline = Math.min(100, 65 + Math.min(25, state.q * 2) + Math.min(10, (state.selected || []).length * 3));
+  const responsibleAI = Number(state.alloc?.compliance || 0) * 2 + (Object.values(state.initiativeStates || {}).reduce((sum, item) => sum + Number(item.controlMaturity || 0), 0) / Math.max(1, Object.keys(state.initiativeStates || {}).length)) * 30;
+  const scoreBreakdown = composeCampaignScore({ scenarioMode: state.scenarioMode, scenarioTargetProgress, realisedFinancialValue: realisedFinancialValueScore(state.financialLedger), operatingHealth, executionDiscipline, responsibleAI, validatedLearning: validatedLearningScore(state) });
+  return { ...state, score: Math.round(scoreBreakdown.score), scoreBreakdown };
+}
+
 export function calculateBCGScore(state: any) {
   const people = Math.min(100, (state.alloc?.people || 0) * 2 + ((state.alloc?.people || 0) > 20 ? 10 : 0) + ((state.adoption || 0) > 60 ? 10 : 0));
   const selectedIds = new Set([

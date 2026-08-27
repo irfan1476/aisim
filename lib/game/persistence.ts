@@ -29,6 +29,7 @@ export type WhatIfDraft = {
   selected: string[];
   alloc: Allocation;
   deploymentAmount?: number;
+  initiativeActions?: InitiativeActionSet;
   projection?: Record<string, unknown>;
   quarter?: number;
 };
@@ -366,6 +367,9 @@ export function normalizeWhatIfDraft(value: unknown): WhatIfDraft | null {
     selected,
     alloc: normalizeAllocation(value.alloc, defaults.alloc),
     deploymentAmount: typeof value.deploymentAmount === 'number' && Number.isFinite(value.deploymentAmount) ? Math.max(0, value.deploymentAmount) : undefined,
+    initiativeActions: isRecord(value.initiativeActions)
+      ? Object.fromEntries(Object.entries(value.initiativeActions).filter(([, action]) => isInitiativeAction(action))) as InitiativeActionSet
+      : undefined,
     projection: isRecord(value.projection) ? value.projection : undefined,
     quarter: typeof value.quarter === 'number' && Number.isFinite(value.quarter) ? value.quarter : undefined,
   };
@@ -378,7 +382,7 @@ export function readLegacyGameState(): GameState | null {
     if (!raw) return null;
     const state = normalizeGameState(JSON.parse(raw));
     const draft = readWhatIfDraft();
-    return draft ? { ...state, selected: draft.selected, alloc: draft.alloc } : state;
+    return draft ? { ...state, selected: draft.selected, alloc: draft.alloc, ...(draft.initiativeActions ? { initiativeActions: draft.initiativeActions } : {}) } : state;
   } catch {
     return null;
   }

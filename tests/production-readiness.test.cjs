@@ -100,8 +100,10 @@ test('strategy drafts carry their chosen quarterly deployment without exceeding 
     selected: ['demand'],
     alloc: before.alloc,
     deploymentAmount: chosenDeployment,
+    initiativeActions: { demand: 'discover' },
   });
   assert.equal(useGameStore.getState().deploymentAmount, chosenDeployment);
+  assert.equal(useGameStore.getState().initiativeActions.demand, 'discover');
 
   useGameStore.getState().applyWhatIfDraft({
     name: 'Out-of-range test',

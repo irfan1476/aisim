@@ -52,6 +52,7 @@ const { generateProactiveRecommendations } = require('../lib/game/recommendation
 const { calculateCapitalPlan, calculateCapitalRunway } = require('../lib/game/capital.ts');
 const { createCounterfactualTrace, recordDecision, recordCrisisResponse, replayCounterfactual } = require('../lib/counterfactual.ts');
 const { advanceTurn, applyCrisisResponse, applyTurnDecision } = require('../lib/game/turnResolver.ts');
+const { realisedROI } = require('../lib/game/economics.ts');
 
 const allocation = {
   infra: 35,
@@ -1016,6 +1017,32 @@ test('an unaffordable paid crisis response is rejected without impact or spend',
   assert.match(after.feedback, /requires 0\.50/);
 });
 
+test('crisis responses refresh the score breakdown, including the final quarter', () => {
+  const base = initialGameState(undefined, { campaignBudget: 120, quarterlyBudget: 10 });
+  const state = {
+    ...base,
+    q: 12,
+    stage: 'results',
+    risk: 70,
+    crisis: { title: 'Final-quarter crisis', type: 'TEST', text: 'Test', options: [] },
+  };
+  const before = state.score;
+  const after = applyCrisisResponse(state, { impact: { risk: -20 }, cost: 0 });
+  assert.equal(after.stage, 'results');
+  assert.equal(after.q, 12);
+  assert.notEqual(after.score, before, 'the final-quarter crisis response must affect the score');
+  assert.equal(after.score, Math.round(after.scoreBreakdown.score));
+  assert.ok(after.scoreBreakdown.values.operatingHealth >= 0);
+});
+
+test('results UI labels modelled ROI separately from realised cash ROI', () => {
+  const source = fs.readFileSync(path.resolve(__dirname, '../components/GameResultsModal.tsx'), 'utf8');
+  assert.match(source, /Modelled ROI/);
+  assert.match(source, /Realised cash ROI/);
+  assert.equal(realisedROI({ cumulativeInvestment: 10, cumulativeNetBenefit: -2 }), -20);
+  assert.equal(realisedROI({ cumulativeInvestment: 10, cumulativeNetBenefit: 3 }), 30);
+});
+
 test('capital plan separates initiative floor, continuity, and optional acceleration', () => {
   const base = initialGameState(undefined, { campaignBudget: 60, quarterlyBudget: 5 });
   const evolved = {
@@ -1032,6 +1059,27 @@ test('capital plan separates initiative floor, continuity, and optional accelera
   assert.equal(plan.accelerationSpend, 2.34);
   assert.equal(plan.remainingAfterPlan, 56);
   assert.equal(plan.continuityAllocations.energy, 0.16);
+});
+
+test('excess discovery capital becomes measurable evidence without operating value', () => {
+  const state = initialGameState();
+  const before = state.initiativeStates.demand;
+  const result = applyTurnDecision(state, {
+    selected: ['demand'],
+    initiativeActions: { demand: 'discover' },
+    alloc: allocation,
+    deploymentAmount: 10,
+  });
+
+  assert.equal(result.accepted, true);
+  const after = result.nextState.initiativeStates.demand;
+  const funding = result.nextState.history[0].initiativeFunding.demand;
+  assert.ok(funding.scaleUp > 0, 'the excess release should be attributed to discovery evidence');
+  assert.ok(after.dataInvestment > before.dataInvestment, 'discovery should increase durable evidence investment');
+  assert.ok(after.currentData >= before.currentData, 'discovery should not reduce measurable data readiness');
+  assert.equal(result.nextState.roi, state.roi, 'discovery should not create realised operating ROI');
+  assert.equal(result.nextState.revenue, state.revenue, 'discovery should not create operating revenue');
+  assert.equal(result.nextState.financialLedger.grossBenefit, 0, 'discovery should not create realised operating benefit');
 });
 
 test('scale-up capital earns bounded maturity credits and compounds initiative capability', () => {

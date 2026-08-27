@@ -12,12 +12,11 @@ import {
   evaluateInitiativeGate,
   type GateEvaluation,
 } from './readiness';
-import { calculateHumanOversightRequirement } from './lifecycleResolver';
 
 export type CapacityDemand = CapacityState;
 
 export type CapacityIssue = {
-  code: 'DELIVERY_CAPACITY' | 'CHANGE_CAPACITY' | 'DATA_CAPACITY' | 'GOVERNANCE_CAPACITY' | 'HUMAN_OVERSIGHT_CAPACITY';
+  code: 'DELIVERY_CAPACITY' | 'CHANGE_CAPACITY' | 'DATA_CAPACITY' | 'GOVERNANCE_CAPACITY';
   message: string;
   demand: number;
   available: number;
@@ -43,11 +42,6 @@ type InitiativeLike = {
   baseRiskScore?: number;
   riskScore?: number;
   requirements?: Partial<InitiativeRequirements>;
-  aiLifecycle?: { stage?: string };
-  deploymentMode?: 'augmentation' | 'automation' | 'not_set';
-  autonomyLevel?: 'advisory' | 'semi_autonomous' | 'autonomous';
-  risks?: { modelRisk: number; operationalRisk: number; legalRisk: number };
-  humanOversightRequired?: number;
 };
 
 type ScenarioCapacitySource = Pick<ScenarioDefinition, 'capacity'> | ScenarioCapacityConfig | Partial<CapacityState> | undefined;
@@ -76,8 +70,6 @@ export function deriveCapacityState(allocation: Allocation, scenario?: ScenarioC
     changeCapacity: nonNegative(overrides.changeCapacity, allocationValue(allocation, 'people') / 10),
     dataEngineeringCapacity: nonNegative(overrides.dataEngineeringCapacity, allocationValue(allocation, 'data') / 10),
     governanceReviewCapacity: nonNegative(overrides.governanceReviewCapacity, allocationValue(allocation, 'compliance') / 8),
-    humanOversightCapacity: nonNegative(overrides.humanOversightCapacity, 1 + allocationValue(allocation, 'people') / 10 + allocationValue(allocation, 'compliance') / 20),
-    humanOversightDemand: 0,
   };
 }
 
@@ -108,7 +100,6 @@ export function calculateCapacityDemand(
   const actionMap = asActionMap(actions);
   const initiativeMap = asInitiativeMap(initiatives);
   const demand: CapacityDemand = { deliveryTeams: 0, changeCapacity: 0, dataEngineeringCapacity: 0, governanceReviewCapacity: 0 };
-  let humanOversightDemand = 0;
   Object.entries(actionMap).forEach(([id, action]) => {
     const initiative = initiativeMap[id];
     if (!initiative || !actionMultiplier[action]) return;
@@ -120,23 +111,9 @@ export function calculateCapacityDemand(
     demand.changeCapacity += requirements.changeLoad * multiplier;
     demand.dataEngineeringCapacity += requirements.dataLoad * multiplier;
     demand.governanceReviewCapacity += requirements.governanceLoad * multiplier;
-    const stage = initiative.aiLifecycle?.stage;
-    // Old campaigns have no recorded deployment-mode decision. They remain
-    // playable after migration and are not retroactively charged against the
-    // new oversight pool; newly governed deployments always record a mode.
-    if ((action === 'scale' || action === 'maintain') && initiative.deploymentMode && initiative.deploymentMode !== 'not_set' && initiative.risks && initiative.autonomyLevel && (stage === 'deploy' || stage === 'monitor')) {
-      humanOversightDemand += Number.isFinite(Number(initiative.humanOversightRequired))
-        ? Math.max(0, Number(initiative.humanOversightRequired))
-        : calculateHumanOversightRequirement({
-            autonomyLevel: initiative.autonomyLevel,
-            deploymentMode: initiative.deploymentMode,
-            risks: initiative.risks,
-          });
-    }
   });
   return {
     ...Object.fromEntries(Object.entries(demand).map(([key, value]) => [key, Number(value.toFixed(4))])),
-    humanOversightDemand: Number(humanOversightDemand.toFixed(4)),
   } as CapacityDemand;
 }
 
@@ -173,14 +150,6 @@ export function validatePortfolioCapacity(
   const initiativeMap = asInitiativeMap(initiatives);
   const demand = calculateCapacityDemand(actionMap, initiativeMap);
   const issues = capacityIssues(demand, capacity);
-  if (Number.isFinite(Number(capacity.humanOversightCapacity)) && Number(demand.humanOversightDemand || 0) > Number(capacity.humanOversightCapacity) + 1e-9) {
-    issues.push({
-      code: 'HUMAN_OVERSIGHT_CAPACITY',
-      message: `Human oversight demand ${Number(demand.humanOversightDemand).toFixed(1)} exceeds available ${Number(capacity.humanOversightCapacity).toFixed(1)} units.`,
-      demand: Number(demand.humanOversightDemand || 0),
-      available: Number(capacity.humanOversightCapacity),
-    });
-  }
   const configuredRequirements = (scenario && 'capacity' in scenario ? (scenario as ScenarioDefinition).capacity?.initiativeRequirements : undefined) || {};
   const gates = Object.fromEntries(Object.entries(actionMap).flatMap(([id, action]) => {
     const initiative = initiativeMap[id];

@@ -121,10 +121,6 @@ export type CapacityState = {
   changeCapacity: number;
   dataEngineeringCapacity: number;
   governanceReviewCapacity: number;
-  /** Oversight units available this quarter for deployed AI capabilities. */
-  humanOversightCapacity?: number;
-  /** Oversight units consumed by the proposed portfolio. */
-  humanOversightDemand?: number;
 };
 
 export type InitiativeRequirements = {

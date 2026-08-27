@@ -145,20 +145,8 @@ export default function GameDecisionView({
     : total;
   const capacityValidation = validatePortfolioCapacity(initiativeActions, state.initiativeStates, effectiveAllocation as Allocation, scenario);
   const capacityIssue = capacityValidation.issues[0];
-  const oversightDrivers = capacityIssue?.code === 'HUMAN_OVERSIGHT_CAPACITY'
-    ? selectedInitiatives.flatMap((initiative) => {
-        const live = state.initiativeStates?.[initiative.id];
-        const action = actionFor(initiative.id, Number(live?.quartersFunded || 0));
-        const stage = String(live?.aiLifecycle?.stage || '');
-        return live && (action === 'scale' || action === 'maintain') && (stage === 'deploy' || stage === 'monitor')
-          ? [{ name: initiative.name, demand: Number(live.humanOversightRequired || 0), mode: live.deploymentMode }]
-          : [];
-      })
-    : [];
   const capacityGuidance = capacityIssue
-    ? capacityIssue.code === 'HUMAN_OVERSIGHT_CAPACITY'
-      ? `Oversight is being consumed by ${oversightDrivers.length ? oversightDrivers.map((item) => `${item.name} (${item.demand.toFixed(1)} units${item.mode && item.mode !== 'not_set' ? ` · ${item.mode}` : ''})`).join(' and ') : 'a deployed or maintained capability'}. Add roughly ${Math.ceil(Math.max(0, capacityIssue.demand - capacityIssue.available) * 10)} People points or ${Math.ceil(Math.max(0, capacityIssue.demand - capacityIssue.available) * 20)} Compliance points, or select fewer deployed initiatives / pause one this quarter.`
-      : capacityIssue.code === 'DATA_CAPACITY'
+    ? capacityIssue.code === 'DATA_CAPACITY'
         ? 'Increase the Data allocation or reduce the number of initiatives doing discovery, pilot, or scale work this quarter.'
         : capacityIssue.code === 'GOVERNANCE_CAPACITY'
           ? 'Increase the Compliance allocation or reduce concurrent initiatives requiring governance review.'
@@ -190,7 +178,7 @@ export default function GameDecisionView({
         : 'people';
     const points = Math.ceil(gap * (target === 'compliance' ? 8 : 10));
     if (state.initiativeAllocationMode === 'custom') {
-      const briefsToAdjust = initiativeFundingBriefs.filter((brief) => capacityIssue.code !== 'HUMAN_OVERSIGHT_CAPACITY' || brief.action === 'scale' || brief.action === 'maintain');
+      const briefsToAdjust = initiativeFundingBriefs;
       briefsToAdjust.forEach((brief) => {
         const current = allocationForInitiative(brief.initiative.id, 'custom', state.initiativeAllocations, state.alloc);
         const next = shiftAllocation(current, target, points);
@@ -226,7 +214,7 @@ export default function GameDecisionView({
             `Technical debt −${(allocation.mlops / 20).toFixed(2)}`,
           ]
         : action === 'maintain'
-          ? [`Run funding preserves realised benefit. The tailored mix sets oversight and monitoring: ${allocation.people}% people, ${allocation.compliance}% compliance, ${allocation.mlops}% ops.`]
+          ? [`Run funding preserves realised benefit. The tailored mix supports people, controls, and monitoring: ${allocation.people}% people, ${allocation.compliance}% compliance, ${allocation.mlops}% ops.`]
           : action === 'pause'
             ? ['No positive delivery effect this quarter. Pausing preserves the option to adapt, while readiness and benefit can decay.']
             : ['No further operating investment. Retirement closes the capability and stops ongoing delivery work.'];

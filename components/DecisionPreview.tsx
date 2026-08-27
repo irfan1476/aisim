@@ -4,6 +4,9 @@ import type { GameInitiative, GameViewState } from "./gameViewTypes";
 import { formatBudget } from "../lib/currency";
 import { getScenario } from "../lib/scenarios/registry";
 import { deploymentCapacity } from "../lib/game/state";
+import { calculateActionCapitalPlan } from "../lib/game/capital";
+import { suggestedLifecycleAction } from "../lib/game/lifecycleResolver";
+import type { InitiativeActionSet } from "../lib/game/businessModel";
 
 type Props = {
   state: GameViewState;
@@ -57,13 +60,26 @@ export default function DecisionPreview({ state, initiatives }: Props) {
     synergy.initiativeIds.every((id) => selectedIds.includes(id)),
   );
   const costReduction = synergyOpportunities.reduce((sum, synergy) => sum + synergy.costReduction, 0);
-  const expectedSpend = selectedCost * (1 - Math.min(0.25, costReduction));
   const campaignRemaining = Number(
     state.campaignBudgetRemaining ?? state.campaignBudget ?? state.quarterlyBudget * 12,
   );
-  const budgetAfter = Math.max(0, campaignRemaining - expectedSpend);
   const capacity = deploymentCapacity(state.campaignBudget, campaignRemaining, state.quarterlyBudget, state.q, state.spent);
   const plannedDeployment = Math.min(Number(state.deploymentAmount || 0), capacity.maximumDeployment);
+  const initiativeActions: InitiativeActionSet = { ...(state.initiativeActions || {}) };
+  selectedIds.forEach((id) => {
+    if (initiativeActions[id]) return;
+    const live = state.initiativeStates?.[id];
+    initiativeActions[id] = state.scenarioMode && live
+      ? suggestedLifecycleAction(live, state.q)
+      : 'scale';
+  });
+  Object.entries(state.initiativeStates || {}).forEach(([id, initiative]) => {
+    if (initiativeActions[id] || selectedIds.includes(id)) return;
+    if (Number(initiative.quartersFunded || 0) > 0) initiativeActions[id] = 'maintain';
+  });
+  const actionPlan = calculateActionCapitalPlan(state, initiativeActions, plannedDeployment);
+  const expectedSpend = actionPlan.requiredCapital;
+  const budgetAfter = Math.max(0, campaignRemaining - actionPlan.totalReleased);
   const unfunded = initiatives.filter((initiative) => !selectedIds.includes(initiative.id));
   const posture = postureFor(selected.length);
   const affectedChallenges = scenario

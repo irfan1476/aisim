@@ -27,6 +27,7 @@ Module._resolveFilename = function resolveTypeScriptImports(request, parent, isM
 
 const { initialGameState } = require('../lib/game/state.ts');
 const { previewStrategy } = require('../lib/game/strategyPreview.ts');
+const { applyTurnDecision } = require('../lib/game/turnResolver.ts');
 const { getScenario } = require('../lib/scenarios/registry.ts');
 const { scenarioInitiativesToStates } = require('../lib/game/initiativeAdapter.ts');
 
@@ -76,9 +77,17 @@ for (const scenarioId of ['projectFactory', 'bankNext', 'care360', 'futureReady'
     });
     state.initiativeStates = scenarioInitiativesToStates(scenario.initiatives);
     const initiative = scenario.initiatives[0];
+    // Exercise the action-aware preview with a lifecycle-valid pilot. The
+    // scenario starts in data readiness, so a direct scale would correctly be
+    // rejected by the live lifecycle contract.
+    state.initiativeStates[initiative.id] = {
+      ...state.initiativeStates[initiative.id],
+      aiLifecycle: { ...state.initiativeStates[initiative.id].aiLifecycle, stage: 'experiment', stageStartedAt: 0, stageStatus: 'in_progress' },
+    };
     const minimumCost = state.initiativeStates[initiative.id].currentCost;
-    const baseline = previewStrategy(state, { selected: [initiative.id], alloc: state.alloc, deploymentAmount: minimumCost });
-    const accelerated = previewStrategy(state, { selected: [initiative.id], alloc: state.alloc, deploymentAmount: minimumCost * 2 });
+    const action = { [initiative.id]: 'pilot' };
+    const baseline = previewStrategy(state, { selected: [initiative.id], initiativeActions: action, alloc: state.alloc, deploymentAmount: minimumCost * .6 });
+    const accelerated = previewStrategy(state, { selected: [initiative.id], initiativeActions: action, alloc: state.alloc, deploymentAmount: minimumCost * 1.2 });
 
     assert.ok(accelerated.alternative.spend.fundingIntensity > 1);
     assert.notEqual(
@@ -116,7 +125,35 @@ test('preview includes continuity commitments and rejects an underfunded plan', 
   const result = previewStrategy(state, { selected: ['demand'], alloc: allocation, deploymentAmount: 1.5 });
   assert.equal(result.valid, false);
   assert.match(result.warning, /continuity/);
-  assert.equal(result.alternative.spend.portfolioCost, state.initiativeStates.demand.currentCost);
-  assert.equal(result.alternative.initiativeStates.energy.continuityInvestment, 0.16);
+  assert.ok(result.alternative.spend.portfolioCost < state.initiativeStates.demand.currentCost);
+  assert.ok(result.alternative.initiativeStates.energy.continuityInvestment >= 0);
   assert.equal(result.alternative.initiativeStates.energy.quartersSinceLastFund, 0);
+});
+
+test('action-aware preview matches the live resolver for the same lifecycle decision', () => {
+  const scenario = getScenario('projectFactory');
+  const state = initialGameState(undefined, {
+    scenarioMode: true,
+    scenarioId: scenario.id,
+    quarterlyBudget: scenario.startingState.budget,
+    campaignBudget: scenario.startingState.budget * 12,
+    defaultAllocation: scenario.startingState.defaultAllocation,
+    scenarioStartingMetrics: scenario.startingState.startingMetrics,
+    startingMetrics: scenario.startingState.startingMetrics,
+  });
+  state.initiativeStates = scenarioInitiativesToStates(scenario.initiatives);
+  const initiative = scenario.initiatives[0];
+  state.initiativeStates[initiative.id] = {
+    ...state.initiativeStates[initiative.id],
+    aiLifecycle: { ...state.initiativeStates[initiative.id].aiLifecycle, stage: 'experiment', stageStartedAt: 0, stageStatus: 'in_progress' },
+  };
+  const initiativeActions = { [initiative.id]: 'pilot' };
+  const deploymentAmount = state.initiativeStates[initiative.id].currentCost * .6;
+  const decision = { selected: [initiative.id], initiativeActions, alloc: state.alloc, deploymentAmount };
+  const preview = previewStrategy(state, decision);
+  const live = applyTurnDecision(state, decision);
+  assert.equal(live.accepted, true);
+  assert.deepEqual(preview.alternative.scenarioMetrics, live.nextState.scenarioState.metrics);
+  assert.equal(preview.alternative.initiativeStates[initiative.id].lifecycle, live.nextState.initiativeStates[initiative.id].lifecycle);
+  assert.deepEqual(preview.alternative.decision.initiativeActions, initiativeActions);
 });

@@ -10,6 +10,7 @@ import type {
 import type { GameState, QuarterSnapshot } from './state';
 import type { InitiativeState } from './initiativeState';
 import { updateFinancialLedger } from './economics';
+import { refreshCampaignScore } from './scoring';
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 const finite = (value: unknown, fallback = 0) => Number.isFinite(Number(value)) ? Number(value) : fallback;
@@ -165,7 +166,7 @@ export function applyLifecycleReview(state: GameState, input: LifecycleReviewInp
     return { ...initiative, aiLifecycle: lifecycle, evaluation };
   }, `Evaluation recorded for ${review.initiativeId}: ${review.decision}.`);
   return next.initiativeStates?.[review.initiativeId]
-    ? recordLifecycleDecision(next, 'evaluationDecisions', review)
+    ? recordLifecycleDecision(refreshCampaignScore(next), 'evaluationDecisions', review)
     : next;
 }
 
@@ -198,7 +199,7 @@ export function applyDeploymentMode(state: GameState, input: DeploymentModeInput
     };
   }, `Deployment mode recorded for ${input.initiativeId}: ${input.mode}.`);
   return next.initiativeStates?.[input.initiativeId]
-    ? recordLifecycleDecision(next, 'deploymentDecisions', normalizedInput)
+    ? recordLifecycleDecision(refreshCampaignScore(next), 'deploymentDecisions', normalizedInput)
     : next;
 }
 
@@ -263,7 +264,7 @@ export function applyAdaptation(state: GameState, input: AdaptationInput): GameS
     financialLedger,
     feedback: `${operated.feedback} ${cost > 0 ? `${cost.toFixed(2)} of campaign capital was used.` : 'No additional campaign capital was used.'}`,
   };
-  return recordLifecycleDecision(charged, 'adaptationDecisions', normalizedInput);
+  return recordLifecycleDecision(refreshCampaignScore(charged), 'adaptationDecisions', normalizedInput);
 }
 
 /** Calculate oversight units for one deployed initiative. */
