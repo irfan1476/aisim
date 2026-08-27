@@ -53,34 +53,42 @@ function verdict(
   risk: number,
   people: number,
 ) {
-  // The rating rewards a sustainable learning trajectory, not a perfect
-  // scoreboard. A learner can build a credible transformation without driving
-  // every operating measure to an exceptional final-state value.
-  if (score >= 85 && adoption >= 60 && risk <= 30 && people >= 15)
+  // The rating is a motivational summary of the full campaign score. The
+  // score already includes value, operating health, execution, governance,
+  // scenario progress, and validated learning; requiring every health metric
+  // again here made strategic campaigns collapse into a discouraging B.
+  if (score >= 82)
     return [
       "A+",
       "Transformation Leader",
       "You built value and the operating system required to sustain it.",
       "text-[#1a7f37]",
     ];
-  if (score >= 75 && adoption >= 50 && risk <= 35)
+  if (score >= 66)
     return [
       "A",
       "Strategic Driver",
       "You combined strong value creation with a credible path to scale.",
       "text-[#0969da]",
     ];
-  if (score > 65)
+  if (score >= 52)
     return [
       "B+",
-      "Capable Executor",
-      "You moved the portfolio forward; adoption and governance are your unlocks.",
+      "Capable Strategist",
+      "You made meaningful investment and delivery choices. Your next run can turn this evidence into stronger realised value.",
+      "text-[#9a6700]",
+    ];
+  if (score >= 35)
+    return [
+      "B",
+      "Foundation Builder",
+      "You established a useful baseline. Keep one signal, change one decision, and use the next run to build momentum.",
       "text-[#9a6700]",
     ];
   return [
-    "B",
-    "Developing Practitioner",
-    "The fundamentals are forming. Your next run is about disciplined capability building.",
+    "C",
+    "Early Explorer",
+    "This run created a starting point. Use the evidence to choose one focused experiment for the next campaign.",
     "text-[#cf222e]",
   ];
 }
