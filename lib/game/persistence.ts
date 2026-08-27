@@ -1,11 +1,12 @@
-import { initialGameState, normalizeDeploymentAmount, quarterlyDeploymentCap, type Allocation, type GameState, type MetricKey, type PortfolioSnapshot, type QuarterSnapshot } from './state';
+import { initialGameState, normalizeDeploymentAmount, quarterlyDeploymentCap, type Allocation, type GameState, type InitiativeAllocationSet, type MetricKey, type PortfolioSnapshot, type QuarterSnapshot } from './state';
 import { initializeInitiativeStates, migrateInitiativeState, type InitiativeState } from './initiativeState';
 import { createInitiativeGeneration, generateInitiatives, inferArchetypeFromDecisions, type InitiativeGeneration, type ScenarioArchetype } from './generator';
 import { getScenario } from '../scenarios/registry';
 import { scenarioInitiativesToStates } from './initiativeAdapter';
 import { emptyFinancialLedger } from './economics';
 import { isInitiativeAction } from './initiativeState';
-import type { InitiativeActionSet } from './businessModel';
+import { allocationTotal, rebalanceOperatingAllocation } from './initiativeAllocation';
+import type { AdaptationSet, DeploymentModeSet, InitiativeActionSet, LifecycleReviewSet, AdaptationInput, DeploymentModeInput, LifecycleReviewInput } from './businessModel';
 
 export const GAME_STORAGE_KEY = 'ai-investment-game';
 export const LEGACY_GAME_STORAGE_KEY = 'ai-investment-save';
@@ -13,7 +14,7 @@ export const WHAT_IF_STORAGE_KEY = 'ai-whatif-applied';
 export const LEADERBOARD_STORAGE_KEY = 'ai_simulation_leaderboard';
 export const LEGACY_MIGRATION_KEY = 'ai-investment-legacy-migrated';
 export const CAMPAIGN_CHECKPOINTS_STORAGE_KEY = 'ai-investment-campaign-checkpoints';
-export const GAME_PERSISTENCE_VERSION = 7;
+export const GAME_PERSISTENCE_VERSION = 9;
 
 export type CampaignCheckpoint = {
   id: string;
@@ -95,6 +96,16 @@ function normalizeAllocation(value: unknown, fallback: Allocation): Allocation {
   };
 }
 
+function normalizeInitiativeAllocations(value: unknown, fallback: Allocation, initiativeIds?: Set<string>): InitiativeAllocationSet {
+  if (!isRecord(value)) return {};
+  return Object.fromEntries(Object.entries(value)
+    .filter(([id, allocation]) => (!initiativeIds || initiativeIds.has(id)) && isRecord(allocation))
+    .map(([id, allocation]) => {
+      const normalized = normalizeAllocation(allocation, fallback);
+      return [id, allocationTotal(normalized) === 100 ? normalized : rebalanceOperatingAllocation(normalized, 'infra', normalized.infra)];
+    }));
+}
+
 function normalizeInitiativeStates(value: unknown, fallback: Record<string, InitiativeState>): Record<string, InitiativeState> {
   const source = isRecord(value) ? value : {};
   return Object.fromEntries(Object.entries(fallback).map(([id, base]) => {
@@ -141,6 +152,8 @@ function normalizeSnapshot(
     synergiesDiscovered: stringArrayOr(value.synergiesDiscovered, []),
   };
   if (isRecord(value.allocation)) snapshot.allocation = normalizeAllocation(value.allocation, fallbackMetrics.alloc);
+  if (value.allocationMode === 'shared' || value.allocationMode === 'custom') snapshot.allocationMode = value.allocationMode;
+  if (isRecord(value.initiativeAllocations)) snapshot.initiativeAllocations = normalizeInitiativeAllocations(value.initiativeAllocations, fallbackMetrics.alloc);
   if (value.crisis !== undefined) snapshot.crisis = value.crisis;
   if (isRecord(value.crisisResponse)) {
     const crisisResponse: Record<string, number> = {};
@@ -179,6 +192,12 @@ function normalizeSnapshot(
   if (isRecord(value.initiativeActions)) {
     snapshot.initiativeActions = Object.fromEntries(Object.entries(value.initiativeActions).filter(([, action]) => isInitiativeAction(action))) as InitiativeActionSet;
   }
+  if (isRecord(value.lifecycleReviews)) snapshot.lifecycleReviews = value.lifecycleReviews as LifecycleReviewSet;
+  if (isRecord(value.deploymentModes)) snapshot.deploymentModes = value.deploymentModes as DeploymentModeSet;
+  if (isRecord(value.adaptations)) snapshot.adaptations = value.adaptations as AdaptationSet;
+  if (Array.isArray(value.evaluationDecisions)) snapshot.evaluationDecisions = value.evaluationDecisions as LifecycleReviewInput[];
+  if (Array.isArray(value.deploymentDecisions)) snapshot.deploymentDecisions = value.deploymentDecisions as DeploymentModeInput[];
+  if (Array.isArray(value.adaptationDecisions)) snapshot.adaptationDecisions = value.adaptationDecisions as AdaptationInput[];
   if (isRecord(value.initiativeFunding)) snapshot.initiativeFunding = value.initiativeFunding as QuarterSnapshot['initiativeFunding'];
   if (isRecord(value.financialLedger)) snapshot.financialLedger = value.financialLedger as QuarterSnapshot['financialLedger'];
   if (isRecord(value.capacity)) snapshot.capacity = value.capacity as QuarterSnapshot['capacity'];
@@ -236,6 +255,8 @@ export function normalizeGameState(value: unknown): GameState {
   next.initiativeStates = hasCurrentInitiativeStates
     ? normalizeInitiativeStates(source.initiativeStates, generatedDefaults)
     : (next.history.at(-1)?.initiativeStates || generatedDefaults);
+  next.initiativeAllocationMode = source.initiativeAllocationMode === 'custom' ? 'custom' : 'shared';
+  next.initiativeAllocations = normalizeInitiativeAllocations(source.initiativeAllocations, next.alloc, new Set(Object.keys(next.initiativeStates)));
   next.initiativeActions = isRecord(source.initiativeActions)
     ? Object.fromEntries(Object.entries(source.initiativeActions).filter(([, action]) => isInitiativeAction(action))) as InitiativeActionSet
     : Object.fromEntries(next.selected.map((id) => [id, 'scale']));

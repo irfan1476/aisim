@@ -3,8 +3,70 @@ import type { InitiativeGeneration } from '../lib/game/generator';
 import type { UserReflections } from '../lib/game/state';
 import type { CurrencyMode } from '../lib/scenarios/types';
 import type { FinancialLedger, InitiativeActionSet } from '../lib/game/businessModel';
+import type { Allocation, InitiativeAllocationMode, InitiativeAllocationSet } from '../lib/game/state';
 
 export type MetricColor = 'gold' | 'emerald' | 'blue' | 'purple' | 'red' | 'cyan';
+
+/**
+ * Learner-facing AI lifecycle contracts. These are intentionally structural
+ * and optional: old campaigns and standard-mode initiatives predate the AI
+ * lifecycle layer and must remain renderable.
+ */
+export type AiEvaluationDecision = 'go' | 'no_go' | 'pause';
+export type AiDeploymentMode = 'augmentation' | 'automation' | 'not_set';
+export type AiAdaptationAction = 'retrain' | 'tune' | 'rollback' | 'deprecate';
+export type AiLifecycleStage = 'data_readiness' | 'experiment' | 'pilot' | 'evaluate' | 'deploy' | 'monitor' | 'adapt';
+
+export type AiLifecycleEvaluation = {
+  successCriteria?: Array<{ id?: string; label?: string; metric: string; threshold: number; actual?: number; met?: boolean; direction?: 'higher-is-better' | 'lower-is-better' }>;
+  goNoGoDecision?: AiEvaluationDecision | 'pending' | 'go_with_conditions';
+  decisionRationale?: string;
+  decisionOwner?: string;
+  recommendedDecision?: 'go' | 'go_with_conditions' | 'no_go';
+  confidence?: 'high' | 'medium';
+};
+
+export type AiLifecycleMonitoring = {
+  performance?: number;
+  drift?: number;
+  isDegraded?: boolean;
+  actionAvailable?: boolean;
+  availableActions?: AiAdaptationAction[];
+  lastMonitoredAt?: number;
+};
+
+export type AiLifecycleSignals = {
+  aiLifecycle?: { stage?: AiLifecycleStage | string; stageStatus?: string; stageStartedAt?: number; stageCompletedAt?: number };
+  evaluation?: AiLifecycleEvaluation;
+  deploymentMode?: AiDeploymentMode;
+  riskProfile?: { modelRisk?: number; operationalRisk?: number; legalRisk?: number };
+  risks?: { modelRisk?: number; operationalRisk?: number; legalRisk?: number };
+  monitoring?: AiLifecycleMonitoring;
+  oversight?: { required?: number; allocated?: number };
+  humanOversightRequired?: number;
+  humanOversightAllocated?: number;
+  dataReadiness?: number;
+  lastRetrainedAt?: number;
+};
+
+export type LifecycleEvaluationPayload = {
+  initiativeId: string;
+  decision: AiEvaluationDecision;
+  rationale: string;
+  owner: string;
+};
+
+export type LifecycleDeploymentPayload = {
+  initiativeId: string;
+  mode: Exclude<AiDeploymentMode, 'not_set'>;
+  rationale: string;
+};
+
+export type LifecycleAdaptationPayload = {
+  initiativeId: string;
+  action: AiAdaptationAction;
+  reason: string;
+};
 
 export interface GameInitiative {
   id: string;
@@ -30,7 +92,9 @@ export interface GameViewState {
   stage: 'decide' | 'results' | 'done';
   selected: string[];
   initiativeActions: InitiativeActionSet;
-  alloc: Record<string, number>;
+  alloc: Allocation;
+  initiativeAllocationMode: InitiativeAllocationMode;
+  initiativeAllocations: InitiativeAllocationSet;
   roi: number;
   revenue: number;
   efficiency: number;

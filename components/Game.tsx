@@ -128,6 +128,12 @@ export default function Game({ resume = false }: { resume?: boolean }) {
       value,
     );
   const updateDeployment = (amount: number) => store.setDeploymentAmount(amount);
+  const updateInitiativeAllocation = (initiativeId: string, key: string, value: number) =>
+    store.updateInitiativeAllocation(
+      initiativeId,
+      key as "infra" | "data" | "people" | "mlops" | "compliance" | "innovation",
+      value,
+    );
   const llm = useLLMStore();
   const ask = async (questionOverride?: string) => {
     const userQuestion = (questionOverride ?? question).trim();
@@ -315,6 +321,8 @@ export default function Game({ resume = false }: { resume?: boolean }) {
         onAsk={ask}
         onToggleInitiative={toggle}
         onAllocationChange={updateAlloc}
+        onInitiativeAllocationModeChange={store.setInitiativeAllocationMode}
+        onInitiativeAllocationChange={updateInitiativeAllocation}
         onDeploymentChange={updateDeployment}
         onConfirm={confirm}
         onReset={reset}
@@ -325,6 +333,9 @@ export default function Game({ resume = false }: { resume?: boolean }) {
         onAdvance={advance}
         onApproveRecommendation={store.approveRecommendation}
         onSaveReflection={store.saveReflection}
+        onLifecycleEvaluation={store.submitLifecycleEvaluation}
+        onLifecycleDeployment={store.submitLifecycleDeployment}
+        onLifecycleAdaptation={store.submitLifecycleAdaptation}
       />
     </main>
   );

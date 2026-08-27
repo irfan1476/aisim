@@ -42,57 +42,27 @@ function Gauge({
 }) {
   const currentPosition = clampPosition(current, min, max);
   const targetPosition = clampPosition(target, min, max);
-  const targetAngle = -90 + targetPosition * 180;
-  const currentAngle = Math.PI - currentPosition * Math.PI;
-  const currentX = 100 + 76 * Math.cos(currentAngle);
-  const currentY = 102 - 76 * Math.sin(currentAngle);
   const rangeColours = direction === 'lower-is-better'
     ? ['#1a7f37', '#9a6700', '#cf222e']
     : ['#cf222e', '#9a6700', '#1a7f37'];
 
   return (
     <div
-      className="mt-3 rounded-xl border border-[#d0d7de] bg-[#f6f8fa] px-2 pt-1"
+      className="mt-3 rounded-xl border border-[#8c959f] bg-[#f6f8fa] p-3"
       role="img"
       aria-label={`${label}: ${valueLabel(current, unit)} current. Target ${valueLabel(target, unit)}. ${direction === 'lower-is-better' ? 'Lower is better.' : 'Higher is better.'}`}
     >
-      <svg viewBox="0 0 200 116" className="h-[112px] w-full overflow-visible" aria-hidden="true">
-        <path d="M 24 102 A 76 76 0 0 1 176 102" fill="none" stroke="#d8dee4" strokeWidth="14" strokeLinecap="butt" />
-        {rangeColours.map((colour, index) => (
-          <path
-            key={colour}
-            d="M 24 102 A 76 76 0 0 1 176 102"
-            fill="none"
-            pathLength="100"
-            stroke={colour}
-            strokeWidth="14"
-            strokeDasharray="31 69"
-            strokeDashoffset={-index * 34}
-            strokeLinecap="butt"
-            opacity="0.9"
-          />
-        ))}
-        <line
-          x1="100"
-          y1="13"
-          x2="100"
-          y2="35"
-          stroke="#24292f"
-          strokeWidth="3"
-          strokeLinecap="round"
-          transform={`rotate(${targetAngle} 100 102)`}
-        />
-        <circle cx={currentX} cy={currentY} r="6" fill="#24292f" stroke="#ffffff" strokeWidth="3" />
-        <text x="100" y="73" textAnchor="middle" className="fill-[#24292f] text-[26px] font-bold">
-          {Number.isInteger(current) ? current : current.toFixed(1)}
-        </text>
-        <text x="100" y="92" textAnchor="middle" className="fill-[#57606a] text-[11px] font-semibold">
-          {unit}
-        </text>
-      </svg>
-      <div className="-mt-1 flex items-center justify-between gap-2 px-1 pb-2 text-[10px] font-bold uppercase tracking-wide">
-        <span className="text-[#57606a]">Current marker</span>
-        <span className="text-[#24292f]">Target · {valueLabel(target, unit)}</span>
+      <div className="relative px-1 pt-1" aria-hidden="true">
+        <div className="grid h-7 grid-cols-3 overflow-hidden rounded-sm border border-[#8c959f]">
+          {rangeColours.map((colour, index) => <span key={colour} style={{ backgroundColor: colour, opacity: index === 1 ? 0.85 : 0.9 }} />)}
+        </div>
+        <span className="absolute top-0 h-10 w-1 rounded-sm bg-[#24292f] shadow-sm" style={{ left: `calc(${currentPosition * 100}% - 2px)` }} />
+        <span className="absolute top-0 h-10 w-1 rounded-sm bg-[#57606a] shadow-sm" style={{ left: `calc(${targetPosition * 100}% - 2px)` }} />
+        <div className="mt-2 flex justify-between text-[10px] text-[#24292f]"><span>{valueLabel(min, unit)}</span><span>{valueLabel((min + max) / 2, unit)}</span><span>{valueLabel(max, unit)}</span></div>
+      </div>
+      <div className="mt-2 flex items-center justify-between gap-2 border-t border-[#d8dee4] pt-2 text-[10px] font-bold uppercase tracking-wide">
+        <span className="text-[#24292f]"><i className="mr-1 inline-block h-2 w-2 rounded-full bg-[#24292f]" />Current marker</span>
+        <span className="text-[#57606a]">Target · {valueLabel(target, unit)}</span>
       </div>
     </div>
   );
@@ -134,7 +104,7 @@ export default function ScenarioPreview({ scenario, metrics, history }: Props) {
         const TrendIcon = improving ? TrendingUp : TrendingDown;
 
         return (
-          <article key={challenge.id} title={`${challenge.label}: ${item.label}. ${item.explanation}`} className={`rounded-xl border border-[#d0d7de] border-l-4 bg-white p-3 ${colors.accent}`}>
+          <article key={challenge.id} title={`${challenge.label}: ${item.label}. ${item.explanation}`} className={`rounded-xl border border-[#8c959f] border-l-4 bg-white p-3 ${colors.accent}`}>
             <div className="flex items-center justify-between gap-2">
               <div className="flex min-w-0 items-center gap-2">
                 <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${colors.icon}`}><Icon size={15} aria-hidden="true" /></span>

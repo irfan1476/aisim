@@ -7,16 +7,28 @@ import { normalizeGameState } from './persistence';
 import { generateProactiveRecommendations } from './recommendations';
 import { calculateProgressPercentages, calculateScenarioProgress } from '../scenarios/progress';
 import { getScenario } from '../scenarios/registry';
-import { quarterlyDeploymentCap, type Allocation, type GameState } from './state';
+import { quarterlyDeploymentCap, type Allocation, type GameState, type InitiativeAllocationMode, type InitiativeAllocationSet } from './state';
 import type { InitiativeActionSet } from './businessModel';
+import type { AdaptationInput, AdaptationSet, DeploymentModeInput, DeploymentModeSet, LifecycleReviewInput, LifecycleReviewSet } from './businessModel';
 import { validatePortfolioCapacity } from './capacity';
 import { updateFinancialLedger } from './economics';
 import { composeCampaignScore, realisedFinancialValueScore } from './scoring';
+import { applyAdaptation, applyDeploymentMode, applyLifecycleReview, lifecycleActionError, normalizeLifecycleReviewInput } from './lifecycleResolver';
+import { derivePortfolioAllocation } from './initiativeAllocation';
 
 export type TurnDecision = {
   selected: string[];
   initiativeActions?: InitiativeActionSet;
+  lifecycleReviews?: LifecycleReviewSet;
+  deploymentModes?: DeploymentModeSet;
+  adaptations?: AdaptationSet;
+  /** Array aliases are used by the executable counterfactual trace format. */
+  evaluationDecisions?: LifecycleReviewInput[];
+  deploymentDecisions?: DeploymentModeInput[];
+  adaptationDecisions?: AdaptationInput[];
   alloc: Allocation;
+  initiativeAllocationMode?: InitiativeAllocationMode;
+  initiativeAllocations?: InitiativeAllocationSet;
   deploymentAmount: number;
 };
 
@@ -52,7 +64,30 @@ function crisisRoll(seed: number, quarter: number): number {
  * drift apart.
  */
 export function applyTurnDecision(source: GameState, input: TurnDecision): TurnResolution {
-  const state = normalizeGameState(source);
+  let state = normalizeGameState(source);
+  const lifecycleReviews = input.lifecycleReviews
+    ? Object.fromEntries(Object.entries(input.lifecycleReviews).map(([initiativeId, review]) => {
+      const normalized = normalizeLifecycleReviewInput({ initiativeId, ...review });
+      const { initiativeId: _ignored, ...record } = normalized;
+      return [initiativeId, record];
+    })) as LifecycleReviewSet
+    : undefined;
+  const evaluationDecisions = input.evaluationDecisions?.map(normalizeLifecycleReviewInput);
+  // Lifecycle operations are part of the deterministic decision payload. The
+  // pure GameState helpers are also exposed for stores that want to commit one
+  // operation before the quarter is submitted.
+  Object.entries(lifecycleReviews || {}).forEach(([initiativeId, review]) => {
+    state = applyLifecycleReview(state, { initiativeId, ...review });
+  });
+  (evaluationDecisions || []).forEach((review) => { state = applyLifecycleReview(state, review); });
+  Object.entries(input.deploymentModes || {}).forEach(([initiativeId, mode]) => {
+    state = applyDeploymentMode(state, { initiativeId, ...mode });
+  });
+  (input.deploymentDecisions || []).forEach((mode) => { state = applyDeploymentMode(state, mode); });
+  Object.entries(input.adaptations || {}).forEach(([initiativeId, adaptation]) => {
+    state = applyAdaptation(state, { initiativeId, ...adaptation });
+  });
+  (input.adaptationDecisions || []).forEach((adaptation) => { state = applyAdaptation(state, adaptation); });
   const selected = Array.from(new Set(input.selected || [])).slice(0, 3);
   const initiativeActions: InitiativeActionSet = Object.keys(input.initiativeActions || {}).length
     ? { ...input.initiativeActions }
@@ -60,12 +95,36 @@ export function applyTurnDecision(source: GameState, input: TurnDecision): TurnR
       ? { ...state.initiativeActions }
       : Object.fromEntries(selected.map((id) => [id, 'scale']));
   selected.forEach((id) => { initiativeActions[id] = initiativeActions[id] || 'scale'; });
+  const lifecycleBlock = state.scenarioMode
+    ? Object.entries(initiativeActions).flatMap(([id, action]) => {
+      const initiative = state.initiativeStates[id];
+      const reason = initiative ? lifecycleActionError(initiative, action, state.q) : undefined;
+      return reason ? [reason] : [];
+    })[0]
+    : undefined;
+  if (lifecycleBlock) {
+    const reason = lifecycleBlock;
+    return { accepted: false, nextState: { ...state, feedback: reason }, reason };
+  }
   const deliveryIds = Object.entries(initiativeActions)
     .filter(([id, action]) => Boolean(state.initiativeStates[id]) && (action === 'pilot' || action === 'scale'))
     .map(([id]) => id)
     .slice(0, 3);
   const scenario = state.scenarioMode ? getScenario(state.scenarioId) : undefined;
-  const capacityValidation = validatePortfolioCapacity(initiativeActions, state.initiativeStates, input.alloc, scenario);
+  const campaignRemaining = Number(state.campaignBudgetRemaining ?? state.campaignBudget ?? state.quarterlyBudget * 12);
+  const deploymentCap = quarterlyDeploymentCap(state.campaignBudget, campaignRemaining, state.quarterlyBudget, state.q, state.spent);
+  const deploymentAmount = Math.min(deploymentCap, Math.max(0, Number(input.deploymentAmount) || 0));
+  const capitalPlan = calculateActionCapitalPlan(state, initiativeActions, deploymentAmount);
+
+  if (capitalPlan.requiredCapital > deploymentAmount + 1e-9) {
+    const reason = `This lifecycle plan needs ${capitalPlan.requiredCapital.toFixed(2)} this quarter, including delivery, run, and exit commitments. You have released ${deploymentAmount.toFixed(2)}. Increase deployment or change the initiative actions.`;
+    return { accepted: false, nextState: { ...state, feedback: reason }, reason };
+  }
+
+  const initiativeAllocationMode = input.initiativeAllocationMode === 'custom' ? 'custom' : state.initiativeAllocationMode;
+  const initiativeAllocations = input.initiativeAllocations || state.initiativeAllocations;
+  const effectiveAllocation = derivePortfolioAllocation(input.alloc, initiativeAllocationMode, initiativeAllocations, capitalPlan.byInitiative);
+  const capacityValidation = validatePortfolioCapacity(initiativeActions, state.initiativeStates, effectiveAllocation, scenario);
   // Capacity is a hard operating limit. Readiness is deliberately not: a
   // learner may run a constrained experiment and see the slower, riskier
   // result rather than being prevented from learning by the interface.
@@ -77,23 +136,21 @@ export function applyTurnDecision(source: GameState, input: TurnDecision): TurnR
   const constrainedExperiments = Object.entries(capacityValidation.gates)
     .filter(([, gate]) => gate.status !== 'ready')
     .map(([id]) => state.initiativeStates[id]?.name || id);
-  const synergyCostReduction = Math.min(0.15, discovery?.effects.reduce((sum, effect) => sum + effect.costReduction, 0) || 0);
-  const campaignRemaining = Number(state.campaignBudgetRemaining ?? state.campaignBudget ?? state.quarterlyBudget * 12);
-  const deploymentCap = quarterlyDeploymentCap(state.campaignBudget, campaignRemaining, state.quarterlyBudget, state.q, state.spent);
-  const deploymentAmount = Math.min(deploymentCap, Math.max(0, Number(input.deploymentAmount) || 0));
-  const capitalPlan = calculateActionCapitalPlan(state, initiativeActions, deploymentAmount);
-
-  if (capitalPlan.requiredCapital > deploymentAmount + 1e-9) {
-    const reason = `This lifecycle plan needs ${capitalPlan.requiredCapital.toFixed(2)} this quarter, including delivery, run, and exit commitments. You have released ${deploymentAmount.toFixed(2)}. Increase deployment or change the initiative actions.`;
-    return { accepted: false, nextState: { ...state, feedback: reason }, reason };
-  }
 
   const actualDeployment = capitalPlan.totalReleased;
   const deliveryCapital = capitalPlan.deliveryCapital;
   const result = resolveQuarter(state, {
     selected: deliveryIds,
     initiativeActions,
-    alloc: input.alloc,
+    lifecycleReviews,
+    deploymentModes: input.deploymentModes,
+    adaptations: input.adaptations,
+    evaluationDecisions,
+    deploymentDecisions: input.deploymentDecisions,
+    adaptationDecisions: input.adaptationDecisions,
+    alloc: effectiveAllocation,
+    initiativeAllocationMode,
+    initiativeAllocations,
     deploymentAmount: deliveryCapital,
     fundingByInitiative: capitalPlan.byInitiative,
     gateResults: capacityValidation.gates,
@@ -112,7 +169,7 @@ export function applyTurnDecision(source: GameState, input: TurnDecision): TurnR
     grossBenefit,
     quarter: state.q,
   });
-  const resolvedState = { ...state, ...adjustedMetrics, initiativeActions, financialLedger, initiativeStates: result.initiativeStates, scenarioState: result.scenarioState };
+  const resolvedState = { ...state, ...adjustedMetrics, initiativeActions, initiativeAllocationMode, initiativeAllocations, financialLedger, initiativeStates: result.initiativeStates, scenarioState: result.scenarioState };
   const discoveredSynergies = Array.from(new Set([
     ...state.discoveredSynergies,
     ...(discovery?.effects.map((effect) => effect.key) || []),
@@ -125,7 +182,7 @@ export function applyTurnDecision(source: GameState, input: TurnDecision): TurnR
   const scenarioOverall = scenario ? (calculateScenarioProgress(resolvedState, scenario)?.overall || 0) : 0;
   const operatingHealth = (Number(adjustedMetrics.adoption ?? state.adoption) + Number(adjustedMetrics.efficiency ?? state.efficiency) + Number(adjustedMetrics.data ?? state.data) + (100 - Number(adjustedMetrics.risk ?? state.risk))) / 4;
   const executionDiscipline = Math.min(100, (capacityValidation.status === 'valid' ? 65 : 40) + Math.min(25, state.q * 2) + Math.min(10, deliveryIds.length * 3));
-  const responsibleAI = (Number(input.alloc.compliance || 0) * 2 + (Object.values(result.initiativeStates).reduce((sum, item) => sum + Number(item.controlMaturity || 0), 0) / Math.max(1, Object.keys(result.initiativeStates).length)) * 30);
+  const responsibleAI = (Number(effectiveAllocation.compliance || 0) * 2 + (Object.values(result.initiativeStates).reduce((sum, item) => sum + Number(item.controlMaturity || 0), 0) / Math.max(1, Object.keys(result.initiativeStates).length)) * 30);
   const scoreModel = composeCampaignScore({
     scenarioMode: Boolean(scenario), scenarioTargetProgress: scenarioOverall,
     realisedFinancialValue: realisedFinancialValueScore(financialLedger), operatingHealth,
@@ -173,6 +230,8 @@ export function applyTurnDecision(source: GameState, input: TurnDecision): TurnR
     history: [...state.history, {
       ...result.snapshot,
       initiativeActions,
+      allocationMode: initiativeAllocationMode,
+      initiativeAllocations,
       initiativeFunding: capitalPlan.byInitiative,
       financialLedger,
       capacity: capacityValidation.capacity,
@@ -189,7 +248,24 @@ export function applyTurnDecision(source: GameState, input: TurnDecision): TurnR
       recommendations: nextRecommendations,
     }],
   };
-  return { accepted: true, nextState, decision: { selected: deliveryIds, initiativeActions, alloc: { ...input.alloc }, deploymentAmount } };
+  return {
+    accepted: true,
+    nextState,
+    decision: {
+      selected: deliveryIds,
+      initiativeActions,
+      lifecycleReviews: lifecycleReviews ? { ...lifecycleReviews } : undefined,
+      deploymentModes: input.deploymentModes ? { ...input.deploymentModes } : undefined,
+      adaptations: input.adaptations ? { ...input.adaptations } : undefined,
+      evaluationDecisions: evaluationDecisions ? evaluationDecisions.map((item) => ({ ...item })) : undefined,
+      deploymentDecisions: input.deploymentDecisions ? input.deploymentDecisions.map((item) => ({ ...item })) : undefined,
+      adaptationDecisions: input.adaptationDecisions ? input.adaptationDecisions.map((item) => ({ ...item })) : undefined,
+      alloc: { ...input.alloc },
+      initiativeAllocationMode,
+      initiativeAllocations: JSON.parse(JSON.stringify(initiativeAllocations || {})),
+      deploymentAmount,
+    },
+  };
 }
 
 /** Apply a learner-selected response to the crisis created by a resolved turn. */

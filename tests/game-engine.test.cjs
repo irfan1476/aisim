@@ -115,7 +115,7 @@ test('run metadata makes reproducibility explicit while allowing seeded campaign
   const different = initialGameState(createInferredGeneration([3, 3, 3, 3, 3], 99173));
   assert.equal(first.runMetadata.seed, same.runMetadata.seed);
   assert.equal(first.runMetadata.runId, same.runMetadata.runId);
-  assert.equal(first.runMetadata.rulesVersion, '2.1');
+  assert.equal(first.runMetadata.rulesVersion, '3.0');
   assert.notEqual(first.runMetadata.seed, different.runMetadata.seed);
   const decision = { selected: ['demand', 'energy'], alloc: allocation };
   assert.deepEqual(resolveQuarter(first, decision), resolveQuarter(same, decision));
@@ -810,11 +810,23 @@ test('scenario quarter flow persists progress and resets only quarter-local cris
     quarterlyBudget: scenario.startingState.budget,
     scenarioStartingMetrics: scenario.startingState.startingMetrics,
   });
+  const initiativeStates = scenarioInitiativesToStates(scenario.initiatives);
+  // This flow is about running an existing scenario portfolio and its cash
+  // ledger. Mark the three initiatives as legacy deployments so the new
+  // lifecycle gate is not mistaken for an already-active campaign.
+  ['successPredictor', 'facultyCopilot', 'chatbot'].forEach((id) => {
+    initiativeStates[id] = {
+      ...initiativeStates[id],
+      lifecycle: 'scale',
+      quartersFunded: 1,
+      aiLifecycle: { stage: 'deploy', stageStartedAt: 1, stageCompletedAt: 1, stageStatus: 'completed' },
+    };
+  });
   useGameStore.getState().loadGame({
     ...base,
     scenarioMode: true,
     scenarioId: scenario.id,
-    initiativeStates: scenarioInitiativesToStates(scenario.initiatives),
+    initiativeStates,
     selected: ['successPredictor', 'facultyCopilot', 'chatbot'],
     alloc: scenario.startingState.defaultAllocation,
     scenarioState: { metrics: { ...scenario.startingState.startingMetrics }, progress: {}, flags: {} },

@@ -18,7 +18,10 @@ export default function LearningRetrospective({ state }: { state: any }) {
     return <section className="rounded-xl border border-white/10 bg-white/5 p-5 text-sm text-white/55">Complete the first quarter to unlock a decision-by-decision retrospective.</section>;
   }
 
-  const selected = latest.chosen || latest.selectedIds || [];
+  const actionEntries = Object.entries(latest.initiativeActions || {})
+    .filter(([, action]) => action && action !== 'pause')
+    .map(([id, action]) => `${id}: ${action}`);
+  const selected = actionEntries.length ? actionEntries : (latest.chosen || latest.selectedIds || []);
   const effects = latest.causalChain || [];
   const approved = latest.approvedRecommendations || [];
   const crisis = latest.crisis;

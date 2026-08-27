@@ -1,0 +1,15 @@
+# Build output is produced by Vercel from the repository source.
+.next/
+.next-stale-chunks*/
+
+# Local reports, browser artifacts, and test output are not deployment inputs.
+test-results/
+playwright-report/
+coverage/
+code_snapshot.txt
+balance-report.json
+ngrok
+ngrok-*.zip
+
+# Local-only campaign material.
+marketing/

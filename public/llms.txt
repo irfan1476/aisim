@@ -4,11 +4,11 @@
 
 ## Canonical site
 
-- Production: https://aisim1.teachmeai.in/
-- Simulation: https://aisim1.teachmeai.in/#simulation
-- How it works: https://aisim1.teachmeai.in/#how-it-works
-- How to play: https://aisim1.teachmeai.in/#how-to-play
-- Social image: https://aisim1.teachmeai.in/aisim.teachmeai.png
+- Production: https://aisim.teachmeai.in/
+- Simulation: https://aisim.teachmeai.in/#simulation
+- How it works: https://aisim.teachmeai.in/#how-it-works
+- How to play: https://aisim.teachmeai.in/#how-to-play
+- Social image: https://aisim.teachmeai.in/aisim.teachmeai.png
 
 ## What it is
 

@@ -4,17 +4,26 @@ import {
   initializeInitiativeStates,
   type InitiativeState,
 } from "./initiativeState";
-import type { GameState, QuarterSnapshot } from "./state";
+import type { GameState, InitiativeAllocationMode, InitiativeAllocationSet, QuarterSnapshot } from "./state";
 import { normalizeGameState } from "./persistence";
 import { evaluateSynergies } from "./generator";
 import { getScenario } from "../scenarios/registry";
 import { applyScenarioEffects, calculatePortfolioDynamics, calculateStandardEffects, fundingIntensityFor } from "./effectResolver";
-import type { InitiativeActionSet, InitiativeFunding } from './businessModel';
+import type { AdaptationInput, AdaptationSet, DeploymentModeInput, DeploymentModeSet, InitiativeActionSet, InitiativeFunding, LifecycleReviewInput, LifecycleReviewSet } from './businessModel';
+import { applyDataFlywheel, recordEvaluationEvidence } from './lifecycleResolver';
 
 export type QuarterDecision = {
   selected?: string[];
   initiativeActions?: InitiativeActionSet;
+  lifecycleReviews?: LifecycleReviewSet;
+  deploymentModes?: DeploymentModeSet;
+  adaptations?: AdaptationSet;
+  evaluationDecisions?: LifecycleReviewInput[];
+  deploymentDecisions?: DeploymentModeInput[];
+  adaptationDecisions?: AdaptationInput[];
   alloc: GameState["alloc"];
+  initiativeAllocationMode?: InitiativeAllocationMode;
+  initiativeAllocations?: InitiativeAllocationSet;
   deploymentAmount?: number;
   fundingByInitiative?: Record<string, InitiativeFunding>;
   gateResults?: Record<string, { deliveryMultiplier: number; riskAdjustment: number }>;
@@ -62,19 +71,20 @@ export function resolveQuarter(
     const run = Number(decision.continuityAllocations?.[id] || 0);
     return [id, { discovery: 0, delivery, scaleUp: Math.max(0, delivery - Number(initiative.currentCost ?? initiative.cost ?? 0)), run, continuity: run, retirement: 0, total: delivery + run }];
   }));
-  const evolved = hasLifecycleDecision
+  let evolved = hasLifecycleDecision
     ? updateInitiativeStatesForActions(
         current.initiativeStates,
         initiativeActions,
         decision.alloc,
-        { adoption: current.adoption, fundingIntensity, investmentMultiplier, fundingByInitiative },
+        { adoption: current.adoption, fundingIntensity, investmentMultiplier, fundingByInitiative, initiativeAllocationMode: decision.initiativeAllocationMode, initiativeAllocations: decision.initiativeAllocations },
       )
     : updateInitiativeStates(
         current.initiativeStates,
         legacySelected,
         decision.alloc,
         { adoption: current.adoption, fundingIntensity, investmentMultiplier, continuityAllocations: decision.continuityAllocations },
-      );
+    );
+  evolved = applyDataFlywheel(evolved);
   // A maintained capability continues to create value, albeit only to the
   // degree it has already been realised. Paused/retired work is excluded.
   const benefitIds = hasLifecycleDecision
@@ -134,16 +144,29 @@ export function resolveQuarter(
         fundingIntensity,
         portfolio,
         gateMultiplier,
+        decision.initiativeAllocationMode,
+        decision.initiativeAllocations,
       )
     : current.scenarioState;
   const resolvedMetrics = scenario
     ? ({ ...metrics, ...scenarioState.metrics } as Partial<GameState>)
     : metrics;
+  evolved = recordEvaluationEvidence(
+    evolved,
+    scenario ? (current.scenarioState?.metrics || {}) : (current as unknown as Record<string, number>),
+    scenario ? (scenarioState.metrics || {}) : (resolvedMetrics as Record<string, number>),
+  );
   const snapshot: QuarterSnapshot = {
     q: current.q,
     chosen: chosen.map((item) => item.name),
     selectedIds: [...selected],
     initiativeActions: { ...initiativeActions },
+    lifecycleReviews: decision.lifecycleReviews,
+    deploymentModes: decision.deploymentModes,
+    adaptations: decision.adaptations,
+    evaluationDecisions: decision.evaluationDecisions,
+    deploymentDecisions: decision.deploymentDecisions,
+    adaptationDecisions: decision.adaptationDecisions,
     portfolio,
     selectedCount: portfolio.selectedCount,
     portfolioPosture: portfolio.portfolioPosture,
@@ -152,6 +175,8 @@ export function resolveQuarter(
     portfolioProvenance: portfolio.provenance,
     provenance: portfolio.provenance,
     allocation: { ...decision.alloc },
+    allocationMode: decision.initiativeAllocationMode,
+    initiativeAllocations: decision.initiativeAllocations ? JSON.parse(JSON.stringify(decision.initiativeAllocations)) : undefined,
     metrics: resolvedMetrics,
     initiativeStates: JSON.parse(JSON.stringify(evolved)),
     scenarioState: JSON.parse(JSON.stringify(scenarioState)),

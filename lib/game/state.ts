@@ -1,4 +1,6 @@
 export type Allocation = { infra: number; data: number; people: number; mlops: number; compliance: number; innovation: number };
+export type InitiativeAllocationMode = 'shared' | 'custom';
+export type InitiativeAllocationSet = Record<string, Allocation>;
 export type Effect = { metric: string; delta: number; color: string; unit?: string; explanation?: string };
 export type CausalItem = { name: string; effects: Effect[]; explanation?: string };
 export type Recommendation = {
@@ -42,7 +44,7 @@ import type { InitiativeState } from './initiativeState';
 import { initializeInitiativeStates } from './initiativeState';
 import { createInitiativeGeneration, generateInitiatives, type InitiativeGeneration } from './generator';
 import type { CurrencyMode } from '../scenarios/types';
-import type { CapacityState, FinancialLedger, InitiativeActionSet, InitiativeFunding } from './businessModel';
+import type { AdaptationInput, AdaptationSet, CapacityState, DeploymentModeInput, DeploymentModeSet, FinancialLedger, InitiativeActionSet, InitiativeFunding, LifecycleReviewInput, LifecycleReviewSet } from './businessModel';
 export type MetricKey = 'roi' | 'revenue' | 'efficiency' | 'adoption' | 'risk' | 'data' | 'satisfaction' | 'literacy' | 'turnover' | 'compliance' | 'innovation' | 'spent' | 'score';
 export type MetricsSnapshot = Partial<Record<MetricKey, number>>;
 export type QuarterSnapshot = {
@@ -57,6 +59,8 @@ export type QuarterSnapshot = {
   portfolioProvenance?: 'calculated-from-portfolio-choice';
   provenance?: 'calculated-from-portfolio-choice';
   allocation?: Allocation;
+  allocationMode?: InitiativeAllocationMode;
+  initiativeAllocations?: InitiativeAllocationSet;
   metrics: MetricsSnapshot;
   initiativeStates?: Record<string, InitiativeState>;
   scenarioState?: ScenarioState;
@@ -75,13 +79,19 @@ export type QuarterSnapshot = {
   remainingReserve?: number;
   fundingIntensity?: number;
   initiativeActions?: InitiativeActionSet;
+  lifecycleReviews?: LifecycleReviewSet;
+  deploymentModes?: DeploymentModeSet;
+  adaptations?: AdaptationSet;
+  evaluationDecisions?: LifecycleReviewInput[];
+  deploymentDecisions?: DeploymentModeInput[];
+  adaptationDecisions?: AdaptationInput[];
   initiativeFunding?: Record<string, InitiativeFunding>;
   financialLedger?: FinancialLedger;
   capacity?: CapacityState;
   budgetProvenance?: 'campaign-purse-with-two-quarter-cap' | 'campaign-purse-with-carry-forward-cap' | 'campaign-purse-with-guided-acceleration';
 };
 export type GameState = {
-  q: number; stage: 'decide' | 'results' | 'done'; selected: string[]; initiativeActions: InitiativeActionSet; alloc: Allocation;
+  q: number; stage: 'decide' | 'results' | 'done'; selected: string[]; initiativeActions: InitiativeActionSet; alloc: Allocation; initiativeAllocationMode: InitiativeAllocationMode; initiativeAllocations: InitiativeAllocationSet;
   roi: number; revenue: number; efficiency: number; adoption: number; risk: number; data: number;
   satisfaction: number; literacy: number; turnover: number; compliance: number; innovation: number;
   spent: number; score: number; financialLedger: FinancialLedger; history: QuarterSnapshot[]; initiativeStates: Record<string, InitiativeState>; achievements: string[]; crisis: any; feedback: string;
@@ -100,8 +110,8 @@ export function initialGameState(generation?: InitiativeGeneration, options: Sce
   const quarterlyBudget = options.quarterlyBudget ?? 10;
   const campaignBudget = options.campaignBudget ?? quarterlyBudget * 12;
   const deploymentCap = quarterlyDeploymentCap(campaignBudget, campaignBudget, quarterlyBudget, 1, 0);
-  const runMetadata: RunMetadata = { runId: `run-${initiativeGeneration.seed}-${options.scenarioId || 'standard'}`, seed: initiativeGeneration.seed, scenarioId: options.scenarioId, rulesVersion: '2.1' };
-  return { q: 1, stage: 'decide', selected: ['demand', 'energy'], initiativeActions: {}, selectedCount: 2, portfolioPosture: 'focused-balance', portfolioBreadth: 2 / 3, concentrationRisk: 3, alloc: options.defaultAllocation || standardAllocation, roi: 0, revenue: 0, efficiency: startingMetrics.efficiency ?? 8, adoption: startingMetrics.adoption ?? 38, risk: 36, data: startingMetrics.data ?? 54, satisfaction: startingMetrics.satisfaction ?? 61, literacy: 35, turnover: 14, compliance: 62, innovation: 42, spent: 0, score: 0, financialLedger: { investment: 0, runCost: 0, crisisCost: 0, grossBenefit: 0, netBenefit: 0, cumulativeInvestment: 0, cumulativeNetBenefit: 0, realisedROI: 0 }, history: [], initiativeStates: initializeInitiativeStates(generateInitiatives(initiativeGeneration)), achievements: [], crisis: null, feedback: 'The board is watching for a balanced portfolio. You have room to build momentum.', initiativeGeneration, userReflections: {}, scenarioMode: Boolean(options.scenarioMode), scenarioId: options.scenarioId, currencyMode: options.currencyMode || '$', quarterlyBudget, campaignBudget, campaignBudgetRemaining: campaignBudget, scenarioBudgetRemaining: quarterlyBudget, deploymentAmount: Math.min(quarterlyBudget * 0.6, deploymentCap), quarterlyDeploymentCap: deploymentCap, lastQuarterDeployment: 0, scenarioStartingMetrics: options.scenarioStartingMetrics, scenarioProgress: options.scenarioProgress, scenarioState: { metrics: { ...(options.scenarioStartingMetrics || {}) }, progress: { ...(options.scenarioProgress || {}) }, flags: {} }, quarterlyCrisisCost: 0, scenarioOverspend: 0, scenarioBonus: 0, causalChain: [], proactiveRecommendations: [], approvedRecommendations: [], discoveredSynergies: [], nextQuarterGuidance: null, baseline: [], experimental: false, runMetadata };
+  const runMetadata: RunMetadata = { runId: `run-${initiativeGeneration.seed}-${options.scenarioId || 'standard'}`, seed: initiativeGeneration.seed, scenarioId: options.scenarioId, rulesVersion: '3.0' };
+  return { q: 1, stage: 'decide', selected: ['demand', 'energy'], initiativeActions: {}, initiativeAllocationMode: 'shared', initiativeAllocations: {}, selectedCount: 2, portfolioPosture: 'focused-balance', portfolioBreadth: 2 / 3, concentrationRisk: 3, alloc: options.defaultAllocation || standardAllocation, roi: 0, revenue: 0, efficiency: startingMetrics.efficiency ?? 8, adoption: startingMetrics.adoption ?? 38, risk: 36, data: startingMetrics.data ?? 54, satisfaction: startingMetrics.satisfaction ?? 61, literacy: 35, turnover: 14, compliance: 62, innovation: 42, spent: 0, score: 0, financialLedger: { investment: 0, runCost: 0, crisisCost: 0, grossBenefit: 0, netBenefit: 0, cumulativeInvestment: 0, cumulativeNetBenefit: 0, realisedROI: 0 }, history: [], initiativeStates: initializeInitiativeStates(generateInitiatives(initiativeGeneration)), achievements: [], crisis: null, feedback: 'The board is watching for a balanced portfolio. You have room to build momentum.', initiativeGeneration, userReflections: {}, scenarioMode: Boolean(options.scenarioMode), scenarioId: options.scenarioId, currencyMode: options.currencyMode || '$', quarterlyBudget, campaignBudget, campaignBudgetRemaining: campaignBudget, scenarioBudgetRemaining: quarterlyBudget, deploymentAmount: Math.min(quarterlyBudget * 0.6, deploymentCap), quarterlyDeploymentCap: deploymentCap, lastQuarterDeployment: 0, scenarioStartingMetrics: options.scenarioStartingMetrics, scenarioProgress: options.scenarioProgress, scenarioState: { metrics: { ...(options.scenarioStartingMetrics || {}) }, progress: { ...(options.scenarioProgress || {}) }, flags: {} }, quarterlyCrisisCost: 0, scenarioOverspend: 0, scenarioBonus: 0, causalChain: [], proactiveRecommendations: [], approvedRecommendations: [], discoveredSynergies: [], nextQuarterGuidance: null, baseline: [], experimental: false, runMetadata };
 }
 
 export type DeploymentCapacity = {

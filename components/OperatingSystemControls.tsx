@@ -5,11 +5,13 @@ import { fundingIntensityFor } from "../lib/game/effectResolver";
 import { deploymentCapacity } from "../lib/game/state";
 import type { GameViewState } from "./gameViewTypes";
 import type { InitiativeActionSet } from "../lib/game/businessModel";
+import type { Allocation } from "../lib/game/state";
 
 type Props = {
   state: GameViewState;
   onAllocationChange: (key: string, value: number) => void;
   onDeploymentChange: (amount: number) => void;
+  effectiveAllocation?: Allocation;
   compact?: boolean;
 };
 
@@ -23,9 +25,12 @@ export default function OperatingSystemControls({
   state,
   onAllocationChange,
   onDeploymentChange,
+  effectiveAllocation,
   compact = false,
 }: Props) {
-  const total = Object.values(state.alloc).reduce((sum, value) => sum + Number(value || 0), 0);
+  const tailored = state.initiativeAllocationMode === 'custom';
+  const displayedAllocation = tailored ? (effectiveAllocation || state.alloc) : state.alloc;
+  const total = Object.values(displayedAllocation).reduce((sum, value) => sum + Number(value || 0), 0);
   const capacity = deploymentCapacity(
     state.campaignBudget,
     state.campaignBudgetRemaining,
@@ -56,15 +61,15 @@ export default function OperatingSystemControls({
         <div className="flex items-start gap-2">
           <span className="mt-0.5 flex h-7 w-7 items-center justify-center rounded-lg bg-[#dafbe1] text-[#1a7f37]"><SlidersHorizontal size={15} /></span>
           <div>
-            <p className="text-xs font-bold uppercase tracking-[.16em] text-[#1a7f37]">Operating system</p>
-            <p className="mt-1 text-xs leading-5 text-[#57606a]">Shift the capability mix, then set the capital you want to release this quarter.</p>
+            <p className="text-xs font-bold uppercase tracking-[.16em] text-[#1a7f37]">{tailored ? 'Capacity mix · derived' : 'Operating system · shared mix'}</p>
+            <p className="mt-1 text-xs leading-5 text-[#57606a]">{tailored ? 'This weighted portfolio mix comes from the tailored initiative plans below. Switch to shared mix to change every initiative at once.' : 'Shift the capability mix, then set the capital you want to release this quarter.'}</p>
           </div>
         </div>
         <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${total === 100 ? "bg-[#e8f4eb] text-[#176b36]" : "bg-[#edf0ee] text-[#303832]"}`}>{total}% allocated</span>
       </div>
 
       <div className="mt-4 grid gap-x-5 gap-y-3 sm:grid-cols-2">
-        {Object.entries(state.alloc).map(([key, value]) => (
+        {Object.entries(displayedAllocation).map(([key, value]) => (
           <label key={key} className="group block rounded-xl bg-white px-3 py-2.5 ring-1 ring-inset ring-[#d8dee4] transition hover:ring-[#1a7f37]/45 focus-within:ring-2 focus-within:ring-[#1a7f37]">
             <span className="flex justify-between gap-2 text-[11px] font-bold text-[#24292f]">
               <span className="capitalize">{labelFor(key)}</span>
@@ -77,8 +82,9 @@ export default function OperatingSystemControls({
               min="5"
               max="50"
               value={value}
+              disabled={tailored}
               onChange={(event) => onAllocationChange(key, Number(event.target.value))}
-              className="mt-2 w-full cursor-ew-resize accent-[#1a7f37]"
+              className="mt-2 w-full cursor-ew-resize accent-[#1a7f37] disabled:cursor-not-allowed disabled:opacity-55"
             />
           </label>
         ))}

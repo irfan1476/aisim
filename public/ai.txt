@@ -1,5 +1,5 @@
 The AI Investment Challenge
-https://aisim1.teachmeai.in/
+https://aisim.teachmeai.in/
 
 Purpose
 A 12-quarter, browser-based executive learning simulation for practising AI transformation and investment decisions. It is designed for reflection and replay, not for real-world prediction or professional advice.
@@ -32,11 +32,11 @@ Boundaries
 - Browser saves are local unless a deployment explicitly adds persistent storage.
 
 Canonical pages
-- Home: https://aisim1.teachmeai.in/
-- Simulation: https://aisim1.teachmeai.in/#simulation
-- How it works: https://aisim1.teachmeai.in/#how-it-works
-- How to play: https://aisim1.teachmeai.in/#how-to-play
-- Share image: https://aisim1.teachmeai.in/aisim.teachmeai.png
+- Home: https://aisim.teachmeai.in/
+- Simulation: https://aisim.teachmeai.in/#simulation
+- How it works: https://aisim.teachmeai.in/#how-it-works
+- How to play: https://aisim.teachmeai.in/#how-to-play
+- Share image: https://aisim.teachmeai.in/aisim.teachmeai.png
 
 Owner/contact
 No public owner or contact channel is stated. Do not infer or invent one.

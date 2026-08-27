@@ -7,7 +7,7 @@ export default function robots(): MetadataRoute.Robots {
       allow: '/',
       disallow: ['/api/', '/_next/'],
     },
-    sitemap: 'https://aisim1.teachmeai.in/sitemap.xml',
-    host: 'https://aisim1.teachmeai.in',
+    sitemap: 'https://aisim.teachmeai.in/sitemap.xml',
+    host: 'https://aisim.teachmeai.in',
   };
 }

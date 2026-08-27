@@ -27,12 +27,23 @@ type InitiativeLike = {
   data?: number;
   human?: number;
   currentData?: number;
+  dataReadiness?: number;
   currentHuman?: number;
   risk?: string;
   currentRisk?: string;
   baseRiskScore?: number;
   riskScore?: number;
 };
+
+/** Persistent initiative data asset readiness, expressed as a percentage for
+ * gates and as the existing 1–5 currentData value in the state model. */
+export function initiativeDataReadiness(initiative: InitiativeLike): number {
+  const authoredOrPersisted = Number(initiative.dataReadiness);
+  if (Number.isFinite(authoredOrPersisted)) return clamp01(authoredOrPersisted / 100);
+  const currentData = Number(initiative.currentData);
+  if (Number.isFinite(currentData)) return clamp01(currentData / 5);
+  return allocationToReadiness({ infra: 0, data: finite(initiative.data, 0) * 6, people: 0, mlops: 0, compliance: 0, innovation: 0 }).data;
+}
 
 const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
 const finite = (value: unknown, fallback = 0) => Number.isFinite(Number(value)) ? Number(value) : fallback;
@@ -98,10 +109,11 @@ export function evaluateInitiativeGate(
   const readiness = allocation ? allocationToReadiness(allocation) : emptyReadiness();
   const issues: GateIssue[] = [];
 
-  const dataRatio = normalized.minimumDataReadiness > 0 ? readiness.data / normalized.minimumDataReadiness : 1;
+  const persistentDataReadiness = initiativeDataReadiness(initiative);
+  const dataRatio = normalized.minimumDataReadiness > 0 ? persistentDataReadiness / normalized.minimumDataReadiness : 1;
   const controlRatio = normalized.minimumControlMaturity > 0 ? readiness.governance / normalized.minimumControlMaturity : 1;
-  if (readiness.data + 1e-9 < normalized.minimumDataReadiness) {
-    issues.push({ code: 'DATA_READINESS', message: `Data readiness ${(readiness.data * 100).toFixed(0)}% is below the ${(normalized.minimumDataReadiness * 100).toFixed(0)}% gate.`, severity: dataRatio < 0.5 ? 'blocking' : 'warning', actual: readiness.data, required: normalized.minimumDataReadiness });
+  if (persistentDataReadiness + 1e-9 < normalized.minimumDataReadiness) {
+    issues.push({ code: 'DATA_READINESS', message: `Data readiness ${(persistentDataReadiness * 100).toFixed(0)}% is below the ${(normalized.minimumDataReadiness * 100).toFixed(0)}% gate.`, severity: dataRatio < 0.5 ? 'blocking' : 'warning', actual: persistentDataReadiness, required: normalized.minimumDataReadiness });
   }
   if (readiness.governance + 1e-9 < normalized.minimumControlMaturity) {
     issues.push({ code: 'CONTROL_MATURITY', message: `Control maturity ${(readiness.governance * 100).toFixed(0)}% is below the ${(normalized.minimumControlMaturity * 100).toFixed(0)}% gate.`, severity: controlRatio < 0.5 ? 'blocking' : 'warning', actual: readiness.governance, required: normalized.minimumControlMaturity });

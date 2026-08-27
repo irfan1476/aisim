@@ -1,20 +1,20 @@
 {
-  "generatedAt": "2026-08-25T10:51:58.086Z",
+  "generatedAt": "2026-08-27T05:14:49.207Z",
   "campaignsPerStrategy": 100,
   "strategies": {
     "balanced": {
       "campaigns": 100,
-      "averageScore": 76.28,
-      "scoreStandardDeviation": 0.85,
+      "averageScore": 75.94,
+      "scoreStandardDeviation": 0.87,
       "averageRoi": 43.48,
-      "averageAdoption": 69.45,
+      "averageAdoption": 68.2,
       "averageRisk": 19.06,
       "averageSpend": 69.44,
       "averageConfidence": 84.32,
       "gradeDistribution": {
         "A+": 0,
-        "A": 99,
-        "B+": 1,
+        "A": 97,
+        "B+": 3,
         "B": 0,
         "C": 0
       },
@@ -25,17 +25,17 @@
     },
     "data-driven": {
       "campaigns": 100,
-      "averageScore": 76.85,
-      "scoreStandardDeviation": 1.16,
+      "averageScore": 76.57,
+      "scoreStandardDeviation": 1.15,
       "averageRoi": 49.78,
-      "averageAdoption": 61.47,
+      "averageAdoption": 60.47,
       "averageRisk": 5,
       "averageSpend": 73.5,
       "averageConfidence": 96,
       "gradeDistribution": {
         "A+": 0,
-        "A": 98,
-        "B+": 2,
+        "A": 97,
+        "B+": 3,
         "B": 0,
         "C": 0
       },
@@ -46,10 +46,10 @@
     },
     "people-first": {
       "campaigns": 100,
-      "averageScore": 80.99,
-      "scoreStandardDeviation": 0.96,
+      "averageScore": 80.6,
+      "scoreStandardDeviation": 0.94,
       "averageRoi": 39.77,
-      "averageAdoption": 83.9,
+      "averageAdoption": 82.4,
       "averageRisk": 8.64,
       "averageSpend": 62.61,
       "averageConfidence": 98,
@@ -67,17 +67,17 @@
     },
     "tech-first": {
       "campaigns": 100,
-      "averageScore": 76.41,
-      "scoreStandardDeviation": 0.99,
+      "averageScore": 76.15,
+      "scoreStandardDeviation": 1.03,
       "averageRoi": 43.03,
-      "averageAdoption": 57.47,
+      "averageAdoption": 56.62,
       "averageRisk": 16.89,
       "averageSpend": 80.09,
       "averageConfidence": 98,
       "gradeDistribution": {
         "A+": 0,
-        "A": 99,
-        "B+": 1,
+        "A": 96,
+        "B+": 4,
         "B": 0,
         "C": 0
       },
@@ -88,10 +88,10 @@
     },
     "risk-tolerant": {
       "campaigns": 100,
-      "averageScore": 71.18,
-      "scoreStandardDeviation": 0.95,
+      "averageScore": 70.94,
+      "scoreStandardDeviation": 0.99,
       "averageRoi": 41.65,
-      "averageAdoption": 66.69,
+      "averageAdoption": 65.53,
       "averageRisk": 32.84,
       "averageSpend": 78.95,
       "averageConfidence": 98,
@@ -109,17 +109,17 @@
     },
     "risk-averse": {
       "campaigns": 100,
-      "averageScore": 75.07,
-      "scoreStandardDeviation": 0.76,
+      "averageScore": 74.72,
+      "scoreStandardDeviation": 0.8,
       "averageRoi": 30.84,
-      "averageAdoption": 64.52,
+      "averageAdoption": 63.42,
       "averageRisk": 5,
       "averageSpend": 63,
       "averageConfidence": 98,
       "gradeDistribution": {
         "A+": 0,
-        "A": 77,
-        "B+": 23,
+        "A": 64,
+        "B+": 36,
         "B": 0,
         "C": 0
       },
@@ -131,17 +131,17 @@
   },
   "overall": {
     "campaigns": 600,
-    "averageScore": 76.13,
-    "scoreStandardDeviation": 3.04,
+    "averageScore": 75.82,
+    "scoreStandardDeviation": 3.01,
     "averageRoi": 41.42,
-    "averageAdoption": 67.25,
+    "averageAdoption": 66.11,
     "averageRisk": 14.57,
     "averageSpend": 71.27,
     "averageConfidence": 95.39,
     "gradeDistribution": {
       "A+": 0,
-      "A": 473,
-      "B+": 127,
+      "A": 454,
+      "B+": 146,
       "B": 0,
       "C": 0
     },
@@ -162,22 +162,22 @@
     "anyStrategyDominating": false
   },
   "balance": {
-    "averageScoreSpread": 9.81,
+    "averageScoreSpread": 9.66,
     "maximumAllowedSpread": 10
   },
   "visualizations": {
     "averageScoreBars": {
-      "balanced": "███████████████ 76.28",
-      "data-driven": "███████████████ 76.85",
-      "people-first": "████████████████ 80.99",
-      "tech-first": "███████████████ 76.41",
-      "risk-tolerant": "██████████████ 71.18",
-      "risk-averse": "███████████████ 75.07"
+      "balanced": "███████████████ 75.94",
+      "data-driven": "███████████████ 76.57",
+      "people-first": "████████████████ 80.6",
+      "tech-first": "███████████████ 76.15",
+      "risk-tolerant": "██████████████ 70.94",
+      "risk-averse": "███████████████ 74.72"
     },
     "gradeDistribution": {
       "A+": 0,
-      "A": 473,
-      "B+": 127,
+      "A": 454,
+      "B+": 146,
       "B": 0,
       "C": 0
     },

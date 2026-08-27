@@ -7,7 +7,11 @@ import { getScenario } from '../lib/scenarios/registry';
 import { scenarioInitiativesToStates } from '../lib/game/initiativeAdapter';
 import { advanceTurn, applyCrisisResponse, applyTurnDecision } from '../lib/game/turnResolver';
 import type { InitiativeAction } from '../lib/game/businessModel';
-import { clearActiveCounterfactualTrace, createCounterfactualTrace, readActiveCounterfactualTrace, recordCrisisResponse, recordDecision, writeActiveCounterfactualTrace } from '../lib/counterfactual';
+import type { AdaptationInput, DeploymentModeInput, LifecycleReviewInput } from '../lib/game/businessModel';
+import { applyAdaptation, applyDeploymentMode, applyLifecycleReview, normalizeLifecycleReviewInput, suggestedLifecycleAction } from '../lib/game/lifecycleResolver';
+import { allocationForInitiative, rebalanceOperatingAllocation, seedInitiativeAllocations } from '../lib/game/initiativeAllocation';
+import { clearActiveCounterfactualTrace, createCounterfactualTrace, readActiveCounterfactualTrace, recordCrisisResponse, recordDecision, recordLifecycleDecisions, writeActiveCounterfactualTrace } from '../lib/counterfactual';
+import type { AdaptationDecision, DeploymentModeDecision, EvaluationDecision, LifecycleDecisionPayload, RecordedDecision } from '../lib/counterfactual';
 import {
   clearPersistedCampaign,
   clearPersistedGameData,
@@ -31,6 +35,8 @@ type GameStore = GameState & {
   selectInitiatives: (ids: string[]) => void;
   setInitiativeAction: (id: string, action: InitiativeAction) => void;
   updateAllocation: (key: keyof GameState['alloc'], value: number) => void;
+  setInitiativeAllocationMode: (mode: GameState['initiativeAllocationMode']) => void;
+  updateInitiativeAllocation: (initiativeId: string, key: keyof GameState['alloc'], value: number) => void;
   setDeploymentAmount: (amount: number) => void;
   confirmDecisions: () => void;
   respondToCrisis: (impact: Record<string, number>, cost?: number) => void;
@@ -50,6 +56,9 @@ type GameStore = GameState & {
   loadGame: (state: unknown) => void;
   initializeScenario: (scenarioId: string, campaignBudget?: number) => void;
   restoreLatestViableCheckpoint: () => boolean;
+  submitLifecycleEvaluation: (payload: LifecycleReviewInput) => void;
+  submitLifecycleDeployment: (payload: DeploymentModeInput) => void;
+  submitLifecycleAdaptation: (payload: AdaptationInput) => void;
 };
 
 const browserStorage: StateStorage = {
@@ -114,6 +123,45 @@ function recommendationFor(state: GameState, title: string): Recommendation | un
     || state.history.at(-1)?.recommendations?.find((item) => item.title === title);
 }
 
+function pendingLifecycleReviews(state: GameState): number {
+  return (state.selected || []).reduce((count, id) => {
+    const item = state.initiativeStates?.[id] as any;
+    if (!item) return count;
+    const stage = item.aiLifecycle?.stage;
+    const status = item.aiLifecycle?.stageStatus;
+    const decision = item.evaluation?.goNoGoDecision;
+    const evaluation = item.evaluation && stage === 'evaluate' && !['go', 'no_go', 'pause'].includes(decision);
+    const deployment = item.deploymentMode === 'not_set' && stage === 'deploy' && status !== 'completed';
+    const monitoring = item.monitoring;
+    const latestAdaptation = Array.isArray(item.adaptationHistory) ? item.adaptationHistory.at(-1) : undefined;
+    const adaptation = Boolean(item.lifecycle !== 'retired' && status !== 'completed' && !(latestAdaptation && Number(latestAdaptation.quarter) >= Number(state.q)) && monitoring && (monitoring.isDegraded || monitoring.actionAvailable || monitoring.availableActions?.length));
+    return count + Number(evaluation) + Number(deployment) + Number(adaptation);
+  }, 0);
+}
+
+function recordLifecycleDecisionInTrace(
+  state: GameState,
+  kind: 'evaluation' | 'deployment' | 'adaptation',
+  payload: EvaluationDecision | DeploymentModeDecision | AdaptationDecision,
+): void {
+  const trace = readActiveCounterfactualTrace();
+  if (!trace) return;
+  const recorded = trace.actions.find((action): action is RecordedDecision => action.type === 'decision' && action.q === state.q);
+  if (!recorded) return;
+  let lifecycle: LifecycleDecisionPayload;
+  if (kind === 'evaluation') {
+    const next = [...(recorded.evaluationDecisions || []).filter((item: EvaluationDecision) => item.initiativeId !== payload.initiativeId), payload as EvaluationDecision];
+    lifecycle = { evaluationDecisions: next };
+  } else if (kind === 'deployment') {
+    const next = [...(recorded.deploymentDecisions || []).filter((item: DeploymentModeDecision) => item.initiativeId !== payload.initiativeId), payload as DeploymentModeDecision];
+    lifecycle = { deploymentDecisions: next };
+  } else {
+    const next = [...(recorded.adaptationDecisions || []).filter((item: AdaptationDecision) => item.initiativeId !== payload.initiativeId), payload as AdaptationDecision];
+    lifecycle = { adaptationDecisions: next };
+  }
+  writeActiveCounterfactualTrace(recordLifecycleDecisions(trace, state.q, lifecycle as LifecycleDecisionPayload));
+}
+
 export const useGameStore = create<GameStore>()(persist((set, get) => ({
   ...initialGameState(),
 
@@ -158,6 +206,8 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
       scenarioProgress: progress,
       scenarioState: { metrics: startingMetrics, progress, flags: {} },
       alloc: { ...scenario.startingState.defaultAllocation },
+      initiativeAllocationMode: 'shared',
+      initiativeAllocations: {},
       selected: [],
       initiativeActions: {},
       stage: 'decide',
@@ -172,9 +222,16 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
   selectInitiatives: (ids) => set((state) => {
     const selected = Array.from(new Set(ids)).slice(0, 3);
     const initiativeActions = { ...state.initiativeActions };
-    selected.forEach((id) => { initiativeActions[id] = initiativeActions[id] === 'pilot' ? 'pilot' : 'scale'; });
+    selected.forEach((id) => {
+      const existing = initiativeActions[id];
+      if (existing && existing !== 'pause') return;
+      const initiative = state.initiativeStates[id];
+      initiativeActions[id] = state.scenarioMode && initiative
+        ? suggestedLifecycleAction(initiative, state.q)
+        : 'scale';
+    });
     Object.entries(initiativeActions).forEach(([id, action]) => {
-      if (!selected.includes(id) && (action === 'pilot' || action === 'scale')) initiativeActions[id] = 'pause';
+      if (!selected.includes(id) && (action === 'discover' || action === 'pilot' || action === 'scale')) initiativeActions[id] = 'pause';
     });
     return { selected, initiativeActions };
   }),
@@ -193,6 +250,25 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
 
   updateAllocation: (key, value) => set((state) => ({ alloc: { ...state.alloc, [key]: value } })),
 
+  setInitiativeAllocationMode: (mode) => set((state) => ({
+    initiativeAllocationMode: mode,
+    initiativeAllocations: mode === 'custom'
+      ? { ...state.initiativeAllocations, ...seedInitiativeAllocations(state.selected, state.initiativeAllocations, state.alloc) }
+      : state.initiativeAllocations,
+  })),
+
+  updateInitiativeAllocation: (initiativeId, key, value) => set((state) => {
+    if (!state.initiativeStates[initiativeId]) return {};
+    const current = allocationForInitiative(initiativeId, state.initiativeAllocationMode, state.initiativeAllocations, state.alloc);
+    return {
+      initiativeAllocationMode: 'custom',
+      initiativeAllocations: {
+        ...state.initiativeAllocations,
+        [initiativeId]: rebalanceOperatingAllocation(current, key, value),
+      },
+    };
+  }),
+
   setDeploymentAmount: (amount) => set((state) => ({
     deploymentAmount: normalizeDeploymentAmount(amount, state.campaignBudget, state.campaignBudgetRemaining, state.quarterlyBudget, state.q, state.spent),
   })),
@@ -203,6 +279,8 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
       selected: before.selected,
       initiativeActions: before.initiativeActions,
       alloc: before.alloc,
+      initiativeAllocationMode: before.initiativeAllocationMode,
+      initiativeAllocations: before.initiativeAllocations,
       deploymentAmount: before.deploymentAmount,
     });
     if (resolution.accepted) {
@@ -232,7 +310,13 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
   }),
 
   advanceQuarter: () => {
-    const next = advanceTurn(get());
+    const current = normalizeGameState(get());
+    const reviews = pendingLifecycleReviews(current);
+    if (reviews > 0) {
+      set({ feedback: `Complete ${reviews} pending lifecycle review${reviews === 1 ? '' : 's'} before advancing the quarter.` });
+      return;
+    }
+    const next = advanceTurn(current);
     set(next);
     if (next.stage === 'decide') saveCampaignCheckpoint(next, `Quarter ${next.q} decision point`);
   },
@@ -343,6 +427,26 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
   })),
 
   loadGame: (state) => set(normalizeGameState(state)),
+
+  submitLifecycleEvaluation: (payload) => set((state) => {
+    const current = normalizeGameState(state);
+    const review = normalizeLifecycleReviewInput(payload);
+    const next = applyLifecycleReview(current, review);
+    recordLifecycleDecisionInTrace(current, 'evaluation', review);
+    return next;
+  }),
+  submitLifecycleDeployment: (payload) => set((state) => {
+    const current = normalizeGameState(state);
+    const next = applyDeploymentMode(current, payload);
+    recordLifecycleDecisionInTrace(current, 'deployment', payload);
+    return next;
+  }),
+  submitLifecycleAdaptation: (payload) => set((state) => {
+    const current = normalizeGameState(state);
+    const next = applyAdaptation(current, payload);
+    recordLifecycleDecisionInTrace(current, 'adaptation', payload);
+    return next;
+  }),
 }), {
   name: GAME_STORAGE_KEY,
   version: GAME_PERSISTENCE_VERSION,

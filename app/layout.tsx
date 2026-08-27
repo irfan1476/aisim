@@ -1,7 +1,7 @@
 import './globals.css';
 import type { Metadata } from 'next';
 
-const siteUrl = 'https://aisim1.teachmeai.in';
+const siteUrl = 'https://aisim.teachmeai.in';
 const socialImage = `${siteUrl}/aisim.teachmeai.png`;
 
 export const metadata: Metadata = {

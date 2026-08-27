@@ -106,7 +106,7 @@ export default function GameDoneScreen({
   };
   const history = (state.history || []) as Snapshot[];
   const reflection = calculateReflection(state as any);
-  const averageAllocation = (key: string) => {
+  const averageAllocation = (key: keyof GameViewState['alloc']) => {
     const captured = history.filter((item) => item.allocation);
     return captured.length
       ? captured.reduce(

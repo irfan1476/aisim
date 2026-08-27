@@ -4,6 +4,7 @@ import type { GameInitiative, GameViewState } from "./gameViewTypes";
 import { formatBudget } from "../lib/currency";
 import { getScenario } from "../lib/scenarios/registry";
 import { deriveOperatingModelAdvisory } from "../lib/game/operatingModelAdvisory";
+import { calculateActionCapitalPlan } from "../lib/game/capital";
 
 type Props = { state: GameViewState; initiatives: GameInitiative[] };
 
@@ -39,12 +40,13 @@ export default function DecisionCoach({ state, initiatives }: Props) {
   const selectedInitiatives = initiatives.filter((initiative) =>
     state.selected.includes(initiative.id),
   );
-  const selectedSpend = selectedInitiatives.reduce((sum, initiative) => {
-    const live = state.initiativeStates?.[initiative.id] as
-      | { currentCost?: number }
-      | undefined;
-    return sum + Number(live?.currentCost ?? initiative.cost ?? 0);
-  }, 0);
+  const actionPlan = calculateActionCapitalPlan(
+    state,
+    state.initiativeActions || {},
+    Number(state.deploymentAmount || 0),
+  );
+  const selectedSpend = selectedInitiatives.reduce((sum, initiative) =>
+    sum + Number(actionPlan.byInitiative[initiative.id]?.total || 0), 0);
   const available = Number(
     state.campaignBudgetRemaining ?? state.campaignBudget ?? 0,
   );

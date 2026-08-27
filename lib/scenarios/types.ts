@@ -34,6 +34,67 @@ export type ScenarioNeglectConfig = {
 };
 
 /**
+ * Scenario-authored AI lifecycle policy.  This is deliberately descriptive:
+ * the engine can opt into these facts incrementally without making the
+ * historical operating lifecycle or existing scenario packs invalid.
+ */
+export type ScenarioLifecycleStage = 'data_readiness' | 'experiment' | 'pilot' | 'evaluate' | 'deploy' | 'monitor' | 'adapt';
+
+export type ScenarioEvaluationCriterion = {
+  id: string;
+  label: string;
+  metric: string;
+  threshold: number;
+  direction: ScenarioDirection;
+};
+
+export type ScenarioDeploymentModeEffects = {
+  efficiencyDelta: number;
+  riskDelta: number;
+  trustDelta: number;
+  oversightUnits: number;
+};
+
+export type ScenarioLifecycleProfile = {
+  dataReadiness: number;
+  experimentQuarters: number;
+  pilotQuarters: number;
+  evaluation: {
+    criteria: ScenarioEvaluationCriterion[];
+    goThreshold: number;
+  };
+  deployment: {
+    defaultMode: 'augmentation' | 'automation';
+    modes: {
+      augmentation: ScenarioDeploymentModeEffects;
+      automation: ScenarioDeploymentModeEffects;
+    };
+  };
+  risks: {
+    model: number;
+    operational: number;
+    legal: number;
+  };
+  drift: {
+    susceptibility: number;
+    quarterlyRate: number;
+    degradationThreshold: number;
+    monitoringRequired: boolean;
+  };
+  oversight: {
+    baseUnits: number;
+    automationUnits: number;
+  };
+  autonomy: 'advisory' | 'semi_autonomous' | 'autonomous';
+  autonomyBoundaries: string;
+  flywheel?: {
+    active: boolean;
+    quality: number;
+    recipientIds: string[];
+  };
+};
+
+/**
  * Optional delivery constraints authored by a scenario pack.  All fields are
  * partial so existing scenarios retain the historical, allocation-derived
  * capacity behaviour until they opt into a more specific operating model.
@@ -77,6 +138,8 @@ export type ScenarioInitiative = Initiative & {
   neglect?: ScenarioNeglectConfig;
   frameworkContribution?: FrameworkContribution;
   provisional?: boolean;
+  /** Optional, initiative-specific lifecycle facts; filled by the adapter when omitted. */
+  lifecycleProfile?: Partial<ScenarioLifecycleProfile>;
 };
 
 export type ScenarioCrisisOption = {

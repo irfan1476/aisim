@@ -1,13 +1,47 @@
 import { normalizeGameState } from './game/persistence';
-import type { Allocation, GameState } from './game/state';
+import type { Allocation, GameState, InitiativeAllocationMode, InitiativeAllocationSet } from './game/state';
 import { advanceTurn, applyCrisisResponse, applyTurnDecision, type CrisisResponse, type TurnDecision } from './game/turnResolver';
+import type { InitiativeActionSet } from './game/businessModel';
 
-export const COUNTERFACTUAL_TRACE_VERSION = 1;
+/** V1/V2 remain readable; V3 records tailored initiative operating mixes. */
+export const COUNTERFACTUAL_TRACE_VERSION = 3;
+const SUPPORTED_COUNTERFACTUAL_TRACE_VERSIONS = new Set([1, 2, COUNTERFACTUAL_TRACE_VERSION]);
 export const ACTIVE_COUNTERFACTUAL_TRACE_STORAGE_KEY = 'aisim-active-counterfactual-trace-v1';
+
+export type EvaluationDecision = {
+  initiativeId: string;
+  decision: 'go' | 'no_go' | 'pause';
+  rationale: string;
+  owner: string;
+};
+
+export type DeploymentModeDecision = {
+  initiativeId: string;
+  mode: 'augmentation' | 'automation';
+  rationale: string;
+};
+
+export type AdaptationDecision = {
+  initiativeId: string;
+  action: 'retrain' | 'tune' | 'rollback' | 'deprecate';
+  reason: string;
+};
+
+export type LifecycleDecisionPayload = {
+  evaluationDecisions?: EvaluationDecision[];
+  deploymentDecisions?: DeploymentModeDecision[];
+  adaptationDecisions?: AdaptationDecision[];
+};
 
 export type RecordedDecision = TurnDecision & {
   type: 'decision';
   q: number;
+  /** Full action map is required for deterministic lifecycle replay. */
+  initiativeActions?: InitiativeActionSet;
+  /** Optional learner-authored lifecycle decisions, added in trace v2. */
+  evaluationDecisions?: EvaluationDecision[];
+  deploymentDecisions?: DeploymentModeDecision[];
+  adaptationDecisions?: AdaptationDecision[];
 };
 
 export type RecordedCrisisResponse = CrisisResponse & {
@@ -34,6 +68,13 @@ export type CounterfactualEdit = {
   selected: string[];
   alloc: Allocation;
   deploymentAmount: number;
+  /** Omitted fields inherit the recorded quarter, preserving the original branch. */
+  initiativeActions?: InitiativeActionSet;
+  initiativeAllocationMode?: InitiativeAllocationMode;
+  initiativeAllocations?: InitiativeAllocationSet;
+  evaluationDecisions?: EvaluationDecision[];
+  deploymentDecisions?: DeploymentModeDecision[];
+  adaptationDecisions?: AdaptationDecision[];
 };
 
 export type CounterfactualReplay = {
@@ -52,6 +93,40 @@ function isFiniteNumber(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value);
 }
 
+function isLifecycleDecisionPayload(value: unknown): value is LifecycleDecisionPayload {
+  if (!value || typeof value !== 'object') return false;
+  const payload = value as LifecycleDecisionPayload;
+  const validEvaluation = payload.evaluationDecisions === undefined || (
+    Array.isArray(payload.evaluationDecisions) && payload.evaluationDecisions.every((item) =>
+      Boolean(item) && typeof item.initiativeId === 'string' && ['go', 'no_go', 'pause'].includes(item.decision)
+      && typeof item.rationale === 'string' && typeof item.owner === 'string'));
+  const validDeployment = payload.deploymentDecisions === undefined || (
+    Array.isArray(payload.deploymentDecisions) && payload.deploymentDecisions.every((item) =>
+      Boolean(item) && typeof item.initiativeId === 'string' && ['augmentation', 'automation'].includes(item.mode)
+      && typeof item.rationale === 'string'));
+  const validAdaptation = payload.adaptationDecisions === undefined || (
+    Array.isArray(payload.adaptationDecisions) && payload.adaptationDecisions.every((item) =>
+      Boolean(item) && typeof item.initiativeId === 'string' && ['retrain', 'tune', 'rollback', 'deprecate'].includes(item.action)
+      && typeof item.reason === 'string'));
+  return validEvaluation && validDeployment && validAdaptation;
+}
+
+function isInitiativeActionSet(value: unknown): value is InitiativeActionSet {
+  return Boolean(value) && typeof value === 'object' && Object.entries(value as Record<string, unknown>).every(([, action]) =>
+    ['discover', 'pilot', 'scale', 'maintain', 'pause', 'retire'].includes(String(action)));
+}
+
+function isAllocation(value: unknown): value is Allocation {
+  if (!value || typeof value !== 'object') return false;
+  const source = value as Record<string, unknown>;
+  return ['infra', 'data', 'people', 'mlops', 'compliance', 'innovation'].every((key) => isFiniteNumber(source[key]) && source[key] >= 0);
+}
+
+function isInitiativeAllocationSet(value: unknown): value is InitiativeAllocationSet {
+  return Boolean(value) && typeof value === 'object'
+    && Object.values(value as Record<string, unknown>).every(isAllocation);
+}
+
 function isRecordedAction(value: unknown): value is CounterfactualAction {
   if (!value || typeof value !== 'object') return false;
   const action = value as Partial<CounterfactualAction>;
@@ -62,7 +137,11 @@ function isRecordedAction(value: unknown): value is CounterfactualAction {
       && Boolean(action.alloc)
       && typeof action.alloc === 'object'
       && isFiniteNumber(action.deploymentAmount)
-      && action.deploymentAmount >= 0;
+      && action.deploymentAmount >= 0
+      && (action.initiativeActions === undefined || isInitiativeActionSet(action.initiativeActions))
+      && (action.initiativeAllocationMode === undefined || action.initiativeAllocationMode === 'shared' || action.initiativeAllocationMode === 'custom')
+      && (action.initiativeAllocations === undefined || isInitiativeAllocationSet(action.initiativeAllocations))
+      && isLifecycleDecisionPayload(action);
   }
   if (action.type === 'crisis-response') {
     return Boolean(action.impact)
@@ -74,7 +153,8 @@ function isRecordedAction(value: unknown): value is CounterfactualAction {
 }
 
 function isValidTrace(value: Partial<CounterfactualTrace>): value is CounterfactualTrace {
-  return value.version === COUNTERFACTUAL_TRACE_VERSION
+  return typeof value.version === 'number'
+    && SUPPORTED_COUNTERFACTUAL_TRACE_VERSIONS.has(value.version)
     && Boolean(value.initialState)
     && Array.isArray(value.actions)
     && value.actions.every(isRecordedAction);
@@ -101,12 +181,43 @@ export function recordDecision(trace: CounterfactualTrace, decision: RecordedDec
     selected: [...decision.selected],
     alloc: { ...decision.alloc },
     deploymentAmount: decision.deploymentAmount,
+    ...(decision.initiativeActions ? { initiativeActions: { ...decision.initiativeActions } } : {}),
+    ...(decision.initiativeAllocationMode ? { initiativeAllocationMode: decision.initiativeAllocationMode } : {}),
+    ...(decision.initiativeAllocations ? { initiativeAllocations: JSON.parse(JSON.stringify(decision.initiativeAllocations)) } : {}),
+    ...(decision.evaluationDecisions ? { evaluationDecisions: decision.evaluationDecisions.map((item) => ({ ...item })) } : {}),
+    ...(decision.deploymentDecisions ? { deploymentDecisions: decision.deploymentDecisions.map((item) => ({ ...item })) } : {}),
+    ...(decision.adaptationDecisions ? { adaptationDecisions: decision.adaptationDecisions.map((item) => ({ ...item })) } : {}),
   };
   return {
     ...trace,
     actions: [...trace.actions.filter((action) => !(action.type === 'decision' && action.q === decision.q)), next]
       .sort((left, right) => left.q - right.q || (left.type === 'decision' ? -1 : 1)),
   };
+}
+
+/**
+ * Attach learner-authored lifecycle decisions to an already-recorded quarter.
+ * Lifecycle reviews happen after the board decision, so this helper updates
+ * the existing immutable action rather than appending a second decision for
+ * the same quarter. A v1 trace is promoted to the current schema only when it
+ * receives the new payload.
+ */
+export function recordLifecycleDecisions(
+  trace: CounterfactualTrace,
+  q: number,
+  payload: LifecycleDecisionPayload,
+): CounterfactualTrace {
+  const existing = trace.actions.find((action): action is RecordedDecision => action.type === 'decision' && action.q === q);
+  if (!existing || !isLifecycleDecisionPayload(payload)) return trace;
+  return recordDecision(
+    { ...trace, version: COUNTERFACTUAL_TRACE_VERSION },
+    {
+      ...existing,
+      ...(payload.evaluationDecisions ? { evaluationDecisions: payload.evaluationDecisions } : {}),
+      ...(payload.deploymentDecisions ? { deploymentDecisions: payload.deploymentDecisions } : {}),
+      ...(payload.adaptationDecisions ? { adaptationDecisions: payload.adaptationDecisions } : {}),
+    },
+  );
 }
 
 export function recordCrisisResponse(trace: CounterfactualTrace, response: RecordedCrisisResponse): CounterfactualTrace {
@@ -140,7 +251,17 @@ export function readActiveCounterfactualTrace(): CounterfactualTrace | null {
       seed: Number(parsed.seed) || normalizeGameState(parsed.initialState).runMetadata.seed,
       rulesVersion: typeof parsed.rulesVersion === 'string' ? parsed.rulesVersion : normalizeGameState(parsed.initialState).runMetadata.rulesVersion,
       initialState: copyState(parsed.initialState),
-      actions: parsed.actions,
+      actions: parsed.actions.map((action) => action.type === 'decision' ? {
+        ...action,
+        selected: [...action.selected],
+        alloc: { ...action.alloc },
+        ...(action.initiativeActions ? { initiativeActions: { ...action.initiativeActions } } : {}),
+        ...(action.initiativeAllocationMode ? { initiativeAllocationMode: action.initiativeAllocationMode } : {}),
+        ...(action.initiativeAllocations ? { initiativeAllocations: JSON.parse(JSON.stringify(action.initiativeAllocations)) } : {}),
+        ...(action.evaluationDecisions ? { evaluationDecisions: action.evaluationDecisions.map((item) => ({ ...item })) } : {}),
+        ...(action.deploymentDecisions ? { deploymentDecisions: action.deploymentDecisions.map((item) => ({ ...item })) } : {}),
+        ...(action.adaptationDecisions ? { adaptationDecisions: action.adaptationDecisions.map((item) => ({ ...item })) } : {}),
+      } : { ...action, impact: { ...action.impact } }),
     };
   } catch {
     return null;
@@ -167,10 +288,14 @@ function fail(state: GameState, appliedThroughQuarter: number, reason: string, d
  * replay intentionally pauses rather than inventing a learner choice.
  */
 export function replayCounterfactual(trace: CounterfactualTrace, edit: CounterfactualEdit): CounterfactualReplay {
-  if (trace.version !== COUNTERFACTUAL_TRACE_VERSION || !isValidTrace(trace)) {
+  // Keep a runtime-validatable view separate from the public type. Saved
+  // localStorage payloads can be malformed even though callers normally pass
+  // a CounterfactualTrace, and this keeps the defensive branch type-safe.
+  const candidate = trace as unknown as Partial<CounterfactualTrace>;
+  if (!isValidTrace(candidate)) {
     let state: GameState;
     try {
-      state = copyState(trace.initialState);
+      state = copyState(candidate.initialState as GameState);
     } catch {
       state = normalizeGameState({} as GameState);
     }
@@ -191,9 +316,19 @@ export function replayCounterfactual(trace: CounterfactualTrace, edit: Counterfa
     if (recorded.q !== state.q) {
       return { status: 'invalid', state, appliedThroughQuarter, reason: `The trace skips or duplicates Quarter ${state.q}.` };
     }
-    const decision: TurnDecision = recorded.q === edit.q
-      ? { selected: [...edit.selected], alloc: { ...edit.alloc }, deploymentAmount: edit.deploymentAmount }
-      : recorded;
+    const decision: TurnDecision & LifecycleDecisionPayload = {
+      selected: recorded.q === edit.q ? [...edit.selected] : [...recorded.selected],
+      alloc: recorded.q === edit.q ? { ...edit.alloc } : { ...recorded.alloc },
+      deploymentAmount: recorded.q === edit.q ? edit.deploymentAmount : recorded.deploymentAmount,
+      // A counterfactual changes only what it explicitly supplies. This keeps
+      // the original lifecycle plan and learner rationale on the replay path.
+      initiativeActions: recorded.q === edit.q ? { ...(edit.initiativeActions || recorded.initiativeActions || {}) } : recorded.initiativeActions,
+      initiativeAllocationMode: recorded.q === edit.q ? edit.initiativeAllocationMode ?? recorded.initiativeAllocationMode : recorded.initiativeAllocationMode,
+      initiativeAllocations: recorded.q === edit.q ? edit.initiativeAllocations ?? recorded.initiativeAllocations : recorded.initiativeAllocations,
+      evaluationDecisions: recorded.q === edit.q ? edit.evaluationDecisions ?? recorded.evaluationDecisions : recorded.evaluationDecisions,
+      deploymentDecisions: recorded.q === edit.q ? edit.deploymentDecisions ?? recorded.deploymentDecisions : recorded.deploymentDecisions,
+      adaptationDecisions: recorded.q === edit.q ? edit.adaptationDecisions ?? recorded.adaptationDecisions : recorded.adaptationDecisions,
+    };
     const resolved = applyTurnDecision(state, decision);
     if (!resolved.accepted) return fail(resolved.nextState, appliedThroughQuarter, resolved.reason, recorded.q === edit.q ? recorded.q : undefined);
     state = resolved.nextState;
