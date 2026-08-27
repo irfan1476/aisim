@@ -2,89 +2,54 @@
 import {
   Activity,
   ArrowRight,
-  BarChart3,
   CheckCircle2,
   ClipboardList,
-  Eye,
-  GitBranch,
   History,
-  RefreshCw,
   ShieldCheck,
   Target,
-  Trophy,
 } from "lucide-react";
 import { useState } from "react";
 
 const steps = [
   {
-    label: "Brief",
-    title: "Create your campaign context",
-    copy: "Choose Standard mode for open play or select a domain scenario, then answer five baseline questions. Your answers quietly shape organisation, data, and team maturity without revealing a strategy label.",
+    label: "Choose",
+    title: "Choose one clear next move",
+    copy: "Start with the Quarter 1 recommendation or compare the initiative cards yourself. Pick up to three capabilities, but a focused first move is usually easier to understand.",
     action:
-      "Answer honestly, then enter the boardroom. A new campaign receives reproducible but varied initiative conditions within the world you selected.",
+      "For each selected capability, choose its next valid lifecycle action. Discovery builds evidence and readiness; it does not create operating ROI yet.",
     watch:
-      "Initiative ROI, cost, readiness, human effort, and risk can differ from an earlier campaign.",
-    Icon: ClipboardList,
-  },
-  {
-    label: "Read",
-    title: "Inspect the living initiative cards",
-    copy: "Each card shows its current investment, ROI, data readiness, delivery risk, maturity, and funding history. These are campaign values—not fixed catalogue values.",
-    action:
-      "Compare the initiatives before selecting. Hover the metric row to see the campaign baseline and use the risk arrow to spot improvement or deterioration.",
-    watch:
-      "A rising risk score means neglect or weak safeguards are accumulating. A falling score means the initiative is becoming safer.",
-    Icon: Eye,
-  },
-  {
-    label: "Decide",
-    title: "Build the quarter portfolio",
-    copy: "Choose zero to three initiatives, decide how much of your campaign purse to deploy this quarter, and distribute operating investment across infrastructure, data, people, MLOps, compliance, and innovation.",
-    action:
-      "You do not have to deploy the full campaign purse every quarter. Keep a reserve when it supports your thesis, then fund the operating system around the portfolio: data, people, delivery discipline, and governance all change what an initiative can deliver.",
-    watch:
-      "Repeated funding compounds maturity. Switching bets is valid, but prolonged neglect raises risk and eventually erodes capability.",
+      "The lifecycle hint tells you what is possible now and what must happen before a pilot or scale-up.",
     Icon: Target,
   },
   {
-    label: "Test",
-    title: "Challenge the decision before committing",
-    copy: "Use Strategy Simulator for What-If comparisons and ask the CFO, CTO, CHRO, or Risk advisor about the current portfolio.",
+    label: "Fund",
+    title: "Fund the move, not every control",
+    copy: "Release the money you want to invest this quarter. The default operating mix is ready to use; change it only when you have a reason to test a different thesis.",
     action:
-      "Compare alternative selections and allocations. Apply a useful draft, or return to the decision window and adjust manually.",
+      "Use Cautious, Recommended, or Accelerated capital pace for a simple first decision. The recommended pace balances learning with reserve.",
     watch:
-      "The advisor can use current maturity, spend, risk, funding history, and discovered combinations. It does not choose for you.",
-    Icon: GitBranch,
+      "Your campaign purse is finite. Faster release can build earlier evidence, but shortens the runway for later quarters.",
+    Icon: ClipboardList,
   },
   {
-    label: "Resolve",
-    title: "See the operating system respond",
-    copy: "Confirm the quarter to evolve the exact initiative values shown on screen. Funding improves capability; neglect and weak governance create consequences.",
+    label: "See results",
+    title: "Read the cause and effect",
+    copy: "Confirm the quarter to evolve the exact initiative values you saw on screen. Results show what changed, what did not change yet, and the next evidence or operating decision needed.",
     action:
-      "Read the new metrics, causal chain, recommendations, and any crisis. Approving a recommendation creates guidance for the next decision—it does not secretly change your plan.",
+      "Check investment quarters separately from delivery quarters. Discovery counts as investment, while pilots and scaling are what create delivery progress.",
     watch:
-      "Compatible initiatives may reveal a capability combination that changes ROI, adoption, risk, and delivery cost.",
+      "A discovery result can be successful even without immediate ROI: the question is whether it produced enough evidence to justify the next step.",
     Icon: Activity,
   },
   {
     label: "Learn",
-    title: "Use the quarter as evidence",
-    copy: "The roadmap and Analytics Hub preserve what you funded, how much you spent, how initiatives evolved, and which outcomes followed.",
+    title: "Use evidence to improve the next quarter",
+    copy: "The roadmap and Analytics Hub preserve what you funded, how much you spent, how initiatives evolved, and which outcomes followed. The Strategy Simulator is there when you want to explore trade-offs.",
     action:
-      "Review trends, diagnostics, live measures, initiative evolution, frameworks, history, and the Time Machine before choosing the next quarter.",
+      "Keep what worked, adjust what did not, and deliberately pause or retire weak bets. You can always take a more advanced route once the core loop is familiar.",
     watch:
-      "Look for momentum, not one-quarter perfection. Decide which capabilities deserve consistency and which should be intentionally deprioritised.",
+      "Look for momentum, not one-quarter perfection. At Q12, the campaign reviews the complete record—not an opening label.",
     Icon: History,
-  },
-  {
-    label: "Finish",
-    title: "Read your strategy autopsy",
-    copy: "After Q12, the simulation infers your strategic pattern from the complete campaign—not from a mode selected at the beginning.",
-    action:
-      "Review the CEO rating, allocation pattern, capital pace, most-funded bets, risk movement, discovered combinations, timeline, and your route to improve. Save or export the record, then replay one changed thesis to compare the result.",
-    watch:
-      "Your verdict rewards sustainable value: ROI matters, but so do adoption, risk control, people investment, and portfolio discipline.",
-    Icon: Trophy,
   },
 ];
 

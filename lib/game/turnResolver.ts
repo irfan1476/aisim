@@ -119,6 +119,8 @@ export function applyTurnDecision(source: GameState, input: TurnDecision): TurnR
     .filter(([id, action]) => Boolean(state.initiativeStates[id]) && (action === 'pilot' || action === 'scale'))
     .map(([id]) => id)
     .slice(0, 3);
+  const discoveryIds = selected.filter((id) => initiativeActions[id] === 'discover');
+  const portfolioIds = selected.filter((id) => initiativeActions[id] !== 'pause');
   const scenario = state.scenarioMode ? getScenario(state.scenarioId) : undefined;
   const campaignRemaining = Number(state.campaignBudgetRemaining ?? state.campaignBudget ?? state.quarterlyBudget * 12);
   const deploymentCap = quarterlyDeploymentCap(state.campaignBudget, campaignRemaining, state.quarterlyBudget, state.q, state.spent);
@@ -159,7 +161,9 @@ export function applyTurnDecision(source: GameState, input: TurnDecision): TurnR
   const actualDeployment = capitalPlan.totalReleased;
   const deliveryCapital = capitalPlan.deliveryCapital;
   const result = resolveQuarter(state, {
-    selected: deliveryIds,
+    // Preserve discovery as a resolved portfolio choice. `resolveQuarter`
+    // separately limits operating effects to pilot/scale actions.
+    selected: portfolioIds,
     initiativeActions,
     lifecycleReviews,
     deploymentModes: input.deploymentModes,
@@ -188,7 +192,7 @@ export function applyTurnDecision(source: GameState, input: TurnDecision): TurnR
     grossBenefit,
     quarter: state.q,
   });
-  const resolvedState = { ...state, ...adjustedMetrics, initiativeActions, initiativeAllocationMode, initiativeAllocations, financialLedger, initiativeStates: result.initiativeStates, scenarioState: result.scenarioState };
+  const resolvedState = { ...state, ...adjustedMetrics, selected: portfolioIds, initiativeActions, initiativeAllocationMode, initiativeAllocations, financialLedger, initiativeStates: result.initiativeStates, scenarioState: result.scenarioState };
   const discoveredSynergies = Array.from(new Set([
     ...state.discoveredSynergies,
     ...(discovery?.effects.map((effect) => effect.key) || []),
@@ -244,7 +248,9 @@ export function applyTurnDecision(source: GameState, input: TurnDecision): TurnR
     discoveredSynergies,
     feedback: constrainedExperiments.length
       ? `Experiment recorded: ${constrainedExperiments.join(', ')} moved ahead before all readiness conditions were met. The outcome includes slower delivery and additional risk—use the result to refine the next hypothesis.`
-      : discovery?.message || (deliveryIds.length === 0
+      : discovery?.message || (deliveryIds.length === 0 && discoveryIds.length > 0
+      ? `Quarter ${state.q} recorded discovery for ${discoveryIds.map((id) => state.initiativeStates[id]?.name || id).join(', ')}. Evidence and data readiness advanced; operating value will begin only after a later pilot or scale decision.`
+      : deliveryIds.length === 0
       ? `Quarter ${state.q} resolved with no new funding for delivery. Run, pause, and retirement actions were recorded.`
       : `Quarter ${state.q} resolved. ${capitalPlan.accelerationSpend > 0 ? `Scale-up capital increased delivery intensity to ${result.snapshot.fundingIntensity?.toFixed(2)}×.` : 'Your portfolio is now showing the consequences of this allocation.'}`),
     history: [...state.history, {

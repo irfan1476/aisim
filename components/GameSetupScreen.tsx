@@ -1,11 +1,4 @@
-import {
-  ArrowRight,
-  BrainCircuit,
-  Eye,
-  Factory,
-  RefreshCw,
-  Target,
-} from 'lucide-react';
+import { ArrowRight, BrainCircuit, Eye, Factory, Target, WalletCards } from 'lucide-react';
 import ScenarioSelector from './ScenarioSelector';
 import type { CurrencyMode } from '../lib/scenarios/types';
 
@@ -26,10 +19,10 @@ interface GameSetupScreenProps {
 }
 
 const FLOW_STEPS = [
-  { title: 'Allocate', description: 'Choose the bets and the operating mix.', icon: Target },
-  { title: 'Observe', description: 'Watch capability, pressure, and value move.', icon: Eye },
-  { title: 'Reflect', description: 'Read the evidence behind each result.', icon: BrainCircuit },
-  { title: 'Adapt', description: 'Change one thesis and test it again.', icon: RefreshCw },
+  { title: 'Choose', description: 'Pick a capability and its next valid action.', icon: Target },
+  { title: 'Fund', description: 'Release capital and use the default operating mix.', icon: WalletCards },
+  { title: 'See results', description: 'Watch what changed, and what needs more evidence.', icon: Eye },
+  { title: 'Learn', description: 'Use the result to refine your next move.', icon: BrainCircuit },
 ];
 
 export default function GameSetupScreen({
@@ -72,8 +65,8 @@ export default function GameSetupScreen({
         <div className="setup-board mt-6 grid gap-4 xl:grid-cols-[1.05fr_.86fr_1.18fr] xl:items-start">
           <section className="setup-panel setup-rules-panel rounded-[24px] border border-ink/10 bg-white p-5 shadow-sm sm:p-6">
             <div className="flex items-center gap-3 text-emerald"><Factory size={19} strokeWidth={1.8} /><span className="text-[11px] font-bold uppercase tracking-[.2em]">Campaign rules &amp; flow</span></div>
-            <h2 className="mt-5 text-[1.35rem] font-semibold tracking-[-.03em] text-ink">Four moves. One connected record.</h2>
-            <p className="mt-2 max-w-md text-sm leading-6 text-ink/60">Across twelve quarters, every decision becomes evidence for the next one.</p>
+            <h2 className="mt-5 text-[1.35rem] font-semibold tracking-[-.03em] text-ink">One simple loop. Twelve quarters.</h2>
+            <p className="mt-2 max-w-md text-sm leading-6 text-ink/60">Choose, fund, see results, learn. Each quarter makes the next decision clearer.</p>
             <div className="mt-6 grid grid-cols-2 gap-3">
               {FLOW_STEPS.map(({ title, description, icon: Icon }) => (
                 <div key={title} className="setup-rule-tile rounded-2xl border border-ink/10 bg-mist/55 p-3.5">

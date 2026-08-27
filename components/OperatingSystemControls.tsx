@@ -34,6 +34,7 @@ export default function OperatingSystemControls({
   compact = false,
 }: Props) {
   const tailored = state.initiativeAllocationMode === 'custom';
+  const openingQuarter = state.q <= 1 && !tailored;
   const displayedAllocation = tailored ? (effectiveAllocation || state.alloc) : state.alloc;
   const total = Number(Object.values(displayedAllocation).reduce((sum, value) => sum + Number(value || 0), 0).toFixed(2));
   const capacity = deploymentCapacity(
@@ -66,34 +67,38 @@ export default function OperatingSystemControls({
         <div className="flex items-start gap-2">
           <span className="mt-0.5 flex h-7 w-7 items-center justify-center rounded-lg bg-[#dafbe1] text-[#1a7f37]"><SlidersHorizontal size={15} /></span>
           <div>
-            <p className="text-xs font-bold uppercase tracking-[.16em] text-[#1a7f37]">{tailored ? 'Capacity mix · derived' : 'Operating system · shared mix'}</p>
-            <p className="mt-1 text-xs leading-5 text-[#57606a]">{tailored ? 'This weighted portfolio mix comes from the tailored initiative plans below. Switch to shared mix to change every initiative at once.' : 'Shift the capability mix, then set the capital you want to release this quarter.'}</p>
+            <p className="text-xs font-bold uppercase tracking-[.16em] text-[#1a7f37]">{tailored ? 'Team support mix · derived' : 'Team support mix · shared'}</p>
+            <p className="mt-1 text-xs leading-5 text-[#57606a]">{tailored ? 'This combined mix comes from the tailored initiative plans below. Switch to a shared mix to support every initiative the same way.' : 'The balanced mix is ready to use. Adjust it only when you want to make an explicit operating trade-off.'}</p>
           </div>
         </div>
         <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${total === 100 ? "bg-[#e8f4eb] text-[#176b36]" : "bg-[#edf0ee] text-[#303832]"}`}>{total}% allocated</span>
       </div>
 
-      <div className="mt-4 grid gap-x-5 gap-y-3 sm:grid-cols-2">
-        {Object.entries(displayedAllocation).map(([key, value]) => (
-          <label key={key} className="group block rounded-xl bg-white px-3 py-2.5 ring-1 ring-inset ring-[#d8dee4] transition hover:ring-[#1a7f37]/45 focus-within:ring-2 focus-within:ring-[#1a7f37]">
-            <span className="flex justify-between gap-2 text-[11px] font-bold text-[#24292f]">
-              <span className="capitalize">{labelFor(key)}</span>
-              <span className="shrink-0 text-[#57606a]">{value}% · {formatCurrency((Number(value) / 100) * deployment, state.currencyMode)}</span>
-            </span>
-            <input
-              data-testid={`allocation-${key}`}
-              aria-label={`${labelFor(key)} allocation`}
-              type="range"
-              min="5"
-              max="50"
-              value={value}
-              disabled={tailored}
-              onChange={(event) => onAllocationChange(key, Number(event.target.value))}
-              className="mt-2 w-full cursor-ew-resize accent-[#1a7f37] disabled:cursor-not-allowed disabled:opacity-55"
-            />
-          </label>
-        ))}
-      </div>
+      <details className="mt-4 rounded-xl border border-[#d0d7de] bg-white/70 p-3" open={!openingQuarter}>
+        <summary className="cursor-pointer text-[11px] font-bold text-[#24292f]">Advanced controls: change the team support mix</summary>
+        <p className="mt-1 text-[10px] leading-4 text-[#57606a]">The default is balanced. Changing these sliders shifts support between data, people, safeguards, and delivery operations.</p>
+        <div className="mt-3 grid gap-x-5 gap-y-3 sm:grid-cols-2">
+          {Object.entries(displayedAllocation).map(([key, value]) => (
+            <label key={key} className="group block rounded-xl bg-white px-3 py-2.5 ring-1 ring-inset ring-[#d8dee4] transition hover:ring-[#1a7f37]/45 focus-within:ring-2 focus-within:ring-[#1a7f37]">
+              <span className="flex justify-between gap-2 text-[11px] font-bold text-[#24292f]">
+                <span className="capitalize">{labelFor(key)}</span>
+                <span className="shrink-0 text-[#57606a]">{value}% · {formatCurrency((Number(value) / 100) * deployment, state.currencyMode)}</span>
+              </span>
+              <input
+                data-testid={`allocation-${key}`}
+                aria-label={`${labelFor(key)} allocation`}
+                type="range"
+                min="5"
+                max="50"
+                value={value}
+                disabled={tailored}
+                onChange={(event) => onAllocationChange(key, Number(event.target.value))}
+                className="mt-2 w-full cursor-ew-resize accent-[#1a7f37] disabled:cursor-not-allowed disabled:opacity-55"
+              />
+            </label>
+          ))}
+        </div>
+      </details>
 
       {capacityIssue && onCapacityFix && <div className="mt-3 rounded-xl border border-[#bf8700]/35 bg-[#fff8c5] p-3"><p className="text-[11px] font-bold text-[#6b4f00]">This plan is over operating capacity.</p><p className="mt-1 text-[10px] leading-4 text-[#6b4f00]">Use the quick fix to adjust the mix to the minimum capacity needed. You can edit the resulting allocation afterward.</p><button type="button" onClick={onCapacityFix} className="mt-2 rounded-lg bg-[#24292f] px-3 py-2 text-[10px] font-bold text-white transition hover:bg-[#0969da]">Make plan executable</button></div>}
 
@@ -102,15 +107,15 @@ export default function OperatingSystemControls({
           <div className="flex gap-2">
             <Wallet size={15} className="mt-0.5 shrink-0 text-[#1a7f37]" />
             <div>
-              <p className="text-xs font-bold text-[#24292f]">Deploy this quarter</p>
-              <p className="mt-1 text-[11px] leading-4 text-[#57606a]">The quarterly pace is a guide, not a gate. Release any amount of the remaining campaign reserve; unused capital carries forward.</p>
+              <p className="text-xs font-bold text-[#24292f]">Invest this quarter</p>
+              <p className="mt-1 text-[11px] leading-4 text-[#57606a]">Choose how much campaign money to invest now. Anything you do not use stays in reserve for later quarters.</p>
             </div>
           </div>
           <b className="shrink-0 text-sm text-[#24292f]">{formatBudget(deployment, state.currencyMode)}</b>
         </div>
         <div className="mt-3 flex flex-wrap items-end justify-between gap-3">
           <label className="block">
-            <span className="block text-[10px] font-bold uppercase tracking-[.12em] text-[#57606a]">Capital to release</span>
+            <span className="block text-[10px] font-bold uppercase tracking-[.12em] text-[#57606a]">Money to invest</span>
             <div className="mt-1 flex items-center overflow-hidden rounded-lg border border-[#9bc9a7] bg-white focus-within:ring-2 focus-within:ring-[#1a7f37]">
               <span className="border-r border-[#d0d7de] px-2 py-2 text-xs font-bold text-[#57606a]">{state.currencyMode === "₹" ? "₹ Cr" : "$M"}</span>
               <input
@@ -128,7 +133,7 @@ export default function OperatingSystemControls({
             </div>
           </label>
           <p className="max-w-[18rem] text-right text-[10px] leading-4 text-[#57606a]">
-            Available now: <b className="text-[#24292f]">{formatBudget(capacity.maximumDeployment, state.currencyMode)}</b>. This is a release decision, not a quarterly cap.
+            Available to invest: <b className="text-[#24292f]">{formatBudget(capacity.maximumDeployment, state.currencyMode)}</b>. This is your campaign reserve, not a quarterly cap.
           </p>
         </div>
         <input
@@ -142,16 +147,16 @@ export default function OperatingSystemControls({
           className="mt-3 w-full cursor-ew-resize accent-[#1a7f37]"
         />
         <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-[10px] text-[#57606a]">
-          <span>Initiative floor: {formatCurrency(plan.initiativeMinimum, state.currencyMode)}</span>
-          <span>Continuity: {formatCurrency(plan.maintenanceSpend, state.currencyMode)}</span>
-          <span>Scale-up: {formatCurrency(plan.accelerationSpend, state.currencyMode)}</span>
+          <span>Minimum for selected work: {formatCurrency(plan.initiativeMinimum, state.currencyMode)}</span>
+          <span>Keep-running cost: {formatCurrency(plan.maintenanceSpend, state.currencyMode)}</span>
+          <span>Extra acceleration: {formatCurrency(plan.accelerationSpend, state.currencyMode)}</span>
           <span>Crisis response: {formatCurrency(plan.crisisResponseSpend, state.currencyMode)}</span>
           <span>Recommended pace: {formatBudget(capacity.recommendedAuthority, state.currencyMode)}</span>
           <span className="font-bold text-[#24292f]">Available reserve: {formatBudget(capacity.maximumDeployment, state.currencyMode)}</span>
         </div>
         <div className="mt-3 flex flex-wrap gap-2">
-          <button type="button" onClick={() => releasePlan(plan.requiredCapital)} className="rounded-lg border border-[#1a7f37] bg-white px-2.5 py-1.5 text-[10px] font-bold text-[#17351f] transition hover:bg-[#e8f4eb]">Fund selected plan · {formatBudget(plan.requiredCapital, state.currencyMode)}</button>
-          <button type="button" onClick={() => releasePlan(suggestedDeployment)} className="rounded-lg border border-[#9bc9a7] bg-white px-2.5 py-1.5 text-[10px] font-bold text-[#17351f] transition hover:bg-[#e8f4eb]">Use suggested pace · {formatBudget(suggestedDeployment, state.currencyMode)}</button>
+          <button type="button" onClick={() => releasePlan(plan.requiredCapital)} className="rounded-lg border border-[#1a7f37] bg-white px-2.5 py-1.5 text-[10px] font-bold text-[#17351f] transition hover:bg-[#e8f4eb]">Fund this plan · {formatBudget(plan.requiredCapital, state.currencyMode)}</button>
+          <button type="button" onClick={() => releasePlan(suggestedDeployment)} className="rounded-lg border border-[#9bc9a7] bg-white px-2.5 py-1.5 text-[10px] font-bold text-[#17351f] transition hover:bg-[#e8f4eb]">Use recommended amount · {formatBudget(suggestedDeployment, state.currencyMode)}</button>
           <button type="button" onClick={() => releasePlan(capacity.maximumDeployment)} className="rounded-lg border border-[#d0d7de] bg-white px-2.5 py-1.5 text-[10px] font-bold text-[#57606a] transition hover:bg-[#f6f8fa]">Release full reserve</button>
         </div>
         {plan.accelerationSpend > 0 && plan.initiativeMinimum > 0 && state.selected.length > 0 && (

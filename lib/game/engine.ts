@@ -52,22 +52,41 @@ export function resolveQuarter(
   const initiativeActions: InitiativeActionSet = Object.keys(decision.initiativeActions || {}).length
     ? { ...decision.initiativeActions }
     : Object.fromEntries(legacySelected.map((id) => [id, 'scale']));
-  const selected = Object.entries(initiativeActions)
-    .filter(([id, action]) => Boolean(current.initiativeStates[id]) && (action === 'pilot' || action === 'scale'))
-    .map(([id]) => id)
+  // A learner's portfolio is the work they deliberately committed to, not
+  // only the subset already producing operating value. Discovery therefore
+  // belongs in snapshots and portfolio posture while delivery effects remain
+  // restricted to pilot/scale below.
+  const actionPortfolioIds = legacySelected.length
+    ? legacySelected
+    : Object.entries(initiativeActions)
+      .filter(([, action]) => action !== 'pause')
+      .map(([id]) => id);
+  const selected = (hasLifecycleDecision ? actionPortfolioIds : legacySelected)
+    .filter((id) => Boolean(current.initiativeStates[id]) && (hasLifecycleDecision ? initiativeActions[id] !== 'pause' : true))
     .slice(0, 3);
+  const deliveryIds = selected.filter((id) => initiativeActions[id] === 'pilot' || initiativeActions[id] === 'scale');
+  const discoveryIds = selected.filter((id) => initiativeActions[id] === 'discover');
   const minimumPortfolioCost = selected.reduce(
-    (sum, id) => sum + Number(current.initiativeStates[id]?.currentCost ?? current.initiativeStates[id]?.baseCost ?? 0),
+    (sum, id) => sum + (deliveryIds.includes(id) ? Number(current.initiativeStates[id]?.currentCost ?? current.initiativeStates[id]?.baseCost ?? 0) : 0),
     0,
   );
+  // When action-aware funding is supplied, discovery/run/exit cash is not
+  // delivery acceleration. Only capital explicitly attributed to pilot/scale
+  // work can affect delivery intensity or maturity progress.
+  const attributedDeliveryCapital = decision.fundingByInitiative
+    ? deliveryIds.reduce((sum, id) => {
+      const funding = decision.fundingByInitiative?.[id];
+      return sum + Number(funding?.delivery || 0) + Number(funding?.scaleUp || 0);
+    }, 0)
+    : decision.deploymentAmount;
   const fundingIntensity = decision.deploymentAmount === undefined
     ? 1
-    : fundingIntensityFor(decision.deploymentAmount, minimumPortfolioCost);
+    : fundingIntensityFor(attributedDeliveryCapital, minimumPortfolioCost);
   const investmentMultiplier = decision.deploymentAmount === undefined || !minimumPortfolioCost
     ? 1
-    : Math.max(0, Number(decision.deploymentAmount) || 0) / minimumPortfolioCost;
+    : Math.max(0, Number(attributedDeliveryCapital) || 0) / minimumPortfolioCost;
   const fundingByInitiative = decision.fundingByInitiative || Object.fromEntries(Object.entries(current.initiativeStates).map(([id, initiative]) => {
-    const delivery = selected.includes(id) ? Number(initiative.currentCost ?? initiative.baseCost ?? initiative.cost ?? 0) * investmentMultiplier : 0;
+    const delivery = deliveryIds.includes(id) ? Number(initiative.currentCost ?? initiative.baseCost ?? initiative.cost ?? 0) * investmentMultiplier : 0;
     const run = Number(decision.continuityAllocations?.[id] || 0);
     return [id, { discovery: 0, delivery, scaleUp: Math.max(0, delivery - Number(initiative.currentCost ?? initiative.cost ?? 0)), run, continuity: run, retirement: 0, total: delivery + run }];
   }));
@@ -101,7 +120,7 @@ export function resolveQuarter(
     Object.keys(current.initiativeStates || {}).length,
   );
   const synergies = evaluateSynergies(benefitIds, evolved, scenario?.synergies);
-  const deliveryGateResults = selected.map((id) => decision.gateResults?.[id]).filter(Boolean);
+  const deliveryGateResults = deliveryIds.map((id) => decision.gateResults?.[id]).filter(Boolean);
   const gateMultiplier = deliveryGateResults.length
     ? deliveryGateResults.reduce((sum, gate) => sum + Number(gate?.deliveryMultiplier || 1), 0) / deliveryGateResults.length
     : 1;
@@ -120,7 +139,7 @@ export function resolveQuarter(
     0.15,
     synergies.reduce((sum, effect) => sum + effect.costReduction, 0),
   );
-  const metrics = calculateStandardEffects(current, selected, decision.alloc, chosen, {
+  const metrics = calculateStandardEffects(current, deliveryIds, decision.alloc, chosen, {
     synergyMultiplier,
     synergyRiskReduction,
     synergyAdoption,
@@ -158,8 +177,12 @@ export function resolveQuarter(
   );
   const snapshot: QuarterSnapshot = {
     q: current.q,
-    chosen: chosen.map((item) => item.name),
+    // `chosen` is kept for older analytics consumers. It now represents the
+    // learner's resolved portfolio instead of silently dropping discovery.
+    chosen: selected.map((id) => evolved[id]?.name || current.initiativeStates[id]?.name || id),
     selectedIds: [...selected],
+    discoveryIds,
+    deliveryIds,
     initiativeActions: { ...initiativeActions },
     lifecycleReviews: decision.lifecycleReviews,
     deploymentModes: decision.deploymentModes,

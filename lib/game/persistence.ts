@@ -149,6 +149,8 @@ function normalizeSnapshot(
     q: Math.max(1, Math.round(numberOr(value.q, fallbackMetrics.q))),
     chosen: stringArrayOr(value.chosen, []),
     selectedIds: stringArrayOr(value.selectedIds, []),
+    discoveryIds: stringArrayOr(value.discoveryIds, []),
+    deliveryIds: stringArrayOr(value.deliveryIds, []),
     metrics,
     initiativeStates: normalizeInitiativeStates(value.initiativeStates, fallbackStates),
     synergiesDiscovered: stringArrayOr(value.synergiesDiscovered, []),

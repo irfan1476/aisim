@@ -41,3 +41,15 @@ test('final report visual keeps its evidence caption within the report card', ()
   assert.match(visual, /What to test on your next run/);
   assert.doesNotMatch(visual, /What worked · what constrained value · what to test next/);
 });
+
+test('decision screen keeps first-time controls progressive and explains lifecycle choices', () => {
+  const decision = read('components', 'GameDecisionView.tsx');
+  const controls = read('components', 'OperatingSystemControls.tsx');
+
+  assert.match(decision, /Select this initiative to choose its next action/, 'unselected cards should not expose an active lifecycle selector');
+  assert.match(decision, /not ready/, 'invalid lifecycle actions should be labelled rather than silently offered');
+  assert.match(decision, /Build evidence and data readiness now/, 'discovery must explain that it is evidence work');
+  assert.match(decision, /Advanced: tailor each initiative/, 'per-initiative allocation should be behind an advanced disclosure');
+  assert.match(controls, /Advanced controls: change the team support mix/, 'opening allocation controls should be progressive');
+  assert.match(controls, /Money to invest/, 'capital labels should use learner language');
+});

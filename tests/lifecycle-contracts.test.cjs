@@ -155,6 +155,72 @@ test('blank evaluation context never blocks progress and is retained as No Entry
   assert.equal(reviewed.history.at(-1).evaluationDecisions[0].owner, 'No Entry');
 });
 
+test('discovery remains a resolved portfolio choice without claiming delivery value', () => {
+  const state = initialGameState();
+  const decision = applyTurnDecision(state, {
+    selected: ['demand'],
+    initiativeActions: { demand: 'discover' },
+    alloc: allocation,
+    deploymentAmount: 1,
+  });
+
+  assert.equal(decision.accepted, true, decision.accepted ? '' : decision.reason);
+  const snapshot = decision.nextState.history.at(-1);
+  assert.deepEqual(snapshot.selectedIds, ['demand']);
+  assert.deepEqual(snapshot.discoveryIds, ['demand']);
+  assert.deepEqual(snapshot.deliveryIds, []);
+  assert.equal(snapshot.selectedCount, 1);
+  assert.deepEqual(snapshot.chosen, ['Demand Forecasting']);
+  assert.deepEqual(decision.nextState.selected, ['demand']);
+  assert.equal(decision.nextState.initiativeStates.demand.quartersFunded, 0, 'discovery must not advance delivery maturity');
+  assert.equal(decision.nextState.initiativeStates.demand.quartersInvested, 1);
+  assert.match(decision.nextState.feedback, /recorded discovery/i);
+  assert.match(decision.nextState.feedback, /operating value/i);
+});
+
+test('scenario discovery records portfolio evidence while leaving outcome progress unchanged', () => {
+  const scenario = getScenario('projectFactory');
+  const startingMetrics = { ...scenario.startingState.startingMetrics };
+  const state = {
+    ...initialGameState(),
+    scenarioMode: true,
+    scenarioId: scenario.id,
+    initiativeStates: scenarioInitiativesToStates(scenario.initiatives),
+    scenarioStartingMetrics: startingMetrics,
+    scenarioState: { metrics: startingMetrics, progress: {}, flags: {} },
+  };
+  const decision = applyTurnDecision(state, {
+    selected: ['maintenance'],
+    initiativeActions: { maintenance: 'discover' },
+    alloc: scenario.startingState.defaultAllocation,
+    deploymentAmount: 1,
+  });
+
+  assert.equal(decision.accepted, true, decision.accepted ? '' : decision.reason);
+  assert.deepEqual(decision.nextState.history.at(-1).selectedIds, ['maintenance']);
+  assert.deepEqual(decision.nextState.history.at(-1).discoveryIds, ['maintenance']);
+  assert.equal(decision.nextState.scenarioState.metrics.downtimePressure, startingMetrics.downtimePressure);
+  assert.equal(decision.nextState.scenarioState.progress.downtimePressure, 0);
+});
+
+test('discovery capital does not accelerate a simultaneous delivery action', () => {
+  const decision = applyTurnDecision(initialGameState(), {
+    selected: ['demand', 'energy'],
+    initiativeActions: { demand: 'pilot', energy: 'discover' },
+    alloc: allocation,
+    // This is the exact combined pilot + discovery commitment for the
+    // generated campaign state: no extra delivery scale-up is released.
+    deploymentAmount: 1.3,
+  });
+
+  assert.equal(decision.accepted, true, decision.accepted ? '' : decision.reason);
+  const snapshot = decision.nextState.history.at(-1);
+  assert.equal(snapshot.fundingIntensity, 1);
+  assert.deepEqual(snapshot.deliveryIds, ['demand']);
+  assert.deepEqual(snapshot.discoveryIds, ['energy']);
+  assert.equal(decision.nextState.initiativeStates.demand.maturityCredits, 0.5);
+});
+
 test('counterfactual traces preserve lifecycle actions and learner decisions', () => {
   let state = initialGameState();
   const decision = {

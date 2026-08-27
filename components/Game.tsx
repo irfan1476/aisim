@@ -12,7 +12,9 @@ import type { GameViewState, Metric } from "./gameViewTypes";
 import { useLLMStore } from "../stores/llmStore";
 import { useGameStore } from "../stores/gameStore";
 import NextQuarterGuidance from "./NextQuarterGuidance";
+import FirstQuarterQuickStart from "./FirstQuarterQuickStart";
 import { createInferredGeneration } from "../lib/game/generator";
+import { firstQuarterPlan, hasCompletedBaseline, type CapitalPace } from "../lib/game/firstQuarter";
 import { initialGameState } from "../lib/game/state";
 import { getScenario } from "../lib/scenarios/registry";
 import type { CurrencyMode } from "../lib/scenarios/types";
@@ -54,6 +56,7 @@ export default function Game({ resume = false }: { resume?: boolean }) {
   const [currencyMode, setCurrencyMode] = useState<CurrencyMode>("$");
   const [campaignBudget, setCampaignBudget] = useState(60);
   const [debug, setDebug] = useState(false);
+  const [q1GuidanceDismissed, setQ1GuidanceDismissed] = useState(false);
   useEffect(() => {
     setDebug(
       process.env.NODE_ENV !== "production" &&
@@ -94,6 +97,7 @@ export default function Game({ resume = false }: { resume?: boolean }) {
       })),
     [availableInitiatives],
   );
+  const q1Plan = useMemo(() => firstQuarterPlan(s), [s]);
 
   const metrics: Metric[] = [
     ["ROI", "roi", "%", "gold"],
@@ -213,7 +217,21 @@ export default function Game({ resume = false }: { resume?: boolean }) {
   };
   const reset = () => {
     store.resetCampaign();
+    setQ1GuidanceDismissed(false);
     setScreen("setup");
+  };
+
+  const applyFirstQuarterPlan = (pace: CapitalPace) => {
+    if (!q1Plan) return;
+    // Use the same store controls as a manual turn. The guidance is therefore
+    // visible and editable rather than a hidden alternate game rule.
+    store.selectInitiatives([q1Plan.initiativeId]);
+    store.setInitiativeAction(q1Plan.initiativeId, q1Plan.action);
+    Object.entries(q1Plan.allocation).forEach(([key, value]) => {
+      store.updateAllocation(key as keyof typeof q1Plan.allocation, value);
+    });
+    store.setDeploymentAmount(q1Plan.deploymentByPace[pace]);
+    setQ1GuidanceDismissed(true);
   };
 
   if (screen === "setup")
@@ -249,6 +267,7 @@ export default function Game({ resume = false }: { resume?: boolean }) {
           })
         }
         onComplete={() => {
+          if (!hasCompletedBaseline(assessment)) return;
           const generation = createInferredGeneration(assessment);
           const scenario = scenarioMode ? getScenario(scenarioId) : undefined;
           store.resetCampaign();
@@ -258,9 +277,10 @@ export default function Game({ resume = false }: { resume?: boolean }) {
             experimental,
           });
           if (scenario) store.initializeScenario(scenario.id, campaignBudget);
+          setQ1GuidanceDismissed(false);
           setScreen("hypothesis");
         }}
-        canContinue={assessment.length === 5}
+        canContinue={hasCompletedBaseline(assessment)}
         analytics={
           <AnalyticsHub state={s} initiatives={availableInitiatives} />
       }
@@ -282,6 +302,14 @@ export default function Game({ resume = false }: { resume?: boolean }) {
         onApply={store.applyRecommendation}
         onDismiss={store.dismissRecommendation}
       />
+      {s.q === 1 && s.stage === "decide" && s.history.length === 0 && q1Plan && !q1GuidanceDismissed && (
+        <FirstQuarterQuickStart
+          plan={q1Plan}
+          currencyMode={s.currencyMode}
+          onApply={applyFirstQuarterPlan}
+          onDismiss={() => setQ1GuidanceDismissed(true)}
+        />
+      )}
       <div className="game-roadmap order-2 w-full px-5 pt-3">
         {debug && (
           <section className="mt-3 rounded-xl border border-dashed border-purple-400 bg-purple-50 p-4 text-xs text-purple-950">

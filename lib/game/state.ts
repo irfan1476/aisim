@@ -51,7 +51,12 @@ export type MetricsSnapshot = Partial<Record<MetricKey, number>>;
 export type QuarterSnapshot = {
   q: number;
   chosen: string[];
+  /** All deliberately funded/operated initiatives this quarter, including discovery. */
   selectedIds?: string[];
+  /** New evidence work; it is recorded as portfolio work but never as delivered value. */
+  discoveryIds?: string[];
+  /** Pilot/scale work that can create this quarter's delivery effects. */
+  deliveryIds?: string[];
   portfolio?: PortfolioSnapshot;
   selectedCount?: number;
   portfolioPosture?: PortfolioPosture;
