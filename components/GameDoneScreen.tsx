@@ -118,6 +118,7 @@ export default function GameDoneScreen({
   const averagePeople = averageAllocation("people");
   const averageData = averageAllocation("data");
   const averageGovernance = averageAllocation("compliance");
+  const realisedValueScore = Number(state.financialLedger?.cumulativeNetBenefit ?? 0) > 0 ? 1 : 0;
   const [grade, archetype, verdictMessage, gradeTone] = verdict(
     state.score,
     state.adoption,
@@ -368,7 +369,7 @@ export default function GameDoneScreen({
               <p><b className="text-[#1f2328]">What worked:</b> {topBetEvidence}. {best ? `Your strongest recorded ROI position was Q${best.q}.` : "No completed quarter was recorded."}</p>
               <p><b className="text-[#1f2328]">What was neglected:</b> {neglectedPressure ? `${neglectedPressure.item.label} finished furthest from its scenario target.` : "Review the quarters where you preserved budget or left initiatives unfunded."}</p>
               <p><b className="text-[#1f2328]">Missed opportunity:</b> {neglectedPressure ? `An earlier investment in ${neglectedPressure.item.label} may have given the capability more time to mature.` : "A saved reserve can be valuable, but leaving a binding pressure unattended for too long carries a learning cost."}</p>
-              <p><b className="text-[#1f2328]">The trade-off:</b> {state.adoption >= 60 ? "You accepted some risk to build adoption and operating momentum." : "You created value, but the operating system did not keep pace with the portfolio."} {strongestCombination ? `Your most repeated combination was ${strongestCombination.replaceAll(" + ", " + ")}.` : ""}</p>
+              <p><b className="text-[#1f2328]">The trade-off:</b> {state.adoption >= 60 ? "You accepted some risk to build adoption and operating momentum." : realisedValueScore > 0 ? "The model showed value, but the operating system did not keep pace with the portfolio." : "The portfolio created a promising direction, but has not yet produced realised cash value."} {strongestCombination ? `Your most repeated combination was ${strongestCombination.replaceAll(" + ", " + ")}.` : ""}</p>
             </div>
           </div>
           <div className="rounded-3xl border border-[#1a7f37]/25 bg-[#f1f8f3] p-6 shadow-sm md:p-8">
