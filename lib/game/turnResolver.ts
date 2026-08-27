@@ -199,10 +199,15 @@ export function applyTurnDecision(source: GameState, input: TurnDecision): TurnR
   ]));
   const resolvedRisk = Number(adjustedMetrics.risk ?? state.risk);
   const crisisProbability = Math.max(.08, Math.min(.7, (resolvedRisk - 15) / 75));
+  // Persist progress as percentages against each declared target. Scenario
+  // metric values (PPM, index points, etc.) are intentionally kept in
+  // scenarioState.metrics and must never be averaged as score percentages.
   const scenarioProgress = scenario
-    ? (result.scenarioState?.progress || calculateScenarioProgress(resolvedState, scenario)?.values)
+    ? calculateProgressPercentages(result.scenarioState?.metrics || {}, scenario)
     : state.scenarioProgress;
-  const scenarioOverall = scenario ? (calculateScenarioProgress(resolvedState, scenario)?.overall || 0) : 0;
+  const scenarioOverall = scenario
+    ? Object.values(scenarioProgress || {}).reduce((sum, value) => sum + Number(value || 0), 0) / Math.max(1, Object.keys(scenarioProgress || {}).length)
+    : 0;
   const operatingHealth = (Number(adjustedMetrics.adoption ?? state.adoption) + Number(adjustedMetrics.efficiency ?? state.efficiency) + Number(adjustedMetrics.data ?? state.data) + (100 - Number(adjustedMetrics.risk ?? state.risk))) / 4;
   const executionDiscipline = Math.min(100, (capacityValidation.status === 'valid' ? 65 : 40) + Math.min(25, state.q * 2) + Math.min(10, deliveryIds.length * 3));
   const responsibleAI = (Number(effectiveAllocation.compliance || 0) * 2 + (Object.values(result.initiativeStates).reduce((sum, item) => sum + Number(item.controlMaturity || 0), 0) / Math.max(1, Object.keys(result.initiativeStates).length)) * 30);

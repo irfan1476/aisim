@@ -2,6 +2,8 @@ import type { GameState } from './state';
 import { averageFrameworkContribution } from '../scenarios/framework';
 import type { FinancialLedger } from './businessModel';
 import { realisedROI } from './economics';
+import { getScenario } from '../scenarios/registry';
+import { calculateProgressPercentages } from '../scenarios/progress';
 
 export type ScoreInputs = {
   /** 0–100 progress against the active scenario's domain targets. */
@@ -38,6 +40,23 @@ const scenarioWeights = {
   responsibleAI: 5,
   validatedLearning: 10,
 } as const;
+
+/**
+ * Return target progress from scenario metrics, never from the raw metric
+ * values themselves. Older saves persisted `scenarioProgress` inconsistently
+ * (sometimes as values such as 100 or 500), so score refreshes must derive the
+ * contract from the authoritative domain metrics and scenario definitions.
+ */
+function scenarioTargetProgressFor(state: Pick<GameState, 'scenarioMode' | 'scenarioId' | 'scenarioState' | 'scenarioProgress'>): number {
+  if (!state.scenarioMode) return 0;
+  const scenario = getScenario(state.scenarioId);
+  const metrics = state.scenarioState?.metrics;
+  const progress = scenario && metrics
+    ? calculateProgressPercentages(metrics, scenario)
+    : state.scenarioProgress || {};
+  const values = Object.values(progress).map(Number).filter(Number.isFinite);
+  return values.length ? values.reduce((sum, value) => sum + clampScore(value), 0) / values.length : 0;
+}
 
 /**
  * Credit a deliberate early-stage initiative for validated evidence without
@@ -116,10 +135,7 @@ export function explainScore(state: GameState, metrics: Partial<GameState> = sta
   const responsibleAI = Number(state.alloc?.compliance || 0) * 2 + (Object.values(state.initiativeStates || {}).reduce((sum, item) => sum + Number(item.controlMaturity || 0), 0) / Math.max(1, Object.keys(state.initiativeStates || {}).length)) * 30;
   return composeCampaignScore({
     scenarioMode: state.scenarioMode,
-    // The precise scenario score is unavailable in legacy saves; its old
-    // score remains intact, while this breakdown remains explicit about zero
-    // inferred target progress rather than fabricating a result.
-    scenarioTargetProgress: 0,
+    scenarioTargetProgress: scenarioTargetProgressFor(state),
     realisedFinancialValue: realisedFinancialValueScore(state.financialLedger || { cumulativeInvestment: 0, cumulativeNetBenefit: 0 }),
     operatingHealth,
     executionDiscipline,
@@ -131,8 +147,7 @@ export function explainScore(state: GameState, metrics: Partial<GameState> = sta
 /** Recalculate score after a post-quarter mutation such as a crisis response
  * or lifecycle decision, which otherwise leaves the persisted breakdown stale. */
 export function refreshCampaignScore(state: GameState): GameState {
-  const progressValues = Object.values(state.scenarioProgress || {}).map(Number).filter(Number.isFinite);
-  const scenarioTargetProgress = progressValues.length ? progressValues.reduce((sum, value) => sum + value, 0) / progressValues.length : 0;
+  const scenarioTargetProgress = scenarioTargetProgressFor(state);
   const operatingHealth = (Number(state.adoption || 0) + Number(state.efficiency || 0) + Number(state.data || 0) + (100 - Number(state.risk || 0))) / 4;
   const executionDiscipline = Math.min(100, 65 + Math.min(25, state.q * 2) + Math.min(10, (state.selected || []).length * 3));
   const responsibleAI = Number(state.alloc?.compliance || 0) * 2 + (Object.values(state.initiativeStates || {}).reduce((sum, item) => sum + Number(item.controlMaturity || 0), 0) / Math.max(1, Object.keys(state.initiativeStates || {}).length)) * 30;

@@ -27,7 +27,7 @@ Module._resolveFilename = function resolveTypeScriptImports(request, parent, isM
 };
 
 const { emptyFinancialLedger, hasPaidBack, lifecycleBenefitRealisation, realiseBenefit, realisedROI, updateFinancialLedger } = require('../lib/game/economics.ts');
-const { composeCampaignScore, realisedFinancialValueScore, validatedLearningScore } = require('../lib/game/scoring.ts');
+const { composeCampaignScore, explainScore, refreshCampaignScore, realisedFinancialValueScore, validatedLearningScore } = require('../lib/game/scoring.ts');
 const { initialGameState } = require('../lib/game/state.ts');
 
 test('financial ledger records all cash costs, realised ROI, and first payback quarter', () => {
@@ -82,4 +82,29 @@ test('validated learning recognises deliberate early-stage work but not passive 
 
   state.initiativeActions = { demand: 'discover' };
   assert.ok(validatedLearningScore(state) > 0);
+});
+
+test('scenario score refresh averages target percentages, not raw domain metric values', () => {
+  const state = initialGameState(undefined, { scenarioMode: true, scenarioId: 'projectFactory' });
+  state.scenarioState = {
+    ...state.scenarioState,
+    metrics: {
+      ...(state.scenarioState?.metrics || {}),
+      // One of five targets is met; the other four remain at their baselines.
+      supplyContinuity: 85,
+    },
+  };
+  // This shape reproduces the legacy disconnect: raw metric values were
+  // persisted in scenarioProgress and later mistaken for percentages.
+  state.scenarioProgress = {
+    downtimePressure: 65,
+    defectRate: 500,
+    energyPressure: 70,
+    workforceResilience: 55,
+    supplyContinuity: 85,
+  };
+  const refreshed = refreshCampaignScore(state);
+  assert.equal(refreshed.scoreBreakdown.values.scenarioTargetProgress, 20);
+  assert.equal(refreshed.scoreBreakdown.contributions.scenarioTargetProgress, 7);
+  assert.equal(explainScore(state).values.scenarioTargetProgress, 20);
 });
