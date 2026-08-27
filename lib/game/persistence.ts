@@ -257,6 +257,22 @@ export function normalizeGameState(value: unknown): GameState {
   next.initiativeStates = hasCurrentInitiativeStates
     ? normalizeInitiativeStates(source.initiativeStates, generatedDefaults)
     : (next.history.at(-1)?.initiativeStates || generatedDefaults);
+  // Older saves predate `quartersInvested`. Reconstruct it from the recorded
+  // quarter ledger so discovery/run/exit capital is not lost on hydration.
+  const historicalInvestmentQuarters: Record<string, number> = {};
+  Object.keys(next.initiativeStates).forEach((id) => { historicalInvestmentQuarters[id] = 0; });
+  next.history.forEach((entry, index) => {
+    Object.keys(next.initiativeStates).forEach((id) => {
+      const funding = entry.initiativeFunding?.[id];
+      const currentTotal = Number(entry.initiativeStates?.[id]?.totalInvestment || 0);
+      const previousTotal = Number(next.history[index - 1]?.initiativeStates?.[id]?.totalInvestment || 0);
+      if (Number(funding?.total || 0) > 0 || currentTotal > previousTotal) historicalInvestmentQuarters[id] += 1;
+    });
+  });
+  Object.entries(next.initiativeStates).forEach(([id, initiative]) => {
+    const saved = isRecord(source.initiativeStates) && isRecord(source.initiativeStates[id]) ? source.initiativeStates[id] : {};
+    if (saved.quartersInvested === undefined) initiative.quartersInvested = Math.max(Number(initiative.quartersInvested || 0), historicalInvestmentQuarters[id] || 0);
+  });
   next.initiativeAllocationMode = source.initiativeAllocationMode === 'custom' ? 'custom' : 'shared';
   next.initiativeAllocations = normalizeInitiativeAllocations(source.initiativeAllocations, next.alloc, new Set(Object.keys(next.initiativeStates)));
   next.initiativeActions = isRecord(source.initiativeActions)

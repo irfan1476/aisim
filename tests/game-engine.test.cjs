@@ -279,6 +279,20 @@ test('hydrateGameState repairs missing initiative state and history', () => {
   assert.deepEqual(hydrated.history, []);
 });
 
+test('legacy hydration reconstructs discovery investment quarters from history', () => {
+  const state = initialGameState();
+  const legacy = structuredClone(state);
+  delete legacy.initiativeStates.demand.quartersInvested;
+  legacy.history = [{
+    q: 1,
+    metrics: {},
+    initiativeStates: { demand: { ...legacy.initiativeStates.demand, totalInvestment: 0.2 } },
+    initiativeFunding: { demand: { discovery: 0.2, delivery: 0, scaleUp: 0, run: 0, continuity: 0, retirement: 0, total: 0.2 } },
+  }];
+  const hydrated = normalizeGameState(legacy);
+  assert.equal(hydrated.initiativeStates.demand.quartersInvested, 1);
+});
+
 test('deriveScore uses resolved metrics and rewards lower risk', () => {
   const state = initialGameState();
   const score = deriveScore(state, { roi: 50, adoption: 60, efficiency: 70, risk: 20 });
