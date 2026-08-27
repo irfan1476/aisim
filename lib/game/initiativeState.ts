@@ -197,6 +197,8 @@ export function migrateInitiativeState(saved: Partial<InitiativeState> | undefin
                   ...(typeof criterion.id === 'string' ? { id: criterion.id.slice(0, 120) } : {}),
                   ...(typeof criterion.label === 'string' ? { label: criterion.label.slice(0, 240) } : {}),
                   ...(criterion.direction === 'higher-is-better' || criterion.direction === 'lower-is-better' ? { direction: criterion.direction } : {}),
+                  ...(criterion.kind === 'outcome' || criterion.kind === 'evidence' || criterion.kind === 'safety' ? { kind: criterion.kind } : {}),
+                  ...(criterion.required === true ? { required: true } : {}),
                   metric: criterion.metric,
                   threshold: Number(criterion.threshold),
                   actual: Number.isFinite(Number(criterion.actual)) ? Number(criterion.actual) : 0,

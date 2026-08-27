@@ -45,6 +45,7 @@ import { initializeInitiativeStates } from './initiativeState';
 import { createInitiativeGeneration, generateInitiatives, type InitiativeGeneration } from './generator';
 import type { CurrencyMode } from '../scenarios/types';
 import type { AdaptationInput, AdaptationSet, CapacityState, DeploymentModeInput, DeploymentModeSet, FinancialLedger, InitiativeActionSet, InitiativeFunding, LifecycleReviewInput, LifecycleReviewSet } from './businessModel';
+import type { CampaignScoreBreakdown } from './scoring';
 export type MetricKey = 'roi' | 'revenue' | 'efficiency' | 'adoption' | 'risk' | 'data' | 'satisfaction' | 'literacy' | 'turnover' | 'compliance' | 'innovation' | 'spent' | 'score';
 export type MetricsSnapshot = Partial<Record<MetricKey, number>>;
 export type QuarterSnapshot = {
@@ -94,7 +95,7 @@ export type GameState = {
   q: number; stage: 'decide' | 'results' | 'done'; selected: string[]; initiativeActions: InitiativeActionSet; alloc: Allocation; initiativeAllocationMode: InitiativeAllocationMode; initiativeAllocations: InitiativeAllocationSet;
   roi: number; revenue: number; efficiency: number; adoption: number; risk: number; data: number;
   satisfaction: number; literacy: number; turnover: number; compliance: number; innovation: number;
-  spent: number; score: number; financialLedger: FinancialLedger; history: QuarterSnapshot[]; initiativeStates: Record<string, InitiativeState>; achievements: string[]; crisis: any; feedback: string;
+  spent: number; score: number; scoreBreakdown?: CampaignScoreBreakdown; financialLedger: FinancialLedger; history: QuarterSnapshot[]; initiativeStates: Record<string, InitiativeState>; achievements: string[]; crisis: any; feedback: string;
   initiativeGeneration: InitiativeGeneration; userReflections: UserReflections;
   scenarioMode: boolean; scenarioId?: string; currencyMode: CurrencyMode; quarterlyBudget: number; campaignBudget: number; campaignBudgetRemaining: number; scenarioBudgetRemaining: number; deploymentAmount: number; quarterlyDeploymentCap: number; lastQuarterDeployment: number; scenarioStartingMetrics?: Record<string, number>; scenarioProgress?: Record<string, number>; scenarioState: ScenarioState; quarterlyCrisisCost: number; scenarioOverspend: number; scenarioBonus: number; portfolio?: PortfolioSnapshot;
   baseline: number[]; experimental: boolean; causalChain: CausalItem[]; proactiveRecommendations: Recommendation[]; approvedRecommendations: string[]; discoveredSynergies: string[]; nextQuarterGuidance: { title: string; action: string; allocationKey?: string; target?: string; initiativeIds?: string[]; preferredInitiativeIds?: string[]; deploymentAmount?: number; operatingAllocationTargets?: Partial<Allocation> } | null;

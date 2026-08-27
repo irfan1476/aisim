@@ -9,17 +9,37 @@ export function defaultLifecycleProfile(initiative: Pick<ScenarioInitiative, 'ba
     experimentQuarters: 1,
     pilotQuarters: 2,
     evaluation: {
-      criteria: [{
-        id: 'primary-outcome',
-        label: `Demonstrate ${initiative.primaryMetric} movement`,
-        metric: initiative.primaryMetric,
-        // Movement targets preserve their direction. A lower-is-better
-        // outcome must require a negative delta rather than letting an
-        // unchanged (or slightly worse) metric appear to meet a positive bar.
-        threshold: Number(((higherIsBetter ? 1 : -1) * Math.abs(initiative.baseEffect) * 0.5).toFixed(2)),
-        direction: higherIsBetter ? 'higher-is-better' : 'lower-is-better',
-      }],
-      goThreshold: 0.7,
+      criteria: [
+        {
+          id: 'directional-outcome',
+          label: `See a directional ${initiative.primaryMetric} signal`,
+          metric: initiative.primaryMetric,
+          // Pilots test whether the signal is moving, rather than demanding
+          // the full production benefit before the learner can decide.
+          threshold: Number(((higherIsBetter ? 1 : -1) * Math.max(.5, Math.abs(initiative.baseEffect) * .2)).toFixed(2)),
+          direction: higherIsBetter ? 'higher-is-better' : 'lower-is-better',
+          kind: 'outcome',
+        },
+        {
+          id: 'evidence-readiness',
+          label: 'Build sufficient data, workflow, and monitoring evidence',
+          metric: 'operationalEvidence',
+          threshold: 42,
+          direction: 'higher-is-better',
+          kind: 'evidence',
+        },
+        ...(initiative.risk === 'HIGH' ? [{
+          id: 'safety-control',
+          label: 'Demonstrate required safety and control readiness',
+          metric: 'safetyEvidence',
+          threshold: 45,
+          direction: 'higher-is-better' as const,
+          kind: 'safety' as const,
+          required: true,
+        }] : []),
+      ],
+      goThreshold: initiative.risk === 'HIGH' ? .67 : .5,
+      conditionalThreshold: initiative.risk === 'HIGH' ? .5 : .34,
     },
     deployment: {
       defaultMode: initiative.risk === 'HIGH' ? 'augmentation' : 'automation',

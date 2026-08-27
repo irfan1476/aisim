@@ -24,6 +24,8 @@ export type AiSuccessCriterion = {
   actual: number;
   met: boolean;
   direction?: 'higher-is-better' | 'lower-is-better';
+  kind?: 'outcome' | 'evidence' | 'safety';
+  required?: boolean;
 };
 
 export type AiEvaluationState = {

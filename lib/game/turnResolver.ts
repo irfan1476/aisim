@@ -12,9 +12,9 @@ import type { InitiativeActionSet } from './businessModel';
 import type { AdaptationInput, AdaptationSet, DeploymentModeInput, DeploymentModeSet, LifecycleReviewInput, LifecycleReviewSet } from './businessModel';
 import { validatePortfolioCapacity } from './capacity';
 import { updateFinancialLedger } from './economics';
-import { composeCampaignScore, realisedFinancialValueScore } from './scoring';
+import { composeCampaignScore, realisedFinancialValueScore, validatedLearningScore } from './scoring';
 import { applyAdaptation, applyDeploymentMode, applyLifecycleReview, lifecycleActionError, normalizeLifecycleReviewInput } from './lifecycleResolver';
-import { derivePortfolioAllocation } from './initiativeAllocation';
+import { allocationForInitiative, allocationTotal, derivePortfolioAllocation } from './initiativeAllocation';
 
 export type TurnDecision = {
   selected: string[];
@@ -123,6 +123,16 @@ export function applyTurnDecision(source: GameState, input: TurnDecision): TurnR
 
   const initiativeAllocationMode = input.initiativeAllocationMode === 'custom' ? 'custom' : state.initiativeAllocationMode;
   const initiativeAllocations = input.initiativeAllocations || state.initiativeAllocations;
+  if (initiativeAllocationMode === 'custom') {
+    const unbalanced = Object.entries(capitalPlan.byInitiative)
+      .filter(([, funding]) => Number(funding.total || 0) > 0)
+      .filter(([id]) => allocationTotal(allocationForInitiative(id, 'custom', initiativeAllocations, input.alloc)) !== 100)
+      .map(([id]) => state.initiativeStates[id]?.name || id);
+    if (unbalanced.length > 0) {
+      const reason = `${unbalanced.join(', ')} ${unbalanced.length === 1 ? 'has' : 'have'} an operating mix below or above 100%. Adjust each initiative's controls before confirming this quarter.`;
+      return { accepted: false, nextState: { ...state, feedback: reason }, reason };
+    }
+  }
   const effectiveAllocation = derivePortfolioAllocation(input.alloc, initiativeAllocationMode, initiativeAllocations, capitalPlan.byInitiative);
   const capacityValidation = validatePortfolioCapacity(initiativeActions, state.initiativeStates, effectiveAllocation, scenario);
   // Capacity is a hard operating limit. Readiness is deliberately not: a
@@ -186,7 +196,7 @@ export function applyTurnDecision(source: GameState, input: TurnDecision): TurnR
   const scoreModel = composeCampaignScore({
     scenarioMode: Boolean(scenario), scenarioTargetProgress: scenarioOverall,
     realisedFinancialValue: realisedFinancialValueScore(financialLedger), operatingHealth,
-    executionDiscipline, responsibleAI,
+    executionDiscipline, responsibleAI, validatedLearning: validatedLearningScore(resolvedState),
   });
   const scenarioCrisis = scenario && state.q % 3 === 0 && crisisRoll(state.initiativeGeneration.seed, state.q) < crisisProbability
     ? scenario.crises[Math.abs(state.initiativeGeneration.seed + state.q) % scenario.crises.length]
@@ -201,6 +211,7 @@ export function applyTurnDecision(source: GameState, input: TurnDecision): TurnR
   const nextState: GameState = {
     ...resolvedState,
     score: Math.round(scoreModel.score),
+    scoreBreakdown: scoreModel,
     scenarioProgress,
     scenarioState: result.scenarioState,
     portfolio: result.snapshot.portfolio,

@@ -46,6 +46,10 @@ export type ScenarioEvaluationCriterion = {
   metric: string;
   threshold: number;
   direction: ScenarioDirection;
+  /** What the learner is validating at this point in the lifecycle. */
+  kind?: 'outcome' | 'evidence' | 'safety';
+  /** A failed mandatory criterion cannot receive a Go recommendation. */
+  required?: boolean;
 };
 
 export type ScenarioDeploymentModeEffects = {
@@ -62,6 +66,8 @@ export type ScenarioLifecycleProfile = {
   evaluation: {
     criteria: ScenarioEvaluationCriterion[];
     goThreshold: number;
+    /** Evidence threshold for a conditional Go when mandatory checks pass. */
+    conditionalThreshold?: number;
   };
   deployment: {
     defaultMode: 'augmentation' | 'automation';

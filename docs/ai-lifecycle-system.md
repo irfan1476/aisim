@@ -11,7 +11,7 @@ The system is implemented as an overlay on the existing operating lifecycle. It 
 1. Preserve the operating model. Existing initiative actions, capital planning, capacity validation, scenario effects, financial ledger, and counterfactual replay remain the authoritative systems.
 2. Separate persistent capability from this-quarter investment. Initiative data readiness is a persistent asset; allocation to data, people, MLOps, and compliance is a current-quarter operating choice.
 3. Allow learning before certainty. Weak readiness can create a constrained experiment. It does not silently become a successful deployment.
-4. Keep the learner accountable without creating artificial roles. Deployment mode and adaptation decisions require a rationale; evaluation notes and decision contact are optional, with blanks stored explicitly as `No Entry`.
+4. Keep the learner accountable without creating artificial roles. Deployment mode and adaptation choices are explicit, but all rationale, owner, and reason fields are optional; blanks are stored explicitly as `No Entry`.
 5. Keep rules deterministic. Evidence, drift, risk, lifecycle transitions, capital charges, and replay depend only on recorded state and decisions. No lifecycle rule uses randomness.
 6. Make scenario context authoritative. A healthcare radiology assistant and a manufacturing workflow optimiser do not receive the same automation, oversight, or drift treatment.
 
@@ -59,7 +59,7 @@ This preserves the simulation's existing principle that a learner may test an im
 
 ## Evaluation
 
-Scenario profiles author one or more success criteria. A criterion contains a stable ID, label, metric, target, and direction.
+Scenario profiles author one or more success criteria. A criterion contains a stable ID, label, metric, target, direction, and optionally a purpose: `outcome`, `evidence`, or `safety`. A safety criterion can be marked `required`.
 
 ```ts
 {
@@ -74,18 +74,42 @@ Scenario profiles author one or more success criteria. A criterion contains a st
 Evidence is produced deterministically at the end of a pilot:
 
 - Scenario metrics use their measured quarter-over-quarter movement for small movement targets, or their current value for absolute targets.
-- Operational criteria without a visible scenario metric use a deterministic composite of data readiness, control maturity, change readiness, and monitored performance.
+- Operational criteria without a visible scenario metric use deterministic virtual measures: `operationalEvidence` combines data readiness, control maturity, change readiness, and monitored performance; `safetyEvidence` weights controls most heavily.
 - Lower-is-better criteria retain negative movement targets. For example, a movement from 65 to 62 has an actual result of `-3`, which meets a target of `-2`.
 
-The system derives an evidence signal from the proportion of criteria met and the scenario's `goThreshold`:
+The system derives an evidence signal from the proportion of criteria met and the scenario's `goThreshold` / `conditionalThreshold`:
 
 | Evidence result | Signal |
 |---|---|
-| Meets or exceeds the authored threshold | Go · high confidence |
-| Mixed evidence | Go with conditions · medium confidence |
-| Weak evidence | No-Go · high confidence |
+| All intended criteria meet the authored Go threshold | Go · high confidence |
+| Enough evidence for the authored conditional threshold, with every required safety/control criterion met | Go with conditions · medium confidence |
+| Weak evidence or a failed required safety/control criterion | No-Go · high confidence |
+
+Default profiles use a modest directional outcome test plus a readiness/evidence test. They do not demand full ROI from a pilot. For high-risk defaults, the safety/control test is mandatory. Detailed scenario profiles preserve their domain-specific criteria: for example, clinician review coverage and cohort equity remain mandatory in Care360.
 
 The signal is advisory. The learner records the actual `go`, `no_go`, or `pause` decision. A rationale and decision contact are invited on the first pass but never block progress; blank fields are stored as `No Entry` in the quarter ledger and executable counterfactual trace.
+
+## Strategy evaluation and early-stage value
+
+Discovery and experiment intentionally create no realised ROI. A pilot creates limited realised benefit. Treating the absence of early ROI as failure would reward premature deployment, so the campaign score records two distinct truths:
+
+- **Realised value** remains the financial component. It only credits observed net benefit in the financial ledger.
+- **Validated learning** credits deliberate initiatives for data readiness, control maturity, change readiness, completed evaluation evidence, and meaningful lifecycle progression.
+
+Validated learning is capped at 10% of the score in scenario mode (and proportionally in Standard mode). It cannot compensate for poor operating health or a lack of realised value over a full campaign, but it makes a disciplined early portfolio visible and achievable. The quarter-results view exposes the current validated-learning signal, while the final strategy autopsy shows each score contribution in points.
+
+The current score weights are:
+
+| Dimension | Scenario mode | Standard mode behaviour |
+|---|---:|---|
+| Scenario target progress | 35% | Excluded; remaining weights are renormalised |
+| Realised value | 20% | Included |
+| Operating health | 20% | Included |
+| Execution discipline | 10% | Included |
+| Responsible AI | 5% | Included |
+| Validated learning | 10% | Included |
+
+Only initiatives with a recorded operating action can earn validated-learning credit; passive starting readiness is never a free score.
 
 ## Deployment mode
 
@@ -126,6 +150,8 @@ Monitoring applies only after a capability is deployed or running. Scenario prof
 When performance falls below the authored degradation threshold, the capability becomes degraded and the learner must record an adaptation decision before progressing.
 
 Human oversight is a fifth capacity pool alongside delivery teams, change capacity, data engineering capacity, and governance review capacity. Available oversight derives from people and compliance allocation. Demand derives from autonomy, deployment mode, and risk drivers.
+
+When a capacity pool blocks confirmation, the decision screen explains the exact demand-versus-availability gap and names the affected selected initiatives. For human oversight it also suggests the smallest useful levers: add People or Compliance allocation, select fewer deployed/maintained initiatives, or pause one for the quarter. The message distinguishes a hard operating limit from a lifecycle or budget issue, so the learner knows whether to edit the operating mix, the portfolio action, or the release amount.
 
 ## Adaptation and capital
 
@@ -215,9 +241,11 @@ The decision screen also presents a funding and operating plan directly below th
 1. **Where does the released capital go?** Each selected initiative shows its action commitment, its attributed quarter spend, and any scale-up capital. Extra delivery capital is distributed proportionally to the committed delivery cost of the selected pilot/scale initiatives; this keeps a shared campaign release reconciled to the financial ledger.
 2. **What will the operating mix change this quarter?** The plan displays the amount of each initiative's attributed spend directed to infrastructure, data, people, operations and maintenance, compliance, and innovation. It names the direct initiative effects: data asset/readiness, change readiness, control maturity, technical debt, monitoring, and oversight.
 
-The default is a **shared mix**: one operating allocation applies consistently to every selected initiative. The learner may switch to **tailor by initiative**. Each tailored initiative mix remains at 100%; it is applied to that initiative's state evolution and scenario effect. The spend-weighted aggregate of all charged initiative mixes becomes the portfolio capacity mix, so local choices still truthfully constrain delivery teams, data engineering, governance review, and human oversight.
+The default is a **shared mix**: one operating allocation applies consistently to every selected initiative. The learner may switch to **tailor by initiative**. In tailored mode, each initiative owns an independent six-lever mix; moving one lever does not redistribute the others. The current total is shown per initiative, and the quarter cannot be confirmed until every funded initiative totals exactly 100%. Once balanced, each mix is applied to that initiative's state evolution and scenario effect. The spend-weighted aggregate of the charged mixes becomes the portfolio capacity mix, so local choices still truthfully constrain delivery teams, data engineering, governance review, and human oversight.
 
 The shared mix remains a convenient default and a reset path. In tailored mode the right-hand operating-system panel becomes a read-only, derived capacity envelope so the learner cannot mistake an organisation-level capacity result for an unrecorded global setting.
+
+Selection and lifecycle action are separate controls. Selecting or deselecting a tile changes the quarter's portfolio scope without rewriting the initiative's existing action; the learner can then change the action explicitly when it is part of the selected plan.
 
 The result is a visible executive decision flow:
 

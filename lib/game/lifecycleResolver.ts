@@ -19,7 +19,7 @@ type LifecycleProfile = {
   dataReadiness?: number;
   experimentQuarters?: number;
   pilotQuarters?: number;
-  evaluation?: { goThreshold?: number };
+  evaluation?: { goThreshold?: number; conditionalThreshold?: number };
   deployment?: { modes?: Partial<Record<'augmentation' | 'automation', DeploymentImpact>> };
   drift?: { susceptibility?: number; quarterlyRate?: number; degradationThreshold?: number; monitoringRequired?: boolean };
   risks?: { model?: number; operational?: number; legal?: number };
@@ -171,9 +171,9 @@ export function applyLifecycleReview(state: GameState, input: LifecycleReviewInp
 
 /** Record whether a deployed capability augments people or automates work. */
 export function applyDeploymentMode(state: GameState, input: DeploymentModeInput): GameState {
-  const rationale = validText(input.rationale);
   if (!['augmentation', 'automation'].includes(input.mode)) return { ...state, feedback: 'Choose augmentation or automation.' };
-  if (!rationale) return { ...state, feedback: 'A deployment rationale is required.' };
+  const rationale = validText(input.rationale) || 'No Entry';
+  const normalizedInput = { ...input, rationale };
   const next = withInitiative(state, input.initiativeId, (initiative) => {
     const mode = input.mode;
     const profile = profileFor(initiative);
@@ -198,16 +198,16 @@ export function applyDeploymentMode(state: GameState, input: DeploymentModeInput
     };
   }, `Deployment mode recorded for ${input.initiativeId}: ${input.mode}.`);
   return next.initiativeStates?.[input.initiativeId]
-    ? recordLifecycleDecision(next, 'deploymentDecisions', input)
+    ? recordLifecycleDecision(next, 'deploymentDecisions', normalizedInput)
     : next;
 }
 
 /** Apply a deterministic monitoring/adaptation intervention. */
 export function applyAdaptation(state: GameState, input: AdaptationInput): GameState {
-  const reason = validText(input.reason);
   const actions: AiAdaptationAction[] = ['retrain', 'tune', 'rollback', 'deprecate'];
   if (!actions.includes(input.action)) return { ...state, feedback: 'Choose retrain, tune, rollback, or deprecate.' };
-  if (!reason) return { ...state, feedback: 'An adaptation reason is required.' };
+  const reason = validText(input.reason) || 'No Entry';
+  const normalizedInput = { ...input, reason };
   const source = state.initiativeStates?.[input.initiativeId];
   if (!source) return { ...state, feedback: `Initiative ${input.initiativeId} was not found.` };
   const costMultiplier: Record<AiAdaptationAction, number> = { retrain: 1, tune: .4, rollback: .2, deprecate: .1 };
@@ -263,7 +263,7 @@ export function applyAdaptation(state: GameState, input: AdaptationInput): GameS
     financialLedger,
     feedback: `${operated.feedback} ${cost > 0 ? `${cost.toFixed(2)} of campaign capital was used.` : 'No additional campaign capital was used.'}`,
   };
-  return recordLifecycleDecision(charged, 'adaptationDecisions', input);
+  return recordLifecycleDecision(charged, 'adaptationDecisions', normalizedInput);
 }
 
 /** Calculate oversight units for one deployed initiative. */
@@ -399,23 +399,43 @@ export function recordEvaluationEvidence(
   return Object.fromEntries(Object.entries(states || {}).map(([id, source]) => {
     if (!source.evaluation?.successCriteria?.length) return [id, source];
     const initiative = { ...source, evaluation: { ...source.evaluation, successCriteria: source.evaluation.successCriteria.map((criterion) => {
-      const current = finite(currentMetrics[criterion.metric], finite(previousMetrics[criterion.metric]));
-      const previous = finite(previousMetrics[criterion.metric], current);
+      const dataReadiness = clamp(finite(source.dataReadiness, finite(source.currentData) / 5 * 100), 0, 100);
+      const controlEvidence = clamp(finite(source.controlMaturity) * 100, 0, 100);
+      const changeEvidence = clamp(finite(source.changeReadiness) * 100, 0, 100);
+      const monitoringEvidence = clamp(finite(source.monitoring?.performance, 100), 0, 100);
       // Negative authored thresholds represent a movement target (for example
       // reduce downtime by two points); positive thresholds are treated as an
       // absolute outcome target when the value is materially larger than one.
-      const hasRecordedMetric = Object.prototype.hasOwnProperty.call(currentMetrics, criterion.metric)
-        || Object.prototype.hasOwnProperty.call(previousMetrics, criterion.metric);
       const operationalEvidence = clamp(
-        finite(source.dataReadiness, finite(source.currentData) / 5 * 100) * .35
-        + clamp(finite(source.controlMaturity) * 100, 0, 100) * .3
-        + clamp(finite(source.changeReadiness) * 100, 0, 100) * .2
-        + clamp(finite(source.monitoring?.performance, 100), 0, 100) * .15,
+        dataReadiness * .35 + controlEvidence * .3 + changeEvidence * .2 + monitoringEvidence * .15,
         0,
         100,
       );
+      const safetyEvidence = clamp(
+        dataReadiness * .2 + controlEvidence * .55 + changeEvidence * .15 + monitoringEvidence * .1,
+        0,
+        100,
+      );
+      const virtualMetrics: Record<string, number> = {
+        operationalEvidence,
+        safetyEvidence,
+        dataReadiness,
+        controlEvidence,
+        changeEvidence,
+        monitoringEvidence,
+      };
+      const hasVirtualMetric = Object.prototype.hasOwnProperty.call(virtualMetrics, criterion.metric);
+      const current = hasVirtualMetric
+        ? virtualMetrics[criterion.metric]
+        : finite(currentMetrics[criterion.metric], finite(previousMetrics[criterion.metric]));
+      const previous = hasVirtualMetric
+        ? current
+        : finite(previousMetrics[criterion.metric], current);
+      const hasRecordedMetric = hasVirtualMetric
+        || Object.prototype.hasOwnProperty.call(currentMetrics, criterion.metric)
+        || Object.prototype.hasOwnProperty.call(previousMetrics, criterion.metric);
       const actual = hasRecordedMetric
-        ? (criterion.threshold < 0 || Math.abs(criterion.threshold) <= 10 ? current - previous : current)
+        ? (hasVirtualMetric ? current : (criterion.threshold < 0 || Math.abs(criterion.threshold) <= 10 ? current - previous : current))
         : operationalEvidence;
       const direction = criterion.direction || (criterion.threshold < 0 ? 'lower-is-better' : 'higher-is-better');
       const met = direction === 'lower-is-better'
@@ -427,9 +447,16 @@ export function recordEvaluationEvidence(
       const criteria = initiative.evaluation.successCriteria;
       const passed = criteria.filter((criterion) => criterion.met).length;
       const ratio = criteria.length ? passed / criteria.length : 0;
-      const goThreshold = clamp(finite(profileFor(source).evaluation?.goThreshold, .7), 0, 1);
-      initiative.evaluation.recommendedDecision = ratio >= goThreshold ? 'go' : ratio >= Math.min(.4, goThreshold) ? 'go_with_conditions' : 'no_go';
-      initiative.evaluation.confidence = ratio >= goThreshold || ratio < .4 ? 'high' : 'medium';
+      const profile = profileFor(source);
+      const goThreshold = clamp(finite(profile.evaluation?.goThreshold, .5), 0, 1);
+      const conditionalThreshold = clamp(finite(profile.evaluation?.conditionalThreshold, Math.min(.4, goThreshold)), 0, goThreshold);
+      const requiredPassed = criteria.filter((criterion) => criterion.required).every((criterion) => criterion.met);
+      initiative.evaluation.recommendedDecision = requiredPassed && ratio >= goThreshold
+        ? 'go'
+        : requiredPassed && ratio >= conditionalThreshold
+          ? 'go_with_conditions'
+          : 'no_go';
+      initiative.evaluation.confidence = initiative.evaluation.recommendedDecision === 'go' || initiative.evaluation.recommendedDecision === 'no_go' ? 'high' : 'medium';
     }
     return [id, initiative];
   })) as Record<string, InitiativeState>;

@@ -4,6 +4,7 @@ import { ArrowRight, BarChart3, FileText, GitBranch, History, RefreshCw, ShieldC
 import { useEffect, useState } from "react";
 import Game from "../components/Game";
 import HomepageVisualPanels from "../components/HomepageVisualPanels";
+import CampaignEvidenceReplayVisual from "../components/CampaignEvidenceReplayVisual";
 import { hasCampaignProgress, readPersistedGameState } from "../lib/game/persistence";
 import { scenarioList } from "../lib/scenarios/registry";
 
@@ -150,7 +151,7 @@ export default function Home() {
             <p className="mt-6 max-w-xl text-base leading-7 text-[#526159]">A completed campaign is not a verdict. It is an evidence record: what you funded, what changed, what constrained value, and what you would test next.</p>
             <div className="mt-7 grid gap-3 sm:grid-cols-2">{[[Target, "Before", "Test a thesis."], [BarChart3, "During", "Watch the system respond."], [FileText, "After", "Read the evidence."], [RefreshCw, "Replay", "Change one move."]].map(([Icon, title, copy]) => { const ToolIcon = Icon as typeof Target; return <div key={title as string} className="rounded-xl border border-[#d0d7de] bg-[#f6f8fa] p-4"><ToolIcon className="text-[#08872b]" size={19}/><h3 className="mt-3 font-bold">{title as string}</h3><p className="mt-1 text-xs leading-5 text-[#65736b]">{copy as string}</p></div>; })}</div>
           </div>
-          <HomepageVisualPanels variant="replay" />
+          <CampaignEvidenceReplayVisual />
         </div>
       </section>
 

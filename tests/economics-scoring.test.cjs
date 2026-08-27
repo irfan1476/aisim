@@ -27,7 +27,8 @@ Module._resolveFilename = function resolveTypeScriptImports(request, parent, isM
 };
 
 const { emptyFinancialLedger, hasPaidBack, lifecycleBenefitRealisation, realiseBenefit, realisedROI, updateFinancialLedger } = require('../lib/game/economics.ts');
-const { composeCampaignScore, realisedFinancialValueScore } = require('../lib/game/scoring.ts');
+const { composeCampaignScore, realisedFinancialValueScore, validatedLearningScore } = require('../lib/game/scoring.ts');
+const { initialGameState } = require('../lib/game/state.ts');
 
 test('financial ledger records all cash costs, realised ROI, and first payback quarter', () => {
   const start = emptyFinancialLedger();
@@ -60,14 +61,25 @@ test('lifecycle benefit realisation is bounded and requires adoption and readine
 });
 
 test('campaign score applies agreed scenario weights and normalises Standard mode', () => {
-  const inputs = { scenarioTargetProgress: 80, realisedFinancialValue: 60, operatingHealth: 70, executionDiscipline: 90, responsibleAI: 100 };
+  const inputs = { scenarioTargetProgress: 80, realisedFinancialValue: 60, operatingHealth: 70, executionDiscipline: 90, responsibleAI: 100, validatedLearning: 50 };
   const scenario = composeCampaignScore({ ...inputs, scenarioMode: true });
-  assert.equal(scenario.score, 75);
-  assert.deepEqual(scenario.weights, { scenarioTargetProgress: 40, realisedFinancialValue: 25, operatingHealth: 20, executionDiscipline: 10, responsibleAI: 5 });
+  assert.equal(scenario.score, 73);
+  assert.deepEqual(scenario.weights, { scenarioTargetProgress: 35, realisedFinancialValue: 20, operatingHealth: 20, executionDiscipline: 10, responsibleAI: 5, validatedLearning: 10 });
 
   const standard = composeCampaignScore({ ...inputs, scenarioMode: false });
   assert.equal(standard.weights.scenarioTargetProgress, 0);
-  assert.equal(standard.weights.realisedFinancialValue, 41.666667);
-  assert.equal(standard.score, 71.67);
+  assert.equal(standard.weights.realisedFinancialValue, 30.769231);
+  assert.equal(standard.score, 69.23);
   assert.equal(realisedFinancialValueScore({ cumulativeInvestment: 20, cumulativeNetBenefit: 10 }), 50);
+});
+
+test('validated learning recognises deliberate early-stage work but not passive starting readiness', () => {
+  const state = initialGameState();
+  state.initiativeStates.demand.dataReadiness = 95;
+  state.initiativeStates.demand.currentData = 4.75;
+  state.initiativeStates.demand.aiLifecycle.stage = 'experiment';
+  assert.equal(validatedLearningScore(state), 0);
+
+  state.initiativeActions = { demand: 'discover' };
+  assert.ok(validatedLearningScore(state) > 0);
 });

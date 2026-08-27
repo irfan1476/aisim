@@ -8,7 +8,7 @@ const clamp = (value: number, minimum = 0, maximum = 100) => Math.min(maximum, M
 const round = (value: number) => Number(value.toFixed(2));
 
 export function allocationTotal(allocation: Partial<Allocation> | undefined): number {
-  return OPERATING_ALLOCATION_KEYS.reduce((sum, key) => sum + finite(allocation?.[key]), 0);
+  return Number(OPERATING_ALLOCATION_KEYS.reduce((sum, key) => sum + finite(allocation?.[key]), 0).toFixed(2));
 }
 
 export function normalizeOperatingAllocation(value: unknown, fallback: Allocation): Allocation {
@@ -23,15 +23,44 @@ export function normalizeOperatingAllocation(value: unknown, fallback: Allocatio
  */
 export function rebalanceOperatingAllocation(current: Allocation, changed: keyof Allocation, value: number): Allocation {
   const next = Object.fromEntries(OPERATING_ALLOCATION_KEYS.map((key) => [key, Math.round(clamp(finite(current[key], 5), 5, 50))])) as Allocation;
-  next[changed] = Math.round(clamp(finite(value, current[changed]), 5, 50));
-  let difference = 100 - allocationTotal(next);
-  const candidates = [...OPERATING_ALLOCATION_KEYS.filter((key) => key !== changed), changed];
+  const requested = Math.round(clamp(finite(value, current[changed]), 5, 50));
+  const previous = next[changed];
+  next[changed] = requested;
+  let difference = previous - requested;
+  const candidates = OPERATING_ALLOCATION_KEYS.filter((key) => key !== changed);
+  const rooms = candidates.map((key) => ({
+    key,
+    room: difference < 0 ? next[key] - 5 : 50 - next[key],
+  }));
+  const totalRoom = rooms.reduce((sum, item) => sum + Math.max(0, item.room), 0);
+  if (totalRoom > 0 && difference !== 0) {
+    const magnitude = Math.min(Math.abs(difference), totalRoom);
+    const sign = Math.sign(difference);
+    const allocations = rooms.map((item) => {
+      const exact = magnitude * Math.max(0, item.room) / totalRoom;
+      const whole = Math.min(Math.floor(exact), Math.max(0, item.room));
+      return { ...item, exact, adjustment: whole };
+    });
+    let remainder = magnitude - allocations.reduce((sum, item) => sum + item.adjustment, 0);
+    allocations
+      .sort((a, b) => (b.exact - b.adjustment) - (a.exact - a.adjustment))
+      .forEach((item) => {
+        if (remainder <= 0 || item.adjustment >= item.room) return;
+        item.adjustment += 1;
+        remainder -= 1;
+      });
+    allocations.forEach((item) => {
+      next[item.key] = Math.round(next[item.key] - sign * item.adjustment);
+    });
+  }
+  // Defensive correction for malformed/legacy mixes and rounding drift.
+  let remainder = 100 - allocationTotal(next);
   for (const key of candidates) {
-    if (Math.abs(difference) < 0.001) break;
-    const room = difference > 0 ? 50 - next[key] : next[key] - 5;
-    const adjustment = Math.sign(difference) * Math.min(Math.abs(difference), Math.max(0, room));
+    if (!remainder) break;
+    const room = remainder > 0 ? 50 - next[key] : next[key] - 5;
+    const adjustment = Math.sign(remainder) * Math.min(Math.abs(remainder), Math.max(0, room));
     next[key] = Math.round(next[key] + adjustment);
-    difference -= adjustment;
+    remainder -= adjustment;
   }
   return next;
 }
@@ -78,8 +107,12 @@ export function derivePortfolioAllocation(
   const aggregate = Object.fromEntries(OPERATING_ALLOCATION_KEYS.map((key) => [key,
     round(funded.reduce((sum, item) => sum + allocationForInitiative(item.id, mode, allocations, shared)[key] * item.total, 0) / total),
   ])) as Allocation;
-  // Preserve a truthful 100% display despite two-decimal rounding.
-  const remainder = round(100 - allocationTotal(aggregate));
-  if (remainder) aggregate.infra = round(aggregate.infra + remainder);
+  // Correct tiny rounding drift only when every contributing initiative is
+  // already balanced. An incomplete learner mix must remain visible and must
+  // be rejected by the quarter confirmation gate.
+  if (funded.every((item) => allocationTotal(allocationForInitiative(item.id, mode, allocations, shared)) === 100)) {
+    const remainder = round(100 - allocationTotal(aggregate));
+    if (remainder) aggregate.infra = round(aggregate.infra + remainder);
+  }
   return aggregate;
 }

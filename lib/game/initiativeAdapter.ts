@@ -55,6 +55,8 @@ export function scenarioInitiativesToStates(initiatives: ScenarioInitiative[]): 
         id: criterion.id,
         label: criterion.label,
         direction: criterion.direction,
+        kind: criterion.kind,
+        required: criterion.required,
       })),
     } as typeof state.evaluation;
     lifecycleState.risks = {

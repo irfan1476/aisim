@@ -21,7 +21,7 @@ export default function ScenarioProgress({ state }: Props) {
     : 0;
 
   return (
-    <section className="mb-0 h-full rounded-2xl border border-[#8c959f] bg-[#f6f8fa] p-4 sm:p-5">
+    <section className="mb-0 rounded-2xl border border-[#8c959f] bg-[#f6f8fa] p-4 sm:p-5">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <div>
           <p className="text-xs font-bold uppercase tracking-[.2em] text-[#1a7f37]">Operating signal focus</p>

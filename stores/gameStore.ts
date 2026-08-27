@@ -9,7 +9,7 @@ import { advanceTurn, applyCrisisResponse, applyTurnDecision } from '../lib/game
 import type { InitiativeAction } from '../lib/game/businessModel';
 import type { AdaptationInput, DeploymentModeInput, LifecycleReviewInput } from '../lib/game/businessModel';
 import { applyAdaptation, applyDeploymentMode, applyLifecycleReview, normalizeLifecycleReviewInput, suggestedLifecycleAction } from '../lib/game/lifecycleResolver';
-import { allocationForInitiative, rebalanceOperatingAllocation, seedInitiativeAllocations } from '../lib/game/initiativeAllocation';
+import { allocationForInitiative, seedInitiativeAllocations } from '../lib/game/initiativeAllocation';
 import { clearActiveCounterfactualTrace, createCounterfactualTrace, readActiveCounterfactualTrace, recordCrisisResponse, recordDecision, recordLifecycleDecisions, writeActiveCounterfactualTrace } from '../lib/counterfactual';
 import type { AdaptationDecision, DeploymentModeDecision, EvaluationDecision, LifecycleDecisionPayload, RecordedDecision } from '../lib/counterfactual';
 import {
@@ -224,14 +224,13 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
     const initiativeActions = { ...state.initiativeActions };
     selected.forEach((id) => {
       const existing = initiativeActions[id];
-      if (existing && existing !== 'pause') return;
+      // Selection is a portfolio-scope choice, not a lifecycle decision.
+      // Preserve any action the learner already chose, including pause.
+      if (existing) return;
       const initiative = state.initiativeStates[id];
       initiativeActions[id] = state.scenarioMode && initiative
         ? suggestedLifecycleAction(initiative, state.q)
         : 'scale';
-    });
-    Object.entries(initiativeActions).forEach(([id, action]) => {
-      if (!selected.includes(id) && (action === 'discover' || action === 'pilot' || action === 'scale')) initiativeActions[id] = 'pause';
     });
     return { selected, initiativeActions };
   }),
@@ -248,7 +247,9 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
     return { initiativeActions, selected };
   }),
 
-  updateAllocation: (key, value) => set((state) => ({ alloc: { ...state.alloc, [key]: value } })),
+  updateAllocation: (key, value) => set((state) => ({
+    alloc: { ...state.alloc, [key]: Math.min(50, Math.max(5, Math.round(Number(value) || 0))) },
+  })),
 
   setInitiativeAllocationMode: (mode) => set((state) => ({
     initiativeAllocationMode: mode,
@@ -264,7 +265,10 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
       initiativeAllocationMode: 'custom',
       initiativeAllocations: {
         ...state.initiativeAllocations,
-        [initiativeId]: rebalanceOperatingAllocation(current, key, value),
+        [initiativeId]: {
+          ...current,
+          [key]: Math.min(50, Math.max(5, Math.round(Number(value) || 0))),
+        },
       },
     };
   }),

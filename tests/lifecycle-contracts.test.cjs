@@ -38,8 +38,16 @@ const {
   recordLifecycleDecisions,
   replayCounterfactual,
 } = require('../lib/counterfactual.ts');
+const { allocationTotal, rebalanceOperatingAllocation } = require('../lib/game/initiativeAllocation.ts');
 
 const allocation = { infra: 35, data: 25, people: 15, mlops: 10, compliance: 10, innovation: 5 };
+
+test('shared and tailored allocation changes rebalance the full 100% mix', () => {
+  const next = rebalanceOperatingAllocation(allocation, 'data', 40);
+  assert.equal(allocationTotal(next), 100);
+  assert.equal(next.data, 40);
+  assert.ok(Object.keys(allocation).filter((key) => key !== 'data' && next[key] !== allocation[key]).length > 1);
+});
 
 test('every scenario initiative receives a stable AI lifecycle profile', () => {
   for (const id of ['projectFactory', 'bankNext', 'care360', 'futureReady']) {
@@ -83,10 +91,10 @@ test('authored readiness stays aligned with the persistent 1–5 data asset', ()
   assert.equal(maintenance.baseData, maintenance.currentData);
 });
 
-test('generic lower-is-better outcomes retain a negative movement target', () => {
+test('generic lower-is-better outcomes retain a modest negative pilot movement target', () => {
   const profile = defaultLifecycleProfile({ baseEffect: -8, primaryMetric: 'downtime pressure', risk: 'MED', data: 3, human: 2 });
   assert.equal(profile.evaluation.criteria[0].direction, 'lower-is-better');
-  assert.equal(profile.evaluation.criteria[0].threshold, -4);
+  assert.equal(profile.evaluation.criteria[0].threshold, -1.6);
 });
 
 test('scenario capabilities cannot skip directly from data readiness to pilot or deployment', () => {
@@ -287,4 +295,27 @@ test('evaluation evidence respects lower-is-better criteria and derives a recomm
   assert.equal(criterion.actual, -3);
   assert.equal(criterion.met, true);
   assert.ok(['go', 'go_with_conditions', 'no_go'].includes(evaluated.maintenance.evaluation.recommendedDecision));
+});
+
+test('evaluation separates pilot evidence from full ROI and honours mandatory safety checks', () => {
+  const states = scenarioInitiativesToStates(getScenario('projectFactory').initiatives);
+  const maintenance = states.maintenance;
+  maintenance.aiLifecycle = { ...maintenance.aiLifecycle, stage: 'evaluate', stageStatus: 'in_progress' };
+  maintenance.lifecycleProfile = {
+    ...(maintenance.lifecycleProfile || {}),
+    evaluation: { goThreshold: 1, conditionalThreshold: .5 },
+  };
+  maintenance.evaluation.successCriteria = [
+    { id: 'directional', label: 'Directional pilot signal', metric: 'downtimePressure', threshold: -2, direction: 'lower-is-better', actual: 0, met: false, kind: 'outcome' },
+    { id: 'safety', label: 'Safety and control evidence', metric: 'safetyEvidence', threshold: 20, direction: 'higher-is-better', actual: 0, met: false, kind: 'safety', required: true },
+    { id: 'full-readiness', label: 'Full production readiness', metric: 'operationalEvidence', threshold: 99, direction: 'higher-is-better', actual: 0, met: false, kind: 'evidence' },
+  ];
+  const conditional = recordEvaluationEvidence(states, { downtimePressure: 65 }, { downtimePressure: 62 });
+  assert.equal(conditional.maintenance.evaluation.successCriteria.find((item) => item.id === 'directional').met, true);
+  assert.equal(conditional.maintenance.evaluation.successCriteria.find((item) => item.id === 'safety').met, true);
+  assert.equal(conditional.maintenance.evaluation.recommendedDecision, 'go_with_conditions');
+
+  const blocked = { ...conditional, maintenance: { ...conditional.maintenance, evaluation: { ...conditional.maintenance.evaluation, successCriteria: conditional.maintenance.evaluation.successCriteria.map((criterion) => criterion.id === 'safety' ? { ...criterion, threshold: 99 } : criterion) } } };
+  const safetyBlocked = recordEvaluationEvidence(blocked, { downtimePressure: 65 }, { downtimePressure: 62 });
+  assert.equal(safetyBlocked.maintenance.evaluation.recommendedDecision, 'no_go');
 });

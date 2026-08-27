@@ -6,12 +6,15 @@ import { deploymentCapacity } from "../lib/game/state";
 import type { GameViewState } from "./gameViewTypes";
 import type { InitiativeActionSet } from "../lib/game/businessModel";
 import type { Allocation } from "../lib/game/state";
+import type { CapacityIssue } from "../lib/game/capacity";
 
 type Props = {
   state: GameViewState;
   onAllocationChange: (key: string, value: number) => void;
   onDeploymentChange: (amount: number) => void;
   effectiveAllocation?: Allocation;
+  capacityIssue?: CapacityIssue;
+  onCapacityFix?: () => void;
   compact?: boolean;
 };
 
@@ -26,11 +29,13 @@ export default function OperatingSystemControls({
   onAllocationChange,
   onDeploymentChange,
   effectiveAllocation,
+  capacityIssue,
+  onCapacityFix,
   compact = false,
 }: Props) {
   const tailored = state.initiativeAllocationMode === 'custom';
   const displayedAllocation = tailored ? (effectiveAllocation || state.alloc) : state.alloc;
-  const total = Object.values(displayedAllocation).reduce((sum, value) => sum + Number(value || 0), 0);
+  const total = Number(Object.values(displayedAllocation).reduce((sum, value) => sum + Number(value || 0), 0).toFixed(2));
   const capacity = deploymentCapacity(
     state.campaignBudget,
     state.campaignBudgetRemaining,
@@ -89,6 +94,8 @@ export default function OperatingSystemControls({
           </label>
         ))}
       </div>
+
+      {capacityIssue && onCapacityFix && <div className="mt-3 rounded-xl border border-[#bf8700]/35 bg-[#fff8c5] p-3"><p className="text-[11px] font-bold text-[#6b4f00]">This plan is over {capacityIssue.code === 'HUMAN_OVERSIGHT_CAPACITY' ? 'human oversight' : 'operating'} capacity.</p><p className="mt-1 text-[10px] leading-4 text-[#6b4f00]">Use the quick fix to adjust the mix to the minimum capacity needed. You can edit the resulting allocation afterward.</p><button type="button" onClick={onCapacityFix} className="mt-2 rounded-lg bg-[#24292f] px-3 py-2 text-[10px] font-bold text-white transition hover:bg-[#0969da]">Make plan executable</button></div>}
 
       <div className="mt-4 rounded-xl border border-[#b8d8c0] bg-[#f2f8f3] p-3">
         <div className="flex items-start justify-between gap-3">
@@ -154,7 +161,7 @@ export default function OperatingSystemControls({
         )}
         <p className={`mt-2 text-[10px] leading-4 ${runway.depletionQuarter ? "text-[#9a6700]" : "text-[#1a7f37]"}`}>{runway.message}</p>
       </div>
-      {total !== 100 && <p className="mt-3 rounded-lg bg-[#edf0ee] px-3 py-2 text-[11px] font-bold text-[#303832]">Rebalance to exactly 100% before confirming this quarter.</p>}
+      {total !== 100 && <p className="mt-3 rounded-lg bg-[#fff8c5] px-3 py-2 text-[11px] font-bold text-[#6b4f00]">This mix is {total}%. Adjust the controls to exactly 100% before confirming this quarter.</p>}
     </section>
   );
 }

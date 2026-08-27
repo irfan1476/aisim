@@ -14,6 +14,8 @@ export type ScoreInputs = {
   executionDiscipline?: number;
   /** 0–100 responsible-AI health (governance, human impact, transparency). */
   responsibleAI?: number;
+  /** 0–100 validated leading evidence from deliberately progressed initiatives. */
+  validatedLearning?: number;
   /** When false, scenario progress is excluded and remaining weights renormalise. */
   scenarioMode?: boolean;
 };
@@ -21,20 +23,53 @@ export type ScoreInputs = {
 export type CampaignScoreBreakdown = {
   score: number;
   scenarioMode: boolean;
-  weights: Record<'scenarioTargetProgress' | 'realisedFinancialValue' | 'operatingHealth' | 'executionDiscipline' | 'responsibleAI', number>;
-  values: Record<'scenarioTargetProgress' | 'realisedFinancialValue' | 'operatingHealth' | 'executionDiscipline' | 'responsibleAI', number>;
-  contributions: Record<'scenarioTargetProgress' | 'realisedFinancialValue' | 'operatingHealth' | 'executionDiscipline' | 'responsibleAI', number>;
+  weights: Record<'scenarioTargetProgress' | 'realisedFinancialValue' | 'operatingHealth' | 'executionDiscipline' | 'responsibleAI' | 'validatedLearning', number>;
+  values: Record<'scenarioTargetProgress' | 'realisedFinancialValue' | 'operatingHealth' | 'executionDiscipline' | 'responsibleAI' | 'validatedLearning', number>;
+  contributions: Record<'scenarioTargetProgress' | 'realisedFinancialValue' | 'operatingHealth' | 'executionDiscipline' | 'responsibleAI' | 'validatedLearning', number>;
 };
 
 const clampScore = (value: unknown) => Math.max(0, Math.min(100, Number.isFinite(Number(value)) ? Number(value) : 0));
-const scoreKeys = ['scenarioTargetProgress', 'realisedFinancialValue', 'operatingHealth', 'executionDiscipline', 'responsibleAI'] as const;
+const scoreKeys = ['scenarioTargetProgress', 'realisedFinancialValue', 'operatingHealth', 'executionDiscipline', 'responsibleAI', 'validatedLearning'] as const;
 const scenarioWeights = {
-  scenarioTargetProgress: 40,
-  realisedFinancialValue: 25,
+  scenarioTargetProgress: 35,
+  realisedFinancialValue: 20,
   operatingHealth: 20,
   executionDiscipline: 10,
   responsibleAI: 5,
+  validatedLearning: 10,
 } as const;
+
+/**
+ * Credit a deliberate early-stage initiative for validated evidence without
+ * pretending that it has already produced a production ROI. Only initiatives
+ * with a recorded action participate, so passive starting readiness is not a
+ * free score.
+ */
+export function validatedLearningScore(state: Pick<GameState, 'initiativeStates' | 'history' | 'initiativeActions'>): number {
+  const intentionalIds = new Set<string>();
+  (state.history || []).forEach((snapshot) => {
+    Object.entries(snapshot.initiativeActions || {}).forEach(([id, action]) => {
+      if (action === 'discover' || action === 'pilot' || action === 'scale' || action === 'maintain') intentionalIds.add(id);
+    });
+  });
+  Object.entries(state.initiativeActions || {}).forEach(([id, action]) => {
+    if (action === 'discover' || action === 'pilot' || action === 'scale' || action === 'maintain') intentionalIds.add(id);
+  });
+  const initiatives = Object.values(state.initiativeStates || {}).filter((initiative) => intentionalIds.has(initiative.id));
+  if (!initiatives.length) return 0;
+  const total = initiatives.reduce((sum, initiative) => {
+    const data = clampScore(initiative.dataReadiness ?? Number(initiative.currentData || 0) * 20);
+    const controls = clampScore(Number(initiative.controlMaturity || 0) * 100);
+    const change = clampScore(Number(initiative.changeReadiness || 0) * 100);
+    const criteria = initiative.evaluation?.successCriteria || [];
+    const reviewEvidence = criteria.length
+      ? criteria.filter((criterion) => criterion.met).length / criteria.length * 100
+      : 0;
+    const stageCredit = ['experiment', 'pilot', 'evaluate', 'deploy', 'monitor'].includes(initiative.aiLifecycle?.stage) ? 100 : 0;
+    return sum + data * .4 + controls * .2 + change * .15 + reviewEvidence * .15 + stageCredit * .1;
+  }, 0);
+  return Number((total / initiatives.length).toFixed(2));
+}
 
 /**
  * Turns an observed ledger return into a 0–100 financial-value score. Zero or
@@ -59,8 +94,9 @@ export function composeCampaignScore(input: ScoreInputs): CampaignScoreBreakdown
     operatingHealth: clampScore(input.operatingHealth),
     executionDiscipline: clampScore(input.executionDiscipline),
     responsibleAI: clampScore(input.responsibleAI),
+    validatedLearning: clampScore(input.validatedLearning),
   };
-  const activeWeight = scenarioMode ? 100 : 60;
+  const activeWeight = scenarioMode ? 100 : 65;
   const weights = Object.fromEntries(scoreKeys.map((key) => [
     key,
     scenarioMode || key !== 'scenarioTargetProgress' ? Number((scenarioWeights[key] / activeWeight * 100).toFixed(6)) : 0,
@@ -70,23 +106,26 @@ export function composeCampaignScore(input: ScoreInputs): CampaignScoreBreakdown
   return { score, scenarioMode, weights, values, contributions };
 }
 
-export type ScoreBreakdown = {
-  outcome: number;
-  sustainedExecution: number;
-  capabilityConsistency: number;
-  baseScore: number;
-  scenarioBonus: number;
-  finalScore: number;
-};
-
-export function explainScore(state: GameState, metrics: Partial<GameState> = state): ScoreBreakdown {
-  const outcome = (Number(metrics.roi ?? state.roi) + Number(metrics.adoption ?? state.adoption) + Number(metrics.efficiency ?? state.efficiency) + (100 - Number(metrics.risk ?? state.risk))) / 4;
-  const sustainedExecution = Math.min(10, Math.max(0, state.q - 2));
-  const establishedCapabilities = Object.values(state.initiativeStates || {}).filter((item) => item.quartersFunded >= 4).length;
-  const capabilityConsistency = Math.min(4, establishedCapabilities * 1.34);
-  const baseScore = Math.min(100, Math.round(outcome + sustainedExecution + capabilityConsistency));
-  const scenarioBonus = state.scenarioMode ? Number(state.scenarioBonus || 0) : 0;
-  return { outcome, sustainedExecution, capabilityConsistency, baseScore, scenarioBonus, finalScore: Math.min(100, baseScore + scenarioBonus) };
+/**
+ * Fallback explanation for legacy saves that pre-date the persisted score
+ * breakdown. New turns persist the exact composition used to calculate score.
+ */
+export function explainScore(state: GameState, metrics: Partial<GameState> = state): CampaignScoreBreakdown {
+  const operatingHealth = (Number(metrics.adoption ?? state.adoption) + Number(metrics.efficiency ?? state.efficiency) + Number(metrics.data ?? state.data) + (100 - Number(metrics.risk ?? state.risk))) / 4;
+  const executionDiscipline = Math.min(100, 65 + Math.min(25, state.q * 2) + Math.min(10, (state.selected || []).length * 3));
+  const responsibleAI = Number(state.alloc?.compliance || 0) * 2 + (Object.values(state.initiativeStates || {}).reduce((sum, item) => sum + Number(item.controlMaturity || 0), 0) / Math.max(1, Object.keys(state.initiativeStates || {}).length)) * 30;
+  return composeCampaignScore({
+    scenarioMode: state.scenarioMode,
+    // The precise scenario score is unavailable in legacy saves; its old
+    // score remains intact, while this breakdown remains explicit about zero
+    // inferred target progress rather than fabricating a result.
+    scenarioTargetProgress: 0,
+    realisedFinancialValue: realisedFinancialValueScore(state.financialLedger || { cumulativeInvestment: 0, cumulativeNetBenefit: 0 }),
+    operatingHealth,
+    executionDiscipline,
+    responsibleAI,
+    validatedLearning: validatedLearningScore(state),
+  });
 }
 
 export function calculateBCGScore(state: any) {

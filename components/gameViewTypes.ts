@@ -4,6 +4,7 @@ import type { UserReflections } from '../lib/game/state';
 import type { CurrencyMode } from '../lib/scenarios/types';
 import type { FinancialLedger, InitiativeActionSet } from '../lib/game/businessModel';
 import type { Allocation, InitiativeAllocationMode, InitiativeAllocationSet } from '../lib/game/state';
+import type { CampaignScoreBreakdown } from '../lib/game/scoring';
 
 export type MetricColor = 'gold' | 'emerald' | 'blue' | 'purple' | 'red' | 'cyan';
 
@@ -18,7 +19,7 @@ export type AiAdaptationAction = 'retrain' | 'tune' | 'rollback' | 'deprecate';
 export type AiLifecycleStage = 'data_readiness' | 'experiment' | 'pilot' | 'evaluate' | 'deploy' | 'monitor' | 'adapt';
 
 export type AiLifecycleEvaluation = {
-  successCriteria?: Array<{ id?: string; label?: string; metric: string; threshold: number; actual?: number; met?: boolean; direction?: 'higher-is-better' | 'lower-is-better' }>;
+  successCriteria?: Array<{ id?: string; label?: string; metric: string; threshold: number; actual?: number; met?: boolean; direction?: 'higher-is-better' | 'lower-is-better'; kind?: 'outcome' | 'evidence' | 'safety'; required?: boolean }>;
   goNoGoDecision?: AiEvaluationDecision | 'pending' | 'go_with_conditions';
   decisionRationale?: string;
   decisionOwner?: string;
@@ -108,6 +109,7 @@ export interface GameViewState {
   innovation: number;
   spent: number;
   score: number;
+  scoreBreakdown?: CampaignScoreBreakdown;
   financialLedger: FinancialLedger;
   history: unknown[];
   achievements: string[];

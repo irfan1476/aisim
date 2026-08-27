@@ -31,7 +31,7 @@ import { calculateActionCapitalPlan, calculateCapitalRunway } from "../lib/game/
 import { validatePortfolioCapacity } from "../lib/game/capacity";
 import type { InitiativeAction, InitiativeActionSet } from "../lib/game/businessModel";
 import { lifecycleActionError, suggestedLifecycleAction } from "../lib/game/lifecycleResolver";
-import { allocationForInitiative, derivePortfolioAllocation, OPERATING_ALLOCATION_KEYS } from "../lib/game/initiativeAllocation";
+import { allocationForInitiative, allocationTotal, derivePortfolioAllocation, OPERATING_ALLOCATION_KEYS } from "../lib/game/initiativeAllocation";
 import { fundingIntensityFor } from "../lib/game/effectResolver";
 import { downloadExport } from "../lib/exportGameplay";
 import { useGameStore } from "../stores/gameStore";
@@ -137,10 +137,74 @@ export default function GameDecisionView({
   });
   const capitalPlan = calculateActionCapitalPlan(state, initiativeActions, deployment);
   const effectiveAllocation = derivePortfolioAllocation(state.alloc, state.initiativeAllocationMode, state.initiativeAllocations, capitalPlan.byInitiative);
+  const unbalancedInitiatives = state.initiativeAllocationMode === 'custom'
+    ? selectedInitiatives.filter((initiative) => allocationTotal(allocationForInitiative(initiative.id, 'custom', state.initiativeAllocations, state.alloc)) !== 100)
+    : [];
   const operatingMixTotal = state.initiativeAllocationMode === 'custom'
     ? Math.round(Object.values(effectiveAllocation).reduce((sum, value) => sum + Number(value || 0), 0))
     : total;
   const capacityValidation = validatePortfolioCapacity(initiativeActions, state.initiativeStates, effectiveAllocation as Allocation, scenario);
+  const capacityIssue = capacityValidation.issues[0];
+  const oversightDrivers = capacityIssue?.code === 'HUMAN_OVERSIGHT_CAPACITY'
+    ? selectedInitiatives.flatMap((initiative) => {
+        const live = state.initiativeStates?.[initiative.id];
+        const action = actionFor(initiative.id, Number(live?.quartersFunded || 0));
+        const stage = String(live?.aiLifecycle?.stage || '');
+        return live && (action === 'scale' || action === 'maintain') && (stage === 'deploy' || stage === 'monitor')
+          ? [{ name: initiative.name, demand: Number(live.humanOversightRequired || 0), mode: live.deploymentMode }]
+          : [];
+      })
+    : [];
+  const capacityGuidance = capacityIssue
+    ? capacityIssue.code === 'HUMAN_OVERSIGHT_CAPACITY'
+      ? `Oversight is being consumed by ${oversightDrivers.length ? oversightDrivers.map((item) => `${item.name} (${item.demand.toFixed(1)} units${item.mode && item.mode !== 'not_set' ? ` · ${item.mode}` : ''})`).join(' and ') : 'a deployed or maintained capability'}. Add roughly ${Math.ceil(Math.max(0, capacityIssue.demand - capacityIssue.available) * 10)} People points or ${Math.ceil(Math.max(0, capacityIssue.demand - capacityIssue.available) * 20)} Compliance points, or select fewer deployed initiatives / pause one this quarter.`
+      : capacityIssue.code === 'DATA_CAPACITY'
+        ? 'Increase the Data allocation or reduce the number of initiatives doing discovery, pilot, or scale work this quarter.'
+        : capacityIssue.code === 'GOVERNANCE_CAPACITY'
+          ? 'Increase the Compliance allocation or reduce concurrent initiatives requiring governance review.'
+          : capacityIssue.code === 'CHANGE_CAPACITY'
+            ? 'Increase the People allocation or reduce concurrent change commitments.'
+            : 'Increase People capacity or reduce the number of initiatives delivering work this quarter.'
+    : '';
+  const shiftAllocation = (allocation: Allocation, target: 'people' | 'compliance' | 'data', points: number): Allocation => {
+    const next = { ...allocation };
+    let remaining = Math.max(0, Math.round(points));
+    const sources: (keyof Allocation)[] = target === 'people' ? ['infra', 'innovation', 'data', 'mlops', 'compliance'] : target === 'data' ? ['infra', 'innovation', 'mlops', 'people', 'compliance'] : ['infra', 'innovation', 'data', 'mlops', 'people'];
+    sources.forEach((source) => {
+      if (!remaining) return;
+      const room = Math.max(0, Math.round(Number(next[source] || 0) - 5));
+      const moved = Math.min(remaining, room, Math.max(0, 50 - Math.round(Number(next[target] || 0))));
+      next[source] = Number(next[source] || 0) - moved;
+      next[target] = Number(next[target] || 0) + moved;
+      remaining -= moved;
+    });
+    return next;
+  };
+  const makePlanExecutable = () => {
+    if (!capacityIssue) return;
+    const gap = Math.max(0, capacityIssue.demand - capacityIssue.available);
+    const target: keyof Allocation = capacityIssue.code === 'DATA_CAPACITY'
+      ? 'data'
+      : capacityIssue.code === 'GOVERNANCE_CAPACITY'
+        ? 'compliance'
+        : 'people';
+    const points = Math.ceil(gap * (target === 'compliance' ? 8 : 10));
+    if (state.initiativeAllocationMode === 'custom') {
+      const briefsToAdjust = initiativeFundingBriefs.filter((brief) => capacityIssue.code !== 'HUMAN_OVERSIGHT_CAPACITY' || brief.action === 'scale' || brief.action === 'maintain');
+      briefsToAdjust.forEach((brief) => {
+        const current = allocationForInitiative(brief.initiative.id, 'custom', state.initiativeAllocations, state.alloc);
+        const next = shiftAllocation(current, target, points);
+        const moved = Math.max(0, Number(next[target]) - Number(current[target]));
+        if (!moved) return;
+        OPERATING_ALLOCATION_KEYS.forEach((key) => {
+          if (next[key] !== current[key]) onInitiativeAllocationChange(brief.initiative.id, key, next[key]);
+        });
+      });
+    } else {
+      const next = shiftAllocation(state.alloc, target, points);
+      OPERATING_ALLOCATION_KEYS.forEach((key) => { if (next[key] !== state.alloc[key]) onAllocationChange(key, next[key]); });
+    }
+  };
   const deliveryBase = selectedInitiatives.reduce((sum, initiative) => {
     const action = actionFor(initiative.id, Number(state.initiativeStates?.[initiative.id]?.quartersFunded || 0));
     return sum + (action === 'pilot' || action === 'scale' ? Number(state.initiativeStates?.[initiative.id]?.currentCost || initiative.cost || 0) : 0);
@@ -251,7 +315,7 @@ export default function GameDecisionView({
           <div className="order-3">
             <AnalyticsHub state={state} initiatives={initiatives} hideTrigger externalOpen={analyticsRequest} />
           </div>
-          <div className={`order-5 mt-5 grid items-stretch gap-5 ${state.scenarioMode ? "2xl:grid-cols-2" : ""} lg:order-4`}>
+          <div className={`order-5 mt-5 grid items-start gap-5 ${state.scenarioMode ? "2xl:grid-cols-2" : ""} lg:order-4`}>
             {state.scenarioMode && <ScenarioProgress state={state} />}
             <DecisionDashboardVisuals state={state} />
           </div>
@@ -316,7 +380,23 @@ export default function GameDecisionView({
                     )}
                     data-risk-score={riskScore}
                     data-selected={selected ? "true" : "false"}
-                    className={`group relative rounded-xl border p-3 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1a7f37] focus-visible:ring-offset-2 ${selected ? "border-[#1a7f37] bg-[#dafbe1] shadow-lg shadow-[#1a7f37]/10 ring-1 ring-[#1a7f37]/35" : "border-ink/8 bg-mist hover:-translate-y-0.5 hover:border-[#1a7f37]/55 hover:bg-white"}`}
+                    role="button"
+                    tabIndex={0}
+                    aria-pressed={selected}
+                    aria-label={`${selected ? "Deselect" : "Select"} ${initiative.name}`}
+                    onClick={(event) => {
+                      const target = event.target as HTMLElement;
+                      if (target.closest("button, select, input, label, a")) return;
+                      onToggleInitiative(initiative.id);
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.target !== event.currentTarget) return;
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        onToggleInitiative(initiative.id);
+                      }
+                    }}
+                    className={`group relative cursor-pointer rounded-xl border p-3 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1a7f37] focus-visible:ring-offset-2 ${selected ? "border-[#1a7f37] bg-[#dafbe1] shadow-lg shadow-[#1a7f37]/10 ring-1 ring-[#1a7f37]/35" : "border-ink/8 bg-mist hover:-translate-y-0.5 hover:border-[#1a7f37]/55 hover:bg-white"}`}
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div>
@@ -325,15 +405,13 @@ export default function GameDecisionView({
                           {initiative.desc}
                         </p>
                       </div>
-                      <div
-                        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border ${selected ? "border-[#1a7f37] bg-[#1a7f37] text-white" : "border-ink/15 text-transparent"}`}
-                      >
-                        <Check size={14} />
+                      <div className="flex shrink-0 items-center gap-2" aria-hidden="true">
+                        <span className={`text-[10px] font-bold uppercase tracking-wide ${selected ? "text-[#176b36]" : "text-[#57606a]"}`}>{selected ? "Selected" : "Add to quarter"}</span>
+                        <span className={`flex h-7 w-7 items-center justify-center rounded-full border ${selected ? "border-[#1a7f37] bg-[#1a7f37] text-white" : "border-ink/25 bg-white text-transparent group-hover:border-[#1a7f37]"}`}>
+                          <Check size={14} />
+                        </span>
                       </div>
                     </div>
-                    <button type="button" aria-pressed={selected} aria-label={`${selected ? "Deselect" : "Select"} ${initiative.name}`} onClick={() => onToggleInitiative(initiative.id)} className={`mt-3 inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-bold uppercase tracking-wider transition ${selected ? "bg-[#1a7f37] text-white" : "bg-ink/5 text-ink/45 hover:bg-[#dafbe1] hover:text-[#1a7f37]"}`}>
-                      <Check size={11} className={selected ? "opacity-100" : "opacity-0"} />{selected ? "Selected" : "Click to select"}
-                    </button>
                     <label className="mt-3 block text-[10px] font-bold uppercase tracking-wider text-ink/45" onClick={(event) => event.stopPropagation()}>
                       This-quarter action
                       <select aria-label={`Action for ${initiative.name}`} value={actionFor(initiative.id, funded)} onChange={(event) => setInitiativeAction(initiative.id, event.target.value as any)} className="mt-1 block w-full rounded-md border border-ink/15 bg-white px-2 py-1.5 text-xs font-bold normal-case tracking-normal text-ink">
@@ -438,7 +516,7 @@ export default function GameDecisionView({
                   </div>
                 </div>
                 <p className="mt-2 text-xs leading-5 text-[#57606a]">{capitalPlan.accelerationSpend > 0 ? `${formatBudget(capitalPlan.accelerationSpend, state.currencyMode)} of extra delivery capital is assigned proportionally to the selected delivery work, based on its committed delivery cost.` : 'No extra delivery capital is assigned above the selected actions’ committed cost.'} Each operating percentage below is applied to that initiative&apos;s own attributed spend—not to an abstract portfolio total.</p>
-                {state.initiativeAllocationMode === 'custom' && <p className="mt-2 rounded-lg border border-[#0969da]/20 bg-white/75 px-3 py-2 text-[11px] leading-5 text-[#57606a]">Tailored mixes are automatically kept at 100% for each initiative. Their spend-weighted aggregate becomes the portfolio capacity mix, so a local choice can affect both the initiative outcome and whether the combined plan has enough data, people, governance, and oversight capacity.</p>}
+                {state.initiativeAllocationMode === 'custom' && <p className={`mt-2 rounded-lg border px-3 py-2 text-[11px] leading-5 ${unbalancedInitiatives.length ? 'border-[#bf8700]/35 bg-[#fff8c5] text-[#6b4f00]' : 'border-[#0969da]/20 bg-white/75 text-[#57606a]'}`}>{unbalancedInitiatives.length ? `Learner-controlled mix: ${unbalancedInitiatives.length} initiative${unbalancedInitiatives.length === 1 ? '' : 's'} still need${unbalancedInitiatives.length === 1 ? 's' : ''} to total 100%. Adjust the sliders below; nothing is redistributed automatically.` : 'Learner-controlled mix: each initiative is balanced to 100%. Its spend-weighted aggregate becomes the portfolio capacity mix, so local choices can affect initiative outcomes and combined capacity.'}</p>}
                 <div className="mt-3 grid gap-3 xl:grid-cols-1 2xl:grid-cols-2">
                   {initiativeFundingBriefs.map((brief) => <article key={brief.initiative.id} className="rounded-xl border border-[#0969da]/20 bg-white/80 p-3">
                     <div className="flex flex-wrap items-start justify-between gap-2">
@@ -453,13 +531,14 @@ export default function GameDecisionView({
                         {state.initiativeAllocationMode === 'custom' && <input aria-label={`${brief.initiative.name} ${allocationLabel[key]} allocation`} type="range" min="5" max="50" value={brief.allocation[key]} onChange={(event) => onInitiativeAllocationChange(brief.initiative.id, key, Number(event.target.value))} className="mt-2 w-full cursor-ew-resize accent-[#0969da]" />}
                       </label>)}
                     </div>
+                    {state.initiativeAllocationMode === 'custom' && <p className={`mt-2 text-[10px] font-bold ${allocationTotal(brief.allocation) === 100 ? 'text-[#1a7f37]' : 'text-[#9a6700]'}`}>{allocationTotal(brief.allocation)}% allocated for this initiative {allocationTotal(brief.allocation) === 100 ? '· ready to confirm' : '· must equal 100% to confirm'}</p>}
                     <div className="mt-3 rounded-lg bg-[#f6f8fa] p-2.5 text-[11px] leading-5 text-[#57606a]"><p className="font-bold uppercase tracking-wide text-[#0969da]">Direct effect this quarter</p>{brief.directEffects.map((effect) => <p key={effect} className="mt-1">{effect}</p>)}</div>
                   </article>)}
                 </div>
               </section>}
               </div>
               <aside className="order-last xl:sticky xl:top-24 xl:order-none" aria-label="Quarter decision configuration">
-                <OperatingSystemControls state={state} effectiveAllocation={effectiveAllocation} onAllocationChange={onAllocationChange} onDeploymentChange={onDeploymentChange} compact />
+                <OperatingSystemControls state={state} effectiveAllocation={effectiveAllocation} onAllocationChange={onAllocationChange} onDeploymentChange={onDeploymentChange} capacityIssue={capacityIssue} onCapacityFix={makePlanExecutable} compact />
               </aside>
             </div>
             <p className="mt-4 flex items-center gap-2 text-[11px] text-ink/45">
@@ -467,7 +546,7 @@ export default function GameDecisionView({
               Funding changes the initiative over time. Hover a metric row to
               compare against its campaign baseline.
             </p>
-            {capacityValidation.issues.length > 0 && <p role="status" className="mt-3 rounded-xl bg-[#ffebe9] px-3 py-2 text-xs font-bold text-[#cf222e]">{capacityValidation.issues[0]?.message || "This action plan exceeds available operating capacity."}</p>}
+            {capacityIssue && <div role="status" className="mt-3 rounded-xl border border-[#cf222e]/25 bg-[#ffebe9] px-3 py-3 text-xs text-[#cf222e]"><p className="font-bold">Why this plan cannot proceed</p><p className="mt-1 font-semibold">{capacityIssue.message}</p><p className="mt-2 leading-5"><b>What to change:</b> {capacityGuidance}</p><p className="mt-2 text-[10px] font-medium text-[#8a3038]">The rule is protecting a real operating limit, not rejecting your strategy. Edit the allocation or the selected action, then confirm again.</p><button type="button" onClick={makePlanExecutable} className="mt-3 rounded-lg bg-[#24292f] px-3 py-2 text-[10px] font-bold text-white transition hover:bg-[#0969da]">Apply quick fix and recalculate</button></div>}
             {!capacityValidation.issues.length && Object.values(capacityValidation.gates).some((gate) => gate.status !== "ready") && <p className="mt-3 rounded-xl bg-[#fff8c5] px-3 py-2 text-xs font-medium text-[#57606a]">Experiment mode: this portfolio has readiness gaps. You can proceed, but results will be slower and riskier—then capture what you learned in the quarter log.</p>}
           </div>
           <div className="order-6 mt-5 flex flex-col items-end gap-3">
@@ -495,11 +574,11 @@ export default function GameDecisionView({
               </p>
             )}
             <button
-              disabled={operatingMixTotal !== 100 || requiresMoreDeployment || lifecycleIssues.length > 0}
+              disabled={operatingMixTotal !== 100 || unbalancedInitiatives.length > 0 || requiresMoreDeployment || lifecycleIssues.length > 0}
               onClick={handleConfirm}
               className="flex items-center gap-3 rounded-xl bg-[#1a7f37] px-6 py-4 text-sm font-bold text-white shadow-sm transition hover:bg-[#0969da] disabled:cursor-not-allowed disabled:opacity-35"
             >
-              {lifecycleIssues.length > 0 ? "Resolve lifecycle choice to continue" : state.selected.length === 0 ? "Continue without funding" : "Confirm decisions"} <ArrowRight size={17} />
+              {lifecycleIssues.length > 0 ? "Resolve lifecycle choice to continue" : unbalancedInitiatives.length > 0 ? "Balance initiative mix to continue" : state.selected.length === 0 ? "Continue without funding" : "Confirm decisions"} <ArrowRight size={17} />
             </button>
           </div>
         </section>

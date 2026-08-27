@@ -221,7 +221,7 @@ export default function GameDoneScreen({
   const nextExperiment = neglectedPressure
     ? `Replay from the next campaign and address ${neglectedPressure.item.label} earlier. Keep your strongest observed combination, then change only one quarter so you can test whether that pressure was the limiting factor.`
     : "Replay with one deliberate change: keep the same portfolio, but change the quarter in which you make your highest-impact investment.";
-  const scoreBreakdown = explainScore(state as any);
+  const scoreBreakdown = state.scoreBreakdown || explainScore(state as any);
   const exportReport = () => {
     const text = [
       `AISim Strategy Autopsy`,
@@ -306,23 +306,25 @@ export default function GameDoneScreen({
               <h2 className="text-2xl font-bold">How the verdict was built</h2>
               <p className="text-[#656d76]">A transparent score, so the result is explainable rather than mysterious.</p>
             </div>
-            <span className="rounded-full bg-[#f6f8fa] px-3 py-1 text-sm font-bold">{scoreBreakdown.finalScore}/100</span>
+            <span className="rounded-full bg-[#f6f8fa] px-3 py-1 text-sm font-bold">{scoreBreakdown.score}/100</span>
           </div>
-          <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {[
-              ["Outcome movement", scoreBreakdown.outcome, "Value, adoption, efficiency, and risk"],
-              ["Sustained execution", scoreBreakdown.sustainedExecution, "Consistency across quarters"],
-              ["Capability consistency", scoreBreakdown.capabilityConsistency, "Initiatives funded for four or more quarters"],
-              ["Scenario bonus", scoreBreakdown.scenarioBonus, scenario ? "Progress against this scenario's targets" : "Not applicable in Standard mode"],
-            ].map(([label, value, detail]) => (
+              ["Scenario progress", scoreBreakdown.contributions.scenarioTargetProgress, scoreBreakdown.values.scenarioTargetProgress, scenario ? "Movement against this scenario's targets" : "Not applicable in Standard mode"],
+              ["Realised value", scoreBreakdown.contributions.realisedFinancialValue, scoreBreakdown.values.realisedFinancialValue, "Observed financial benefit—not forecast ROI"],
+              ["Operating health", scoreBreakdown.contributions.operatingHealth, scoreBreakdown.values.operatingHealth, "Adoption, efficiency, data, and risk"],
+              ["Execution discipline", scoreBreakdown.contributions.executionDiscipline, scoreBreakdown.values.executionDiscipline, "Sequencing, pacing, and delivery follow-through"],
+              ["Responsible AI", scoreBreakdown.contributions.responsibleAI, scoreBreakdown.values.responsibleAI, "Governance and control maturity"],
+              ["Validated learning", scoreBreakdown.contributions.validatedLearning, scoreBreakdown.values.validatedLearning, "Readiness and evidence from deliberately progressed initiatives"],
+            ].map(([label, contribution, value, detail]) => (
               <div key={String(label)} className="rounded-2xl bg-[#f6f8fa] p-4">
                 <p className="text-xs font-bold uppercase tracking-wide text-[#656d76]">{label}</p>
-                <b className="mt-2 block text-2xl text-[#1a7f37]">{Number(value).toFixed(label === "Outcome movement" ? 1 : 0)}</b>
-                <p className="mt-2 text-xs leading-5 text-[#656d76]">{detail}</p>
+                <b className="mt-2 block text-2xl text-[#1a7f37]">{Number(contribution).toFixed(1)} pts</b>
+                <p className="mt-2 text-xs leading-5 text-[#656d76]">{detail} · evidence score {Number(value).toFixed(0)}/100</p>
               </div>
             ))}
           </div>
-          {scenario ? <p className="mt-4 rounded-2xl border border-[#1a7f37]/20 bg-[#eef7f0] p-4 text-sm leading-6 text-[#57606a]">Scenario progress is capped at a small bonus. It rewards movement toward the domain targets without overpowering the core operating results.</p> : null}
+          <p className="mt-4 rounded-2xl border border-[#1a7f37]/20 bg-[#eef7f0] p-4 text-sm leading-6 text-[#57606a]">Validated learning gives early discovery and pilots credit for evidence, readiness, and controls. It never substitutes for realised value, and safety-critical work still needs its mandatory checks.</p>
         </section>
         <section className="mt-6 grid gap-6 lg:grid-cols-2">
           <div className="rounded-3xl border border-[#d0d7de] bg-white p-6 shadow-sm md:p-8">
