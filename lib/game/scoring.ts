@@ -101,7 +101,9 @@ export function realisedFinancialValueScore(ledger: Pick<FinancialLedger, 'cumul
 }
 
 /**
- * Composes the agreed campaign score. Scenario runs use 40/25/20/10/5. In
+ * Composes the agreed campaign score. Scenario runs use 35/20/20/10/5/10 across
+ * scenario progress, realised value, operating health, execution discipline,
+ * responsible AI, and validated learning. In
  * Standard mode the scenario dimension is omitted and the other weights are
  * proportionally renormalised to 100, preserving the relative priorities.
  */

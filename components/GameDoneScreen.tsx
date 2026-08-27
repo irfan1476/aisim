@@ -160,6 +160,23 @@ export default function GameDoneScreen({
   const evidence = `Across ${history.length} quarters, you averaged ${n(averagePeople, 0)}% in people, ${n(averageData, 0)}% in data, and ${n(averageGovernance, 0)}% in governance. ${topBetEvidence}; risk ${riskMovement <= 0 ? "fell" : "rose"} ${n(Math.abs(riskMovement))} points, and you discovered ${discoveredSynergies.size} capability ${discoveredSynergies.size === 1 ? "combination" : "combinations"}.`;
   const operatingModel = deriveOperatingModelAdvisory(state);
   const diagnosis = `Your strategic pattern: ${strategicArchetype}. ${archetypeMessage} ${evidence} ${operatingModel.finalInsight} ${verdictMessage}`;
+  const learningHeadline = state.score >= 75
+    ? "You have a repeatable base to build on."
+    : state.risk > 60
+      ? "Your biggest lesson is sequencing, not ambition."
+      : state.adoption < 45
+        ? "Your next advantage is bringing people along earlier."
+        : "This run gives you a useful baseline to improve.";
+  const learningBody = state.risk > 60
+    ? "You pushed change faster than the operating system could safely absorb. Keep the strongest bet, then add an earlier evidence or governance step in the next campaign."
+    : state.adoption < 45
+      ? "The portfolio moved, but adoption lagged. In the next campaign, fund enablement and data readiness before asking the organisation to scale."
+      : "There is no single perfect strategy. Treat this result as evidence: keep one thing that worked, change one meaningful choice, and compare the outcome.";
+  const replayPrompt = state.risk > 60
+    ? "Test a slower scale-up with one extra quarter of discovery or pilot."
+    : state.adoption < 45
+      ? "Test an earlier people investment while keeping your best-performing initiative."
+      : "Test one timing change while keeping the rest of the portfolio stable.";
   const best = history.reduce<Snapshot | undefined>(
     (a, x) =>
       !a || Number(x.metrics?.roi || 0) > Number(a.metrics?.roi || 0) ? x : a,
@@ -298,6 +315,24 @@ export default function GameDoneScreen({
             ))}
           </div>
         </section>
+        <section className="mt-6 rounded-3xl border border-[#0969da]/25 bg-[#f6faff] p-6 shadow-sm md:p-8" aria-labelledby="learning-summary">
+          <div className="flex flex-wrap items-start justify-between gap-5">
+            <div className="max-w-2xl">
+              <p className="text-xs font-bold uppercase tracking-[.2em] text-[#0969da]">Your learning summary</p>
+              <h2 id="learning-summary" className="mt-2 text-2xl font-bold">{learningHeadline}</h2>
+              <p className="mt-3 text-sm leading-6 text-[#57606a]">{learningBody}</p>
+            </div>
+            <div className="rounded-2xl border border-[#0969da]/20 bg-white px-5 py-4 sm:min-w-64">
+              <p className="text-xs font-bold uppercase tracking-wide text-[#57606a]">Next experiment</p>
+              <p className="mt-2 text-sm font-semibold leading-6 text-[#0d1117]">{replayPrompt}</p>
+            </div>
+          </div>
+          <div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-[#0969da]/15 pt-4 text-xs text-[#57606a]">
+            <span><b className="text-[#0d1117]">Keep:</b> {topBets[0] || "your clearest hypothesis"}</span>
+            <span><b className="text-[#0d1117]">Change:</b> one timing, funding, or sequencing choice</span>
+            <a href="#save-campaign" className="inline-flex items-center gap-1 font-bold text-[#0969da] hover:text-[#0550ae]">Save and compare later <ArrowRight size={14} /></a>
+          </div>
+        </section>
         {scenario && <section className="mt-6 rounded-3xl border border-[#1a7f37]/25 bg-[#f1f8f3] p-6 shadow-sm"><p className="text-xs font-bold uppercase tracking-[.2em] text-[#1a7f37]">Campaign budget ledger</p><div className="mt-4 grid gap-3 sm:grid-cols-3"><div><p className="text-xs text-[#656d76]">Total purse</p><b className="text-xl">{formatBudget(state.campaignBudget || state.quarterlyBudget * 12, state.currencyMode)}</b></div><div><p className="text-xs text-[#656d76]">Spent</p><b className="text-xl">{formatCurrency(state.spent, state.currencyMode)}</b></div><div><p className="text-xs text-[#656d76]">Remaining</p><b className="text-xl text-[#1a7f37]">{formatCurrency(state.campaignBudgetRemaining ?? 0, state.currencyMode)}</b></div></div><p className="mt-3 text-xs text-[#656d76]">The purse is finite across all twelve quarters; unused capital is not automatically a failure.</p></section>}
         {scenario && <section className="mt-6 rounded-3xl border border-[#1a7f37]/25 bg-[#f1f8f3] p-6 shadow-sm md:p-8"><div className="flex flex-wrap items-start justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-[.2em] text-[#1a7f37]">Scenario performance</p><h2 className="mt-2 text-2xl font-bold">{scenario.name}</h2><p className="mt-2 text-sm text-[#57606a]">Budget framing: {formatBudget(state.quarterlyBudget, state.currencyMode)} per quarter · campaign spend: {formatCurrency(state.spent, state.currencyMode)}</p></div><div className="rounded-2xl bg-white px-5 py-3 text-center"><p className="text-xs text-[#57606a]">Scenario bonus</p><b className="text-3xl text-[#1a7f37]">+{state.scenarioBonus || 0}</b></div></div><p className="mt-5 rounded-2xl border border-[#1a7f37]/20 bg-white p-4 text-sm leading-6 text-[#57606a]">{scenarioDiagnosis}</p><div className="mt-6 grid gap-3 sm:grid-cols-2">{scenario.progress.map((item) => { const value = scenarioMetricValue(item); const score = scenarioMetricScore(item); return <div key={item.key} className="rounded-xl bg-white p-4"><div className="flex items-start justify-between gap-3 text-sm font-bold"><span>{item.label}</span><span className="text-right text-[#1a7f37]">{formatScenarioMetric(value, item.unit)}</span></div><div className="mt-3 h-2 rounded-full bg-[#d0d7de]"><div className="h-full rounded-full bg-[#1a7f37]" style={{ width: `${score}%` }} /></div><div className="mt-2 flex justify-between gap-2 text-xs text-[#656d76]"><span>{Math.round(score)}% toward target</span><span>Target {formatScenarioMetric(item.target, item.unit)}</span></div></div>; })}</div></section>}
         <section className="mt-6 rounded-3xl border border-[#d0d7de] bg-white p-6 shadow-sm md:p-8">
@@ -433,7 +468,7 @@ export default function GameDoneScreen({
         </section>
         <YouSaidYouDid reflection={reflection} />
         <SelfAwarenessScore reflection={reflection} />
-        <section className="mt-6 rounded-3xl border border-[#d0d7de] bg-white p-6 shadow-sm md:p-8">
+        <section id="save-campaign" className="mt-6 rounded-3xl border border-[#d0d7de] bg-white p-6 shadow-sm md:p-8">
           <div className="flex items-center justify-between gap-4">
             <div>
               <h2 className="text-2xl font-bold">The story of your strategy</h2>
