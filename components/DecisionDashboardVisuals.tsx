@@ -65,8 +65,15 @@ function MetricCard({ item, events }: { item: DashboardTrajectory; events: Array
   const first = points[0]?.value ?? item.current;
   const rawDelta = item.current - first;
   const improving = item.direction === 'higher-is-better' ? rawDelta >= 0 : rawDelta <= 0;
-  const targetY = item.target === undefined ? undefined : y(item.target);
+  const target = item.target;
+  const targetY = target === undefined ? undefined : y(target);
   const eventByQuarter = new Map(events.map((event) => [event.quarter, event]));
+  const gap = target === undefined ? undefined : item.current - target;
+  const onTarget = gap === undefined ? false : item.direction === 'higher-is-better' ? item.current >= target! : item.current <= target!;
+  const trackPosition = (value: number) => Math.max(0, Math.min(100, ((value - item.min) / Math.max(1, item.max - item.min)) * 100));
+  const trackGradient = item.direction === 'lower-is-better'
+    ? 'linear-gradient(90deg,#2da44e 0%,#d4a72c 55%,#cf222e 100%)'
+    : 'linear-gradient(90deg,#cf222e 0%,#d4a72c 55%,#2da44e 100%)';
 
   return (
     <article className="rounded-xl border border-[#8c959f] bg-white p-3 shadow-[0_2px_8px_rgba(31,35,40,.06)]" title={`${item.label}: ${display(item.current, item.unit)}. ${item.target === undefined ? 'No target configured.' : `Target ${display(item.target, item.unit)}.`}`}>
@@ -74,10 +81,8 @@ function MetricCard({ item, events }: { item: DashboardTrajectory; events: Array
         <span className="flex min-w-0 items-center gap-2 text-xs font-bold text-[#24292f]"><i className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: item.color }} /><span className="min-w-0 break-words leading-4">{item.label}</span></span>
         <span className="shrink-0 text-[10px] font-semibold text-[#57606a]">{item.source === 'scenario' ? 'Scenario' : 'Core'}</span>
       </div>
-      <div className="mt-2 flex items-end justify-between gap-2">
-        <b className="text-xl tracking-tight text-[#24292f]">{display(item.current, item.unit)}</b>
-        <span className={`text-[10px] font-bold ${improving ? 'text-[#1a7f37]' : 'text-[#cf222e]'}`}>{rawDelta === 0 ? '—' : `${improving ? '↑' : '↓'} ${display(Math.abs(rawDelta), item.unit)} vs start`}</span>
-      </div>
+      <div className="mt-2 grid grid-cols-3 gap-2 text-xs"><div><span className="block text-[9px] font-bold uppercase tracking-wide text-[#57606a]">Current</span><b className={`block text-xl tracking-tight ${onTarget ? 'text-[#1a7f37]' : 'text-[#9a6700]'}`}>{display(item.current, item.unit)}</b></div><div><span className="block text-[9px] font-bold uppercase tracking-wide text-[#57606a]">Target</span><b className="block text-xl tracking-tight text-[#24292f]">{item.target === undefined ? '—' : display(item.target, item.unit)}</b></div><div><span className="block text-[9px] font-bold uppercase tracking-wide text-[#57606a]">Gap</span><b className={`block text-xl tracking-tight ${onTarget ? 'text-[#1a7f37]' : 'text-[#cf222e]'}`}>{gap === undefined ? '—' : `${gap > 0 ? '+' : ''}${display(gap, item.unit)}`}</b></div></div>
+      <div className="mt-3"><div className="relative h-1.5 rounded-full" style={{ background: trackGradient }}><span className="absolute -top-1.5 h-4 w-4 -translate-x-1/2 rounded-full border-2 border-white bg-[#24292f] shadow" style={{ left: `${trackPosition(item.current)}%` }} title="Current position"/><span className="absolute -top-1 h-3.5 border-l-2 border-dashed border-[#24292f]" style={{ left: `${target === undefined ? 0 : trackPosition(target)}%` }} title="Target"/></div><div className="mt-1 flex justify-between text-[9px] text-[#57606a]"><span>Current ●</span><span>Target |</span></div></div>
       <svg viewBox={`0 0 ${width} ${height}`} className="mt-2 h-14 w-full" role="img" aria-label={`${item.label} trajectory by quarter`}>
         <path d={`M ${pad} ${height / 2} H ${width - pad}`} stroke="#d8dee4" strokeDasharray="3 3" />
         {targetY !== undefined && <path d={`M ${pad} ${targetY} H ${width - pad}`} stroke={item.color} strokeOpacity=".35" strokeDasharray="2 3" />}
@@ -90,7 +95,8 @@ function MetricCard({ item, events }: { item: DashboardTrajectory; events: Array
           </g>;
         })}
       </svg>
-      <div className="mt-1 flex items-center justify-between text-[10px] text-[#57606a]"><span>Q1</span><span>{item.target === undefined ? 'Relative trend' : `Target ${display(item.target, item.unit)}`}</span><span>Q{Math.max(1, points.length)}</span></div>
+      <div className="mt-1 flex items-center justify-between text-[10px] text-[#57606a]"><span>Q1</span><span>{item.target === undefined ? 'Relative trend' : `${item.direction === 'lower-is-better' ? 'Lower' : 'Higher'} is better`}</span><span>Q{Math.max(1, points.length)}</span></div>
+      <div className="mt-2 flex items-center justify-between border-t border-[#d0d7de] pt-2 text-[10px] text-[#57606a]"><span className={improving ? 'text-[#1a7f37]' : 'text-[#9a6700]'}>{rawDelta === 0 ? '—' : `${improving ? '↗' : '↘'} ${display(Math.abs(rawDelta), item.unit)} vs start`}</span><span><b className="text-[#24292f]">Operating pressure:</b> {Math.round(Math.min(100, Math.max(0, (Number(item.current) / Math.max(1, item.max)) * 100)))}% {onTarget ? 'Nominal' : 'Elevated'}</span></div>
     </article>
   );
 }
