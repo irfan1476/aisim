@@ -1,4 +1,5 @@
 name: Validate and deploy
+# Deployment credentials are maintained through repository secrets.
 on:
   push:
     branches:
