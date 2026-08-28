@@ -53,15 +53,14 @@ function Gauge({
       aria-label={`${label}: ${valueLabel(current, unit)} current. Target ${valueLabel(target, unit)}. ${direction === 'lower-is-better' ? 'Lower is better.' : 'Higher is better.'}`}
     >
       <div className="relative px-1 pt-1" aria-hidden="true">
-        <div className="grid h-7 grid-cols-3 overflow-hidden rounded-sm border border-[#8c959f]">
-          {rangeColours.map((colour, index) => <span key={colour} style={{ backgroundColor: colour, opacity: index === 1 ? 0.85 : 0.9 }} />)}
+        <div className="relative h-1.5 overflow-visible rounded-full" style={{ background: direction === 'lower-is-better' ? 'linear-gradient(90deg,#2da44e,#d4a72c 55%,#cf222e)' : 'linear-gradient(90deg,#cf222e,#d4a72c 55%,#2da44e)' }}>
+          <span className="absolute -top-1.5 h-4 w-4 -translate-x-1/2 rounded-full border-2 border-white bg-[#24292f] shadow" style={{ left: `${currentPosition * 100}%` }} />
+          <span className="absolute -top-1 h-3.5 border-l-2 border-dashed border-[#24292f]" style={{ left: `${targetPosition * 100}%` }} />
         </div>
-        <span className="absolute top-0 h-10 w-1 rounded-sm bg-[#24292f] shadow-sm" style={{ left: `calc(${currentPosition * 100}% - 2px)` }} />
-        <span className="absolute top-0 h-10 w-1 rounded-sm bg-[#57606a] shadow-sm" style={{ left: `calc(${targetPosition * 100}% - 2px)` }} />
-        <div className="mt-2 flex justify-between text-[10px] text-[#24292f]"><span>{valueLabel(min, unit)}</span><span>{valueLabel((min + max) / 2, unit)}</span><span>{valueLabel(max, unit)}</span></div>
+        <div className="mt-2 flex justify-between text-[9px] text-[#57606a]"><span>Current ●</span><span>Target |</span></div>
       </div>
       <div className="mt-2 flex items-center justify-between gap-2 border-t border-[#d8dee4] pt-2 text-[10px] font-bold uppercase tracking-wide">
-        <span className="text-[#24292f]"><i className="mr-1 inline-block h-2 w-2 rounded-full bg-[#24292f]" />Current marker</span>
+        <span className="text-[#24292f]">Current marker</span>
         <span className="text-[#57606a]">Target · {valueLabel(target, unit)}</span>
       </div>
     </div>
@@ -115,7 +114,7 @@ export default function ScenarioPreview({ scenario, metrics, history }: Props) {
               </span>
             </div>
 
-            <div className="mt-3 grid grid-cols-[1fr_auto] items-end gap-3">
+            <div className="mt-3 grid grid-cols-3 items-end gap-2">
               <div>
                 <span className="block text-[10px] font-bold uppercase tracking-widest text-ink/45">Current</span>
                 <b className="text-xl text-ink">{valueLabel(item.current, unit)}</b>
@@ -124,6 +123,7 @@ export default function ScenarioPreview({ scenario, metrics, history }: Props) {
                 <span className="block text-[10px] font-bold uppercase tracking-widest text-ink/45">Target</span>
                 <b className="text-sm text-ink/65">{valueLabel(item.target, unit)}</b>
               </div>
+              <div className="text-right"><span className="block text-[10px] font-bold uppercase tracking-widest text-ink/45">Gap</span><b className={`text-sm ${item.progress >= 70 ? 'text-[#1a7f37]' : 'text-[#9a6700]'}`}>{item.delta > 0 ? '+' : ''}{valueLabel(item.current - item.target, unit)}</b></div>
             </div>
 
             <Gauge
