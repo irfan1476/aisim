@@ -685,3 +685,12 @@ Status: implemented on `codex/project-factory-v3-impl`; ready for local commit/p
 - **Verification evidence:** `npm test` 72/72 passed; `npm run test:e2e` 13/13 passed; V3-specific browser tests 5/5 passed; `npm run build` passed; `npx tsc --noEmit --incremental false` passed; `git diff --check` passed. The generated `balance-report.json` change was restored before commit preparation.
 - **Remaining boundaries:** Window 2–4 gameplay, final pilot-readiness/debrief calibration, additional event cards, P3 sidecar extensions, reuse packs, AI reflection coach, composite scoring, and V2 integration remain deferred by product decision/content readiness.
 - **Next action:** Commit the intentional implementation/documentation changes locally and push `codex/project-factory-v3-impl` to its origin branch. No further product-owner input is required unless the owner chooses to open the deferred boundaries above.
+
+## 2026-08-28 — V3 implementation commit pushed
+
+Status: implemented and pushed
+
+- **Commit:** `565d4f0` — `Complete Project Factory V3 Window 1 implementation`.
+- **Remote:** `origin/codex/project-factory-v3-impl` now points to `565d4f0`; the local branch is clean and synchronized.
+- **Verification at handoff:** 72/72 unit/regression tests, 13/13 full browser tests, 5/5 V3-specific browser tests, production build, type-check, and diff checks pass.
+- **Handoff boundary:** Resume with learner-pilot planning or a product decision on whether/when to author Window 2–4 content. Do not infer later-window content, held event cards, or reuse scenarios from this implementation commit.
