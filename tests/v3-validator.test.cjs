@@ -38,3 +38,19 @@ test('rejects incompatible units and duplicate metric authority', () => {
   assert.ok(result.errors.some((e) => e.code === 'metric-authority-collision'));
   assert.ok(result.errors.some((e) => e.code === 'incompatible-effect-unit'));
 });
+
+test('validates authored Window 1 priorities, evidence, capacity, and research branches', () => {
+  const pack = validPack();
+  pack.portfolioPolicy = { capacityPools: { technicians: 4 } };
+  pack.windowOne = {
+    id: 'PF-W1', quarterRange: [1, 3], boardQuestion: 'Choose evidence', headlineSignals: [], monitoredContext: 'Energy', laterPriorities: [],
+    priorities: [{ id: 'maintenance', displayName: 'Maintenance', problem: 'Uptime', whyNow: 'Now', knownFacts: [], researchQuestions: [], boundary: 'No benefit', owner: 'Ops', costInrCr: 1, capacity: { technicians: 1 }, evidenceIds: ['asset-data'], signalQuarter: 2, deferral: 'Review' }],
+  };
+  pack.researchReviews = [{ initiativeId: 'maintenance', signalQuarter: 2, defaultBranch: 'remediation-required', outcomes: [{ id: 'r1', initiativeId: 'maintenance', branch: 'remediation-required', sourceType: 'synthetic', sourceStatus: 'provisional', authorRole: 'ops', version: '1', producedInWindow: 'PF-W1', basedOnEvidence: ['asset-data'], facts: [], limitations: [], decisionUse: 'Repair', unresolvedConditions: ['Owner'] }] }];
+  const result = validateScenarioV3Pack(pack);
+  assert.ok(result.errors.some((e) => e.code === 'window-priority-count'));
+  pack.windowOne.priorities.push({ ...pack.windowOne.priorities[0], id: 'missing', evidenceIds: ['missing'] });
+  const invalid = validateScenarioV3Pack(pack);
+  assert.ok(invalid.errors.some((e) => e.code === 'unknown-initiative-reference'));
+  assert.ok(invalid.errors.some((e) => e.code === 'unknown-evidence-reference'));
+});

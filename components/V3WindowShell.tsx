@@ -12,6 +12,8 @@ type Props = {
   state: GameViewState;
   pack: V3ScenarioPack;
   onCommit: (input: { initiativeId: string; prediction: string; note: string; evidenceIds: string[] }) => V3DecisionResolution;
+  onReflect: (entryId: string, reflection: string) => void;
+  onPhaseChange: (phase: Phase) => void;
   onNextWindow: (nextQuarter: number) => void;
   onReset: () => void;
 };
@@ -54,15 +56,21 @@ function priorityTone(id: string): string {
   return "Workforce";
 }
 
-export default function V3WindowShell({ state, pack, onCommit, onNextWindow, onReset }: Props) {
+export default function V3WindowShell({ state, pack, onCommit, onReflect, onPhaseChange, onNextWindow, onReset }: Props) {
   const definition = pack.windowOne || fallbackWindow;
-  const [phase, setPhase] = useState<Phase>("orient");
+  const persistedPhase = state.v3State?.cursor?.phase as Phase | undefined;
+  const [phase, setPhase] = useState<Phase>(persistedPhase || "orient");
   const [selectedId, setSelectedId] = useState(definition.priorities[0]?.id || "maintenance");
   const [prediction, setPrediction] = useState("pilot-ready-with-conditions");
   const [note, setNote] = useState("");
   const [evidenceIds, setEvidenceIds] = useState<string[]>(definition.priorities[0]?.evidenceIds || []);
   const [resolution, setResolution] = useState<V3DecisionResolution | null>(null);
   const [reflection, setReflection] = useState("");
+
+  const moveTo = (next: Phase) => {
+    setPhase(next);
+    onPhaseChange(next);
+  };
 
   const currentWindow = windowForQuarter(state.q);
   const priority = useMemo<V3WindowPriority | undefined>(
@@ -71,10 +79,15 @@ export default function V3WindowShell({ state, pack, onCommit, onNextWindow, onR
   );
 
   useEffect(() => {
-    setPhase("orient");
+    const nextPhase = state.v3State?.cursor?.phase as Phase | undefined;
+    setPhase(nextPhase || "orient");
     setResolution(null);
     setReflection("");
     setEvidenceIds(definition.priorities[0]?.evidenceIds || []);
+  // Cursor phase is intentionally excluded: changing phase must not clear the
+  // just-resolved outcome or reflection. Window/definition changes reset the
+  // local interaction state; the cursor is read when the shell mounts.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [definition.priorities, state.q]);
 
   const toggleEvidence = (id: string) => {
@@ -85,7 +98,7 @@ export default function V3WindowShell({ state, pack, onCommit, onNextWindow, onR
     if (!priority) return;
     const result = onCommit({ initiativeId: priority.id, prediction, note, evidenceIds });
     setResolution(result);
-    setPhase("outcome");
+    moveTo("outcome");
   };
 
   const phaseIndex = Object.keys(phaseLabels).indexOf(phase);
@@ -127,7 +140,7 @@ export default function V3WindowShell({ state, pack, onCommit, onNextWindow, onR
             </div>
           </div>
           <div className="hidden items-center gap-5 text-right sm:flex">
-            <div><p className="text-[10px] uppercase tracking-wider text-ink/45">Window</p><p data-testid="campaign-quarter" className="text-sm font-bold">Window {currentWindow.number} · Q{rangeText}</p></div>
+          <div><p className="text-[10px] uppercase tracking-wider text-ink/45">Window</p><p data-testid="campaign-quarter" className="text-sm font-bold">Window {currentWindow.number} · {rangeText}</p></div>
             <div><p className="text-[10px] uppercase tracking-wider text-ink/45">Capital remaining</p><p className="text-sm font-bold">₹{Number(budgetRemaining).toFixed(2)} Cr</p></div>
             <div><p className="text-[10px] uppercase tracking-wider text-ink/45">Active delivery</p><p className="text-sm font-bold">{Object.values(state.v3State?.initiatives || {}).filter((item) => item.lifecycle === "pilot" || item.lifecycle === "scale").length}/2</p></div>
           </div>
@@ -158,7 +171,7 @@ export default function V3WindowShell({ state, pack, onCommit, onNextWindow, onR
           </div>
           <div className="mt-4 flex gap-2 rounded-2xl border border-amber-300/40 bg-amber-50 p-4 text-sm text-ink/70"><Info size={17} className="mt-0.5 shrink-0 text-amber-700" /><span><b>Also monitored:</b> {definition.monitoredContext}</span></div>
           <div className="mt-4 rounded-2xl border border-ink/10 bg-mist p-4 text-sm text-ink/65"><b>Capacity legend:</b> 1/4 means one quarterly unit used of four available units in that shared pool. It is not 25% of a named employee. Research uses capacity but does not use an active Pilot/Scale slot.</div>
-          <button type="button" onClick={() => setPhase("compare")} className="mt-7 flex w-full items-center justify-center gap-2 rounded-xl bg-ink px-5 py-4 text-sm font-bold text-white">Review three priorities <ArrowRight size={17} /></button>
+          <button type="button" onClick={() => moveTo("compare")} className="mt-7 flex w-full items-center justify-center gap-2 rounded-xl bg-ink px-5 py-4 text-sm font-bold text-white">Review three priorities <ArrowRight size={17} /></button>
         </section>}
 
         {phase === "compare" && <section aria-labelledby="v3-compare-title">
@@ -175,7 +188,7 @@ export default function V3WindowShell({ state, pack, onCommit, onNextWindow, onR
             })}
           </div>
           <div className="mt-4 rounded-2xl border border-ink/10 bg-white p-4 text-sm text-ink/60"><b>Later-window portfolio:</b> {definition.laterPriorities.join(" · ")}. Only Research is available in Window 1; Pilot requires research evidence and Scale requires pilot evidence plus its declared gate.</div>
-          <button type="button" onClick={() => setPhase("commit")} className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-ink px-5 py-4 text-sm font-bold text-white">Continue with {priority?.displayName || "selected priority"} <ArrowRight size={17} /></button>
+          <button type="button" onClick={() => moveTo("commit")} className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-ink px-5 py-4 text-sm font-bold text-white">Continue with {priority?.displayName || "selected priority"} <ArrowRight size={17} /></button>
         </section>}
 
         {phase === "commit" && priority && <section className="rounded-3xl border border-ink/10 bg-white p-6" aria-labelledby="v3-commit-title">
@@ -191,9 +204,8 @@ export default function V3WindowShell({ state, pack, onCommit, onNextWindow, onR
 
         {phase === "outcome" && <section className="rounded-3xl border border-ink/10 bg-white p-6" aria-labelledby="v3-outcome-title">
           <p className="text-xs font-bold uppercase tracking-[.18em] text-emerald">Window 1 research review</p>
-          <h1 id="v3-outcome-title" className="mt-2 text-3xl font-semibold">{resolution?.accepted ? "Research authorised" : "Research could not be recorded"}</h1>
-          {resolution?.accepted ? <><div className="mt-5 rounded-2xl border border-emerald/20 bg-emerald/5 p-5"><p className="font-bold text-emerald">What changed</p><ul className="mt-3 space-y-2 text-sm text-ink/65"><li>• {priority?.displayName} moved from Deferred to Research.</li><li>• ₹{priority?.costInrCr.toFixed(2)} Cr was committed; capital and declared Q1 capacity are recorded.</li><li>• Evidence and your prediction are stored in the decision ledger.</li></ul></div><div className="mt-4 rounded-2xl border border-ink/10 bg-mist p-5"><p className="font-bold">What did not change</p><p className="mt-2 text-sm text-ink/65">Operating metrics did not improve because Research evaluates evidence; it does not deploy an operating intervention. Signal is available in Q2 and the board review is at the end of Q3.</p></div><div className="mt-4 rounded-2xl border border-amber-300/40 bg-amber-50 p-5 text-sm text-ink/65"><b>Uncertainty:</b> {priority?.boundary}</div></> : <div className="mt-5 rounded-2xl border border-crimson/20 bg-crimson/5 p-5 text-sm text-crimson">{resolution?.errors.map((error) => error.message).join(" ") || "The decision was not accepted."}</div>}
-          <button type="button" onClick={() => setPhase("reflect")} className="mt-7 flex w-full items-center justify-center gap-2 rounded-xl bg-ink px-5 py-4 text-sm font-bold text-white">Reflect on outcome <ArrowRight size={17} /></button>
+          {resolution?.accepted ? <><div className="mt-5 rounded-2xl border border-emerald/20 bg-emerald/5 p-5"><p className="font-bold text-emerald">What changed</p><ul className="mt-3 space-y-2 text-sm text-ink/65"><li>• {priority?.displayName} moved from Deferred to Research.</li><li>• ₹{priority?.costInrCr.toFixed(2)} Cr was committed; declared Q1 capacity is recorded and the Q2 signal was reviewed.</li><li>• Evidence, prediction, and the resolver-authored result are stored in the decision ledger.</li></ul></div><div className="mt-4 rounded-2xl border border-teal-300/30 bg-teal-50 p-5"><p className="text-xs font-bold uppercase tracking-wider text-teal-800">Window 1 Research finding</p><h2 className="mt-2 text-xl font-bold">{resolution.researchReview?.branch === "pilot-ready-with-conditions" ? "Pilot-ready with conditions" : resolution.researchReview?.branch === "remediation-required" ? "Remediation required" : resolution.researchReview?.branch === "priority-not-supported" ? "Priority not supported" : "Signal is still in progress"}</h2><p className="mt-2 text-sm leading-6 text-ink/65">{resolution.researchReview?.outcome?.decisionUse || "The authored Research signal has not produced a final finding yet."}</p>{resolution.researchReview?.outcome?.facts?.length ? <ul className="mt-3 space-y-1 text-sm text-ink/65">{resolution.researchReview.outcome.facts.map((fact) => <li key={fact}>• {fact}</li>)}</ul> : null}</div><div className="mt-4 rounded-2xl border border-ink/10 bg-mist p-5"><p className="font-bold">What did not change</p><p className="mt-2 text-sm text-ink/65">Operating metrics did not improve because Research evaluates evidence; it does not deploy an operating intervention. The signal is available in Q2 and the board review is at the end of Q3.</p></div><div className="mt-4 rounded-2xl border border-amber-300/40 bg-amber-50 p-5 text-sm text-ink/65"><b>Uncertainty:</b> {resolution.researchReview?.outcome?.unresolvedConditions?.join(" ") || priority?.boundary}</div></> : <div className="mt-5 rounded-2xl border border-crimson/20 bg-crimson/5 p-5 text-sm text-crimson">{resolution?.errors.map((error) => error.message).join(" ") || "The decision was not accepted."}</div>}
+          <button type="button" onClick={() => moveTo("reflect")} className="mt-7 flex w-full items-center justify-center gap-2 rounded-xl bg-ink px-5 py-4 text-sm font-bold text-white">Reflect on outcome <ArrowRight size={17} /></button>
         </section>}
 
         {phase === "reflect" && <section className="rounded-3xl border border-ink/10 bg-white p-6" aria-labelledby="v3-reflect-title">
@@ -202,7 +214,7 @@ export default function V3WindowShell({ state, pack, onCommit, onNextWindow, onR
           <p className="mt-4 text-sm text-ink/60">You predicted: <b>{prediction.replace(/-/g, " ")}</b>. The resolver recorded the result independently of that prediction.</p>
           <textarea aria-label="Window 1 reflection" value={reflection} onChange={(event) => setReflection(event.target.value)} rows={4} className="mt-5 w-full rounded-xl border border-ink/10 bg-white px-3 py-3 text-sm" placeholder="Name the most important condition you would require before Pilot." />
           <p className="mt-3 text-xs text-ink/50">Reflection is for the debrief only. It does not change the scenario outcome.</p>
-          <div className="mt-7 flex gap-3"><button type="button" onClick={() => setPhase("next")} className="rounded-xl border border-ink/10 px-5 py-4 text-sm font-bold">Skip</button><button type="button" onClick={() => setPhase("next")} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-ink px-5 py-4 text-sm font-bold text-white">Save and continue <ArrowRight size={17} /></button></div>
+          <div className="mt-7 flex gap-3"><button type="button" onClick={() => { const entryId = resolution?.state?.ledger.at(-1)?.id; if (entryId) onReflect(entryId, ""); moveTo("next"); }} className="rounded-xl border border-ink/10 px-5 py-4 text-sm font-bold">Skip</button><button type="button" onClick={() => { const entryId = resolution?.state?.ledger.at(-1)?.id; if (entryId) onReflect(entryId, reflection); moveTo("next"); }} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-ink px-5 py-4 text-sm font-bold">Save and continue <ArrowRight size={17} /></button></div>
         </section>}
 
         {phase === "next" && <section className="rounded-3xl border border-ink/10 bg-white p-6" aria-labelledby="v3-next-title">

@@ -100,5 +100,15 @@ export function applyV3PortfolioPlan(state: V3ScenarioState, plan: V3PortfolioPl
   plan.forEach((item) => { const previous = initiatives[item.initiativeId]; if (previous) initiatives[item.initiativeId] = { ...previous, lifecycle: item.lifecycle, ownerId: item.ownerId, gateIds: [...(item.gateIds || previous.gateIds)], capacity: { ...(item.capacity || previous.capacity) } }; });
   const nextUsed = { ...state.capacity.used };
   Object.entries(used).forEach(([pool, amount]) => { nextUsed[pool] = (nextUsed[pool] || 0) + amount; });
-  return { ...state, currentQuarter: Math.max(state.currentQuarter, quarter), budget: { ...state.budget, spent: state.budget.spent + spent, remaining: state.budget.remaining - spent }, capacity: { ...state.capacity, used: nextUsed }, initiatives };
+  const schedule = { ...(state.capacity.schedule || {}) };
+  const quarterKey = String(quarter);
+  schedule[quarterKey] = { ...(schedule[quarterKey] || {}) };
+  Object.entries(used).forEach(([pool, amount]) => { schedule[quarterKey][pool] = (schedule[quarterKey][pool] || 0) + amount; });
+  return {
+    ...state,
+    currentQuarter: Math.max(state.currentQuarter, quarter),
+    budget: { ...state.budget, spent: state.budget.spent + spent, remaining: state.budget.remaining - spent },
+    capacity: { ...state.capacity, used: nextUsed, schedule },
+    initiatives,
+  };
 }

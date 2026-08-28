@@ -38,6 +38,31 @@ export function validateScenarioV3Pack(scenario: Pick<ScenarioDefinition, 'id' |
   const ref = (set: Set<string>, value: string | undefined, code: string, path: string, noun: string) => {
     if (value && !set.has(value)) errors.push(issue(code, path, `Unknown ${noun} '${value}'.`));
   };
+  const validateWindow = (window: NonNullable<V3ScenarioPack['windowOne']>, path: string) => {
+    if (window.quarterRange[0] < 1 || window.quarterRange[1] < window.quarterRange[0]) errors.push(issue('invalid-window-range', `${path}.quarterRange`, 'Window quarter range must be ordered and start at Q1 or later.'));
+    const seen = new Set<string>();
+    if (window.id === 'PF-W1' && window.priorities.length !== 3) errors.push(issue('window-priority-count', `${path}.priorities`, 'Project Factory Window 1 must present exactly three opening priorities.'));
+    window.priorities.forEach((priority, index) => {
+      const priorityPath = `${path}.priorities[${index}]`;
+      if (seen.has(priority.id)) errors.push(issue('duplicate-window-priority', priorityPath, `Priority '${priority.id}' is repeated.`));
+      seen.add(priority.id);
+      ref(initiativeIds, priority.id, 'unknown-initiative-reference', `${priorityPath}.id`, 'initiative');
+      priority.evidenceIds.forEach((id) => ref(evidenceIds, id, 'unknown-evidence-reference', `${priorityPath}.evidenceIds`, 'evidence'));
+      Object.keys(priority.capacity).forEach((pool) => { if (!(pool in (pack.portfolioPolicy?.capacityPools || {}))) errors.push(issue('unknown-capacity-pool', `${priorityPath}.capacity`, `Capacity pool '${pool}' is not declared in the portfolio policy.`)); });
+      if (priority.costInrCr < 0) errors.push(issue('negative-window-cost', `${priorityPath}.costInrCr`, 'Window priority cost cannot be negative.'));
+      if (priority.signalQuarter < window.quarterRange[0]) errors.push(issue('invalid-signal-quarter', `${priorityPath}.signalQuarter`, 'Research signal cannot precede the window start.'));
+    });
+  };
+  if (pack.windowOne) validateWindow(pack.windowOne, 'v3.windowOne');
+  (pack.windows || []).forEach((window, index) => validateWindow(window, `v3.windows[${index}]`));
+  (pack.researchReviews || []).forEach((review, index) => {
+    ref(initiativeIds, review.initiativeId, 'unknown-initiative-reference', `v3.researchReviews[${index}].initiativeId`, 'initiative');
+    review.outcomes.forEach((outcome, outcomeIndex) => {
+      const outcomePath = `v3.researchReviews[${index}].outcomes[${outcomeIndex}]`;
+      if (outcome.initiativeId !== review.initiativeId) errors.push(issue('research-outcome-initiative-mismatch', outcomePath, 'Research outcome must belong to its review initiative.'));
+      outcome.basedOnEvidence.forEach((id) => ref(evidenceIds, id, 'unknown-evidence-reference', `${outcomePath}.basedOnEvidence`, 'evidence'));
+    });
+  });
   for (let i = 0; i < (pack.evidence ?? []).length; i += 1) {
     const evidence = (pack.evidence ?? [])[i];
     if (!evidence.id) errors.push(issue('evidence-id-required', `v3.evidence[${i}]`, 'Evidence needs a stable id.'));

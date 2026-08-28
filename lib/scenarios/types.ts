@@ -147,6 +147,31 @@ export type V3WindowDefinition = {
   priorities: V3WindowPriority[];
 };
 
+export type V3ResearchBranch = 'pilot-ready-with-conditions' | 'remediation-required' | 'priority-not-supported';
+
+export type V3ResearchOutcomeDefinition = {
+  id: string;
+  initiativeId: string;
+  branch: V3ResearchBranch;
+  sourceType: string;
+  sourceStatus: string;
+  authorRole: string;
+  version: string;
+  producedInWindow: string;
+  basedOnEvidence: string[];
+  facts: string[];
+  limitations: string[];
+  decisionUse: string;
+  unresolvedConditions: string[];
+};
+
+export type V3ResearchReviewDefinition = {
+  initiativeId: string;
+  signalQuarter: number;
+  defaultBranch: V3ResearchBranch;
+  outcomes: V3ResearchOutcomeDefinition[];
+};
+
 export type V3CausalRule = {
   [key: string]: unknown;
   id: string;
@@ -181,6 +206,8 @@ export type V3ScenarioPack = {
   responsibleImpact?: Record<string, unknown>;
   eventCoverage?: Record<string, unknown>;
   windowOne?: V3WindowDefinition;
+  windows?: V3WindowDefinition[];
+  researchReviews?: V3ResearchReviewDefinition[];
 };
 
 /**

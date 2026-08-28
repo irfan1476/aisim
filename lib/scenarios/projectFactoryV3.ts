@@ -75,6 +75,23 @@ export const projectFactoryV3Pack: V3ScenarioPack = {
       },
     ],
   },
+  researchReviews: [
+    researchReview('maintenance', 2, 'pilot-ready-with-conditions', [
+      researchOutcome('PF-R01-A', 'maintenance', 'pilot-ready-with-conditions', ['Line M-4 and selected failure modes are bounded.', 'A named data owner and read-only access are available.'], ['Pilot usefulness, nuisance-alert rate, technician disposition, downtime benefit, and scale evidence remain unobserved.'], 'Pilot may be considered in Window 2 within the named M-4 boundary.', ['Technician disposition owner and safe maintenance window must be named.']),
+      researchOutcome('PF-R01-B', 'maintenance', 'remediation-required', ['Selected failure modes remain plausible, but asset ownership or protected technician review capacity is incomplete.'], ['Pilot remains unavailable until the named ownership/review gap is repaired.'], 'Fund the named remediation or redirect capacity before Pilot.', ['Asset owner or protected review capacity is still unresolved.']),
+      researchOutcome('PF-R01-C', 'maintenance', 'priority-not-supported', ['The selected failure modes cannot be detected early enough for a safe intervention window.'], ['Downtime pressure alone is not evidence that this intervention is actionable.'], 'Pilot is unavailable unless a materially different failure mode, sensing approach, or intervention window is evidenced.', ['The current signal cannot support safe action in the chosen boundary.']),
+    ]),
+    researchReview('quality', 2, 'remediation-required', [
+      researchOutcome('PF-R02-A', 'quality', 'pilot-ready-with-conditions', ['Line Q-2 and selected visually observable defects are bounded.', 'A Quality owner controls release, override, rework, and containment.'], ['False rejects, escaped-defect effect, override completion, and OEM acceptance remain unobserved.'], 'A constrained Q-2 Pilot may be considered after the full Q2 brief is incorporated.', ['Full PF-E05 brief and traceability confirmation are required.']),
+      researchOutcome('PF-R02-B', 'quality', 'remediation-required', ['The defect family appears visually detectable, but sample, capture stability, owner, or traceability has a named repairable gap.'], ['Pilot remains unavailable until the stated remediation is reviewed.'], 'Fund the named capture/traceability remediation before Pilot.', ['The representative sample or traceability route is not yet adequate.']),
+      researchOutcome('PF-R02-C', 'quality', 'priority-not-supported', ['The selected defect family is not visually observable/repeatable at the proposed inspection point.'], ['Quality urgency alone cannot support this AI intervention.'], 'Switch priority or redesign the inspection point.', ['The proposed inspection cannot create a safe, traceable action before release.']),
+    ]),
+    researchReview('knowledge', 2, 'remediation-required', [
+      researchOutcome('PF-R03-A', 'knowledge', 'pilot-ready-with-conditions', ['A bounded knowledge domain and one shift workflow are named.', 'A technician review panel and protected review time are identified.'], ['Content usefulness, correction rate, workflow fit, trust, and workforce-readiness benefit remain unobserved.'], 'A bounded Pilot may be considered through G-PF-05 in Window 2.', ['A named human owner must retain applicability and safety decisions.']),
+      researchOutcome('PF-R03-B', 'knowledge', 'remediation-required', ['Validated knowledge exists, but review time, content ownership, provenance, or safety/IP boundaries have a named repairable gap.'], ['Pilot remains unavailable pending the specific remediation and review.'], 'Fund the named governance or review remediation before Pilot.', ['Protected review capacity or accountable content ownership is not yet confirmed.']),
+      researchOutcome('PF-R03-C', 'knowledge', 'priority-not-supported', ['No safe accountable human-review path can be established within the declared operating boundary.'], ['Retirement exposure alone cannot make the assistant actionable.'], 'Preserve capacity or choose a different knowledge-transfer intervention.', ['The target workflow has no validated, safe source and review route.']),
+    ]),
+  ],
   reportedMetrics: [
     { key: 'critical_asset_sensor_coverage', label: 'Critical asset sensor coverage', unit: '%', timeBasis: 'quarterly gate review', ownerRole: 'data_owner', scope: 'scenario', start: 38, min: 0, max: 100 },
     { key: 'structured_failure_code_coverage', label: 'Structured failure-code coverage', unit: '%', timeBasis: 'quarterly gate review', ownerRole: 'maintenance_lead', scope: 'scenario', start: 44, min: 0, max: 100 },
@@ -119,8 +136,8 @@ export const projectFactoryV3Pack: V3ScenarioPack = {
   ],
   causalRules: [
     { id: 'CR-PF-01', initiativeId: 'maintenance', evidenceIds: ['PF-E02', 'PF-E04'], metric: 'unplanned_downtime_share', effects: [{ metric: 'unplanned_downtime_share', delta: -1.6, unit: '% of scheduled production time' }, { metric: 'technician_trust', delta: 2, unit: '0–100 index' }] },
-    { id: 'CR-PF-02', evidenceIds: ['PF-E01', 'PF-E05'], metric: 'first_pass_yield', effects: [{ metric: 'first_pass_yield', delta: 1, unit: '%' }, { metric: 'escaped_defects_ppm', delta: -100, unit: 'PPM' }] },
-    { id: 'CR-PF-03', evidenceIds: ['PF-E04', 'PF-E07'], metric: 'workforce_readiness', effects: [{ metric: 'workforce_readiness', delta: 5, unit: '0–100 index' }, { metric: 'technician_trust', delta: 3, unit: '0–100 index' }] },
+    { id: 'CR-PF-02', initiativeId: 'quality', evidenceIds: ['PF-E01', 'PF-E05'], metric: 'first_pass_yield', effects: [{ metric: 'first_pass_yield', delta: 1, unit: '%' }, { metric: 'escaped_defects_ppm', delta: -100, unit: 'PPM' }] },
+    { id: 'CR-PF-03', initiativeId: 'knowledge', evidenceIds: ['PF-E04', 'PF-E07'], metric: 'workforce_readiness', effects: [{ metric: 'workforce_readiness', delta: 5, unit: '0–100 index' }, { metric: 'technician_trust', delta: 3, unit: '0–100 index' }] },
   ],
   events: [{ id: 'EV-PF-01', trigger: 'quarter >= 4', triggerMetric: 'unplanned_downtime_share', triggerInitiative: 'maintenance', effects: [{ metric: 'schedule_adherence', delta: -3, unit: '%', sourceRuleId: 'ER-PF-01', sourceEvidenceIds: ['PF-E02', 'PF-E03', 'PF-E04'] }] }],
   portfolioPolicy: { lifecycleStates: ['deferred', 'research', 'pilot', 'scale', 'sustain', 'pause', 'stop'], budgetPosture: 'constrained', budget: { currency: 'INR_Cr', capitalEnvelope: 5, annualRunEnvelope: 1.2 }, capacityPools: { data_engineering: 4, plant_integration: 3, frontline_change: 3, governance_assurance: 2 } },
@@ -135,6 +152,14 @@ function initiative(id: string, valueHypothesis: string, ownerRole: string, evid
 
 function gate(id: string, appliesTo: string[], ownerRole: string, requiredEvidence: string[], conditions: string[], onFailure: string) {
   return { id, appliesTo, ownerRole, requiredEvidence, conditions, onFailure };
+}
+
+function researchOutcome(id: string, initiativeId: string, branch: 'pilot-ready-with-conditions' | 'remediation-required' | 'priority-not-supported', facts: string[], limitations: string[], decisionUse: string, unresolvedConditions: string[]) {
+  return { id, initiativeId, branch, sourceType: 'expert-calibrated synthetic', sourceStatus: 'provisional', authorRole: 'Project Factory research review panel', version: '0.1-provisional', producedInWindow: 'PF-W1', basedOnEvidence: initiativeId === 'maintenance' ? ['PF-E01', 'PF-E02'] : initiativeId === 'quality' ? ['PF-E01', 'PF-E05'] : ['PF-E04', 'PF-E07'], facts, limitations, decisionUse, unresolvedConditions };
+}
+
+function researchReview(initiativeId: string, signalQuarter: number, defaultBranch: 'pilot-ready-with-conditions' | 'remediation-required' | 'priority-not-supported', outcomes: ReturnType<typeof researchOutcome>[]) {
+  return { initiativeId, signalQuarter, defaultBranch, outcomes };
 }
 
 export const projectFactoryV3: ScenarioDefinition = { ...projectFactory, id: 'project-factory-2030', schemaVersion: 'v3', packVersion: '0.2.0-provisional', v3: projectFactoryV3Pack };

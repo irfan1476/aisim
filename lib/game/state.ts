@@ -41,18 +41,40 @@ export type V3LedgerEntry = {
   reflection?: string;
 };
 export type V3GateRecord = { id: string; status: 'pending' | 'met' | 'failed' | 'repaired'; history: Array<{ quarter: number; status: 'pending' | 'met' | 'failed' | 'repaired'; evidenceIds: string[] }> };
-export type V3EventRecord = { id: string; quarter: number; optionId?: string; impacts: Record<string, number> };
+export type V3EventRecord = { id: string; quarter: number; optionId?: string; impacts: Record<string, number>; sourceRuleId?: string; sourceEvidenceIds?: string[]; reason?: string };
 export type V3StakeholderRecord = { id: string; sentiment: number; history: Array<{ quarter: number; delta: number; reason?: string }> };
 export type V3ScorecardState = { execution: number; governance: number; stakeholderHealth: number; resilience: number; evidenceQuality: number; evidence: string[] };
 export type V3BaselineResponse = { questionId: string; version: string; response: string };
 export type V3BaselineState = { version: string; responses: V3BaselineResponse[] };
+export type V3ResearchReviewState = {
+  initiativeId: string;
+  status: 'in-progress' | V3ResearchBranch;
+  startedQuarter: number;
+  signalQuarter: number;
+  completedQuarter?: number;
+  outcomeArtifactId?: string;
+  outcomeArtifact?: V3ResearchOutcomeDefinition;
+};
+export type V3WindowStatus = 'pending' | 'paused' | 'resolved';
+export type V3WindowHistoryEntry = {
+  windowId: string;
+  quarterRange: [number, number];
+  status: V3WindowStatus;
+  decisionLedgerId?: string;
+  quarterSnapshots: Array<{ quarter: number; metrics: Record<string, number>; lifecycle: Record<string, V3Lifecycle>; note?: string }>;
+  pauseResumeCursor?: { nextQuarter: number; operationId?: string; reason?: string };
+  aggregateOutcome?: { changed: Record<string, number>; unchanged: string[]; uncertainty: string[]; sourceRuleIds: string[]; sourceEvidenceIds: string[] };
+};
+export type V3WindowCursor = { windowId: string; phase: 'orient' | 'compare' | 'commit' | 'outcome' | 'reflect' | 'next'; nextQuarter: number };
+export type V3BoardMemoState = { situation?: string; decision?: string; operatingChange?: string; uncertainty?: string; nextAction?: string; updatedAt?: string };
+export type V3ResponsibleImpactState = { risk?: string; equity?: string; accessibility?: string; sustainability?: string; residualRisk?: string; monitoring?: string; escalation?: string; incidentLearning?: string };
 export type V3ScenarioState = {
   schemaVersion: 1;
   scenarioId: string;
   seed: number;
   currentQuarter: number;
   budget: { envelope: number; spent: number; remaining: number };
-  capacity: { pools: Record<string, number>; used: Record<string, number>; activeDeliveryLimit: number };
+  capacity: { pools: Record<string, number>; used: Record<string, number>; schedule: Record<string, Record<string, number>>; activeDeliveryLimit: number };
   initiatives: Record<string, V3InitiativeState>;
   ledger: V3LedgerEntry[];
   gates: Record<string, V3GateRecord>;
@@ -60,11 +82,16 @@ export type V3ScenarioState = {
   stakeholders: Record<string, V3StakeholderRecord>;
   scorecard: V3ScorecardState;
   baseline: V3BaselineState;
+  researchReviews: Record<string, V3ResearchReviewState>;
+  windowHistory: V3WindowHistoryEntry[];
+  cursor?: V3WindowCursor;
+  boardMemo?: V3BoardMemoState;
+  responsibleImpact?: V3ResponsibleImpactState;
 };
 import type { InitiativeState } from './initiativeState';
 import { initializeInitiativeStates } from './initiativeState';
 import { createInitiativeGeneration, generateInitiatives, type InitiativeGeneration } from './generator';
-import type { CurrencyMode, V3ScenarioPack } from '../scenarios/types';
+import type { CurrencyMode, V3ResearchBranch, V3ResearchOutcomeDefinition, V3ScenarioPack } from '../scenarios/types';
 export type MetricKey = 'roi' | 'revenue' | 'efficiency' | 'adoption' | 'risk' | 'data' | 'satisfaction' | 'literacy' | 'turnover' | 'compliance' | 'innovation' | 'spent' | 'score';
 export type MetricsSnapshot = Partial<Record<MetricKey, number>>;
 export type QuarterSnapshot = {
@@ -112,7 +139,7 @@ export function createV3State(scenarioId: string, seed = 2030, budget = 5, initi
     seed,
     currentQuarter: 1,
     budget: { envelope: budget, spent: 0, remaining: budget },
-    capacity: { pools, used: {}, activeDeliveryLimit: 2 },
+    capacity: { pools, used: {}, schedule: {}, activeDeliveryLimit: 2 },
     initiatives,
     ledger: [],
     gates,
@@ -120,6 +147,9 @@ export function createV3State(scenarioId: string, seed = 2030, budget = 5, initi
     stakeholders,
     scorecard: { execution: 0, governance: 0, stakeholderHealth: 0, resilience: 0, evidenceQuality: 0, evidence: [] },
     baseline: { version: 'v1', responses: [] },
+    researchReviews: {},
+    windowHistory: [],
+    cursor: { windowId: pack?.windowOne?.id || 'PF-W1', phase: 'orient', nextQuarter: 1 },
   };
 }
 

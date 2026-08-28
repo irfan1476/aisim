@@ -74,7 +74,7 @@ test('V3 event, exposure, workflow evidence, and value attribution are source-bo
   assert.equal(workflow.result, 45);
   assert.deepEqual(workflow.state.scorecard.evidence, ['workflow:maintenance']);
 
-  const value = attributeV3OperationalValue(pack, { uptime: 75 }, { uptime: 70 });
+  const value = attributeV3OperationalValue(pack, { uptime: 75 }, { uptime: 70 }, { operatingEffectsObserved: true });
   assert.deepEqual(value[0], { status: 'estimated', metric: 'uptime', delta: 5, sourceRuleIds: ['maintenance-signal'], evidenceIds: ['asset-data'] });
 });
 

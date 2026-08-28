@@ -51,7 +51,7 @@ test('PF2 predictive-maintenance loop stays evidence-led from plan through sidec
   assert.equal(resolution.accepted, true, JSON.stringify(resolution.errors));
   assert.equal(resolution.state.initiatives.maintenance.lifecycle, 'research');
   assert.equal(resolution.state.gates['asset-evidence'].status, 'met');
-  assert.equal(resolution.metrics.uptime, 75);
+  assert.equal(resolution.metrics.uptime, 70, 'Research must not produce operating benefit.');
   assert.equal(resolution.state.ledger[0].evidenceIds[0], 'asset-data');
   assert.equal(JSON.stringify(v3State), before, 'resolver must not mutate the pre-resolution state');
 
@@ -59,7 +59,7 @@ test('PF2 predictive-maintenance loop stays evidence-led from plan through sidec
   assert.ok(projection);
   assert.equal(projection.ledger[0].initiativeIds[0], 'maintenance');
   assert.equal(projection.ledger[0].evidenceIds[0], 'asset-data');
-  assert.equal(projection.metrics.uptime.current, 75);
+  assert.equal(projection.metrics.uptime.current, 70);
   assert.deepEqual(projection.metrics.uptime.sourceRuleIds, ['maintenance-signal']);
   assert.deepEqual(projection.metrics.uptime.sourceEvidenceIds, ['asset-data']);
   assert.equal(projection.gates['asset-evidence'].status, 'met');

@@ -60,6 +60,21 @@ function normalizeV3State(value: unknown, fallback: V3ScenarioState): V3Scenario
       ? saved.lifecycle as V3ScenarioState['initiatives'][string]['lifecycle'] : base.lifecycle;
     return [id, { ...base, lifecycle, ownerId: typeof saved.ownerId === 'string' ? saved.ownerId : base.ownerId, gateIds: stringArrayOr(saved.gateIds, base.gateIds), capacity: numberMap(saved.capacity), rationale: typeof saved.rationale === 'string' ? saved.rationale : base.rationale, reviewQuarter: typeof saved.reviewQuarter === 'number' ? saved.reviewQuarter : base.reviewQuarter }];
   }));
+  const validBranches = ['pilot-ready-with-conditions', 'remediation-required', 'priority-not-supported'];
+  const researchReviews = isRecord(source.researchReviews)
+    ? Object.fromEntries(Object.entries(source.researchReviews).filter(([, item]) => isRecord(item)).map(([id, item]) => {
+      const review = item as Record<string, unknown>;
+      const status: V3ScenarioState['researchReviews'][string]['status'] = validBranches.includes(String(review.status)) ? String(review.status) as V3ScenarioState['researchReviews'][string]['status'] : 'in-progress';
+      return [id, { initiativeId: typeof review.initiativeId === 'string' ? review.initiativeId : id, status, startedQuarter: Math.max(1, Math.round(numberOr(review.startedQuarter, 1))), signalQuarter: Math.max(1, Math.round(numberOr(review.signalQuarter, 2))), completedQuarter: typeof review.completedQuarter === 'number' ? review.completedQuarter : undefined, outcomeArtifactId: typeof review.outcomeArtifactId === 'string' ? review.outcomeArtifactId : undefined, outcomeArtifact: isRecord(review.outcomeArtifact) ? review.outcomeArtifact as V3ScenarioState['researchReviews'][string]['outcomeArtifact'] : undefined }];
+    }))
+    : fallback.researchReviews;
+  const windowHistory = Array.isArray(source.windowHistory)
+    ? source.windowHistory.filter(isRecord).map((entry) => entry as V3ScenarioState['windowHistory'][number])
+    : fallback.windowHistory;
+  const phases = ['orient', 'compare', 'commit', 'outcome', 'reflect', 'next'];
+  const cursor = isRecord(source.cursor) && phases.includes(String(source.cursor.phase))
+    ? { windowId: typeof source.cursor.windowId === 'string' ? source.cursor.windowId : fallback.cursor?.windowId || 'PF-W1', phase: source.cursor.phase as V3ScenarioState['cursor'] extends infer C ? C extends { phase: infer P } ? P : never : never, nextQuarter: Math.max(1, Math.round(numberOr(source.cursor.nextQuarter, 1))) }
+    : fallback.cursor;
   return {
     ...fallback,
     schemaVersion: 1,
@@ -67,7 +82,14 @@ function normalizeV3State(value: unknown, fallback: V3ScenarioState): V3Scenario
     seed: numberOr(source.seed, fallback.seed),
     currentQuarter: Math.max(1, Math.round(numberOr(source.currentQuarter, fallback.currentQuarter))),
     budget: { envelope: numberOr(budget.envelope, fallback.budget.envelope), spent: numberOr(budget.spent, 0), remaining: numberOr(budget.remaining, fallback.budget.remaining) },
-    capacity: { pools: numberMap(capacity.pools), used: numberMap(capacity.used), activeDeliveryLimit: Math.max(0, Math.round(numberOr(capacity.activeDeliveryLimit, 2))) },
+    capacity: {
+      pools: numberMap(capacity.pools),
+      used: numberMap(capacity.used),
+      schedule: isRecord(capacity.schedule)
+        ? Object.fromEntries(Object.entries(capacity.schedule).filter(([, value]) => isRecord(value)).map(([quarter, value]) => [quarter, numberMap(value)]))
+        : fallback.capacity.schedule,
+      activeDeliveryLimit: Math.max(0, Math.round(numberOr(capacity.activeDeliveryLimit, 2))),
+    },
     initiatives: normalizedInitiatives,
     ledger: Array.isArray(source.ledger) ? source.ledger.filter(isRecord).map((entry) => entry as V3ScenarioState['ledger'][number]) : [],
     gates: isRecord(source.gates) ? source.gates as V3ScenarioState['gates'] : {},
@@ -80,6 +102,11 @@ function normalizeV3State(value: unknown, fallback: V3ScenarioState): V3Scenario
       version: typeof source.baseline.version === 'string' ? source.baseline.version : fallback.baseline.version,
       responses: Array.isArray(source.baseline.responses) ? source.baseline.responses.filter(isRecord).map((response) => ({ questionId: typeof response.questionId === 'string' ? response.questionId : '', version: typeof response.version === 'string' ? response.version : fallback.baseline.version, response: typeof response.response === 'string' ? response.response : '' })).filter((response) => response.questionId && response.response) : [],
     } : fallback.baseline,
+    researchReviews,
+    windowHistory,
+    cursor,
+    boardMemo: isRecord(source.boardMemo) ? source.boardMemo as V3ScenarioState['boardMemo'] : fallback.boardMemo,
+    responsibleImpact: isRecord(source.responsibleImpact) ? source.responsibleImpact as V3ScenarioState['responsibleImpact'] : fallback.responsibleImpact,
   };
 }
 

@@ -12,6 +12,6 @@ test('V3 decision façade composes validation, ledger, gates, and causal/value p
   const result = resolveV3Decision({ gameState: { v3State }, pack, plan: [{ initiativeId: 'a', lifecycle: 'research', cost: 1 }], evidenceIds: ['e'], metrics: { uptime: 70 }, ledger: { id: 'l1', quarter: 1, initiativeIds: ['a'], rationale: 'test', prediction: 'uptime improves', evidenceIds: ['e'], gateIds: ['g'] }, gateChecks: [{ gateId: 'g' }] });
   assert.equal(result.accepted, true);
   assert.equal(result.state.ledger.length, 1);
-  assert.equal(result.metrics.uptime, 72);
-  assert.equal(result.value[0].status, 'estimated');
+  assert.equal(result.metrics.uptime, 70, 'Research must not produce operating benefit.');
+  assert.equal(result.value[0].status, 'not-yet-observable');
 });

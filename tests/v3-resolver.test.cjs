@@ -15,6 +15,8 @@ test('gate resolution and events are immutable and source-bound', () => {
   const event = r.resolveV3Event(pack, gate.state, 'e1', 'contain');
   assert.equal(event.result.triggered, true);
   assert.equal(event.state.eventLog[0].optionId, 'contain');
+  assert.deepEqual(event.state.eventLog[0].sourceEvidenceIds, []);
+  assert.match(event.state.eventLog[0].reason, /Authored event/);
 });
 
 test('workflow evidence changes evidence/execution, not a global adoption metric', () => {

@@ -12,7 +12,7 @@ async function startProjectFactoryV3(page) {
   await page.getByRole('button', { name: 'Take the baseline assessment' }).click();
   for (let index = 0; index < 5; index += 1) await page.getByTestId(`baseline-${index}-3`).click();
   await page.getByRole('button', { name: 'Enter the boardroom' }).click();
-  await page.getByRole('button', { name: 'Begin campaign' }).click();
+  await page.getByRole('button', { name: 'Begin the V3 board window' }).click();
   await expect(page.getByTestId('v3-window-shell')).toBeVisible();
   await expect(page.getByTestId('campaign-quarter')).toContainText('Window 1');
 }
@@ -47,8 +47,9 @@ test('V3 Commit records research and shows a no-operating-benefit outcome', asyn
   await expect(page.getByRole('heading', { name: 'Predictive Maintenance' })).toBeVisible();
   await page.getByRole('button', { name: 'Confirm research' }).click();
 
-  await expect(page.getByRole('heading', { name: 'Research authorised' })).toBeVisible();
+  await expect(page.getByText('Window 1 research review')).toBeVisible();
   await expect(page.getByText(/Operating metrics did not improve/)).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Pilot-ready with conditions' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Reflect on outcome' })).toBeVisible();
 
   const persisted = await page.evaluate(() => JSON.parse(localStorage.getItem('ai-investment-game')).state);
@@ -65,6 +66,11 @@ test('V3 completes the reflection handoff without exposing the active-play sidec
   await page.getByRole('button', { name: 'Reflect on outcome' }).click();
   await page.getByLabel('Window 1 reflection').fill('Require usable history and a named technician disposition owner.');
   await page.getByRole('button', { name: 'Save and continue' }).click();
+  const persisted = await page.evaluate(() => JSON.parse(localStorage.getItem('ai-investment-game')).state);
+  expect(persisted.v3State.baseline.responses).toHaveLength(5);
+  expect(persisted.v3State.ledger[0].outcome.status).toBe('pilot-ready-with-conditions');
+  expect(persisted.v3State.ledger[0].reflection).toContain('usable history');
+  expect(persisted.v3State.windowHistory[0].quarterSnapshots).toHaveLength(3);
   await expect(page.getByRole('heading', { name: 'Your Research decision is carried forward.' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Enter Window 2' })).toBeVisible();
   await expect(page.getByRole('complementary', { name: 'V3 analytics' })).toHaveCount(0);

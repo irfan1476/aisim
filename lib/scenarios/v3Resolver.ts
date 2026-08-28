@@ -1,5 +1,5 @@
-import type { V3ScenarioPack, V3CausalRule, V3Event } from './types';
-import type { V3ScenarioState, V3GateRecord, V3EventRecord } from '../game/state';
+import type { V3ScenarioPack, V3CausalRule, V3Event, V3ResearchBranch, V3ResearchOutcomeDefinition } from './types';
+import type { V3ScenarioState, V3GateRecord, V3EventRecord, V3ResearchReviewState } from '../game/state';
 
 export type V3ResolverResult<T> = { state: V3ScenarioState; result: T };
 export type V3GateResult = { gateId: string; status: 'pending' | 'met' | 'failed'; missingEvidence: string[]; failedConditions: string[] };
@@ -7,6 +7,7 @@ export type V3CausalResult = { applied: Array<{ ruleId: string; metric: string; 
 export type V3EventResult = { triggered: boolean; eventId?: string; reason?: string };
 export type V3ExposureResult = { exposed: boolean; deferred: boolean; reason: string };
 export type V3ValueAttribution = { status: 'observed' | 'estimated' | 'not-yet-observable'; metric: string; delta: number; value?: number; sourceRuleIds: string[]; evidenceIds: string[] };
+export type V3ResearchReviewResult = { review: V3ResearchReviewState; outcome: V3ResearchOutcomeDefinition | undefined; branch: V3ResearchBranch | 'in-progress' };
 
 const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 const gatesFor = (pack: V3ScenarioPack) => pack.gates || pack.governanceGates || [];
@@ -66,13 +67,46 @@ export function resolveV3CausalRules(pack: V3ScenarioPack, state: V3ScenarioStat
   return { state: next, result: { applied, deferred } };
 }
 
+/** Resolve the authored Research finding independently of the learner prediction. */
+export function resolveV3ResearchReview(pack: V3ScenarioPack, state: V3ScenarioState, initiativeId: string, quarter = state.currentQuarter): V3ResolverResult<V3ResearchReviewResult> {
+  const next = clone(state);
+  const definition = (pack.researchReviews || []).find((item) => item.initiativeId === initiativeId);
+  next.researchReviews = next.researchReviews || {};
+  const existing = next.researchReviews[initiativeId];
+  if (!definition) {
+    const review: V3ResearchReviewState = { initiativeId, status: 'in-progress', startedQuarter: existing?.startedQuarter || quarter, signalQuarter: existing?.signalQuarter || quarter + 1 };
+    next.researchReviews[initiativeId] = review;
+    return { state: next, result: { review, outcome: undefined, branch: 'in-progress' } };
+  }
+  if (quarter < definition.signalQuarter) {
+    const review: V3ResearchReviewState = { initiativeId, status: 'in-progress', startedQuarter: existing?.startedQuarter || Math.max(1, quarter - 1), signalQuarter: definition.signalQuarter };
+    next.researchReviews[initiativeId] = review;
+    return { state: next, result: { review, outcome: undefined, branch: 'in-progress' } };
+  }
+  const branch = definition.defaultBranch;
+  const outcome = definition.outcomes.find((item) => item.branch === branch) || definition.outcomes[0];
+  const review: V3ResearchReviewState = { initiativeId, status: branch, startedQuarter: existing?.startedQuarter || Math.max(1, definition.signalQuarter - 1), signalQuarter: definition.signalQuarter, completedQuarter: quarter, outcomeArtifactId: outcome?.id, outcomeArtifact: outcome };
+  next.researchReviews[initiativeId] = review;
+  return { state: next, result: { review, outcome, branch } };
+}
+
 export function resolveV3Event(pack: V3ScenarioPack, state: V3ScenarioState, eventId: string, optionId?: string, metrics: Record<string, number> = {}): V3ResolverResult<V3EventResult> {
   const next = clone(state); const event = (pack.events || []).find((item) => item.id === eventId);
   if (!event) return { state: next, result: { triggered: false, reason: 'Unknown event.' } };
   if (event.trigger && !evaluateCondition(event.trigger, metrics, next.currentQuarter)) return { state: next, result: { triggered: false, reason: 'Trigger conditions are not met.' } };
   const impacts: Record<string, number> = {};
   for (const effect of event.effects || []) impacts[effect.metric] = (impacts[effect.metric] || 0) + effect.delta;
-  const record: V3EventRecord = { id: event.id, quarter: next.currentQuarter, optionId, impacts };
+  const sourceRuleId = event.effects?.find((effect) => effect.sourceRuleId)?.sourceRuleId;
+  const sourceEvidenceIds = Array.from(new Set((event.effects || []).flatMap((effect) => effect.sourceEvidenceIds || [])));
+  const record: V3EventRecord = {
+    id: event.id,
+    quarter: next.currentQuarter,
+    optionId,
+    impacts,
+    sourceRuleId,
+    sourceEvidenceIds,
+    reason: event.trigger ? `Trigger satisfied: ${event.trigger}` : 'Authored event resolved.',
+  };
   next.eventLog = [...next.eventLog, record];
   return { state: next, result: { triggered: true, eventId } };
 }
@@ -109,12 +143,13 @@ export function applyV3CausalRule(rule: V3CausalRule, metrics: Record<string, nu
 }
 
 /** Attribute value only when the pack declares an operational metric and evidence. */
-export function attributeV3OperationalValue(pack: V3ScenarioPack, metrics: Record<string, number>, before: Record<string, number>): V3ValueAttribution[] {
+export function attributeV3OperationalValue(pack: V3ScenarioPack, metrics: Record<string, number>, before: Record<string, number>, options: { operatingEffectsObserved?: boolean } = {}): V3ValueAttribution[] {
   return (pack.report?.changes || []).map((change) => {
     const delta = (metrics[change.metric] ?? 0) - (before[change.metric] ?? metrics[change.metric] ?? 0);
     const evidenceIds = [...(change.evidenceIds || [])];
     const sourceRuleIds = change.ruleId ? [change.ruleId] : [];
-    return { status: sourceRuleIds.length || evidenceIds.length ? 'estimated' : 'not-yet-observable', metric: change.metric, delta, sourceRuleIds, evidenceIds };
+    const status = options.operatingEffectsObserved && (sourceRuleIds.length || evidenceIds.length) ? 'estimated' : 'not-yet-observable';
+    return { status, metric: change.metric, delta: options.operatingEffectsObserved ? delta : 0, sourceRuleIds, evidenceIds };
   });
 }
 

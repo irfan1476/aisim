@@ -5,6 +5,8 @@ export type V3AnalyticsProjection = {
   dashboard: { quarter: number; budgetRemaining: number; activeInitiatives: number; gateHealth: number; stakeholderHealth: number; evidenceCount: number };
   metrics: Record<string, { current: number; start?: number; target?: number; progress?: number; direction?: string; unit?: string; owner?: string; sourceRuleIds: string[]; sourceEvidenceIds: string[] }>;
   ledger: V3ScenarioState['ledger'];
+  windowHistory: V3ScenarioState['windowHistory'];
+  researchReviews: V3ScenarioState['researchReviews'];
   gates: V3ScenarioState['gates'];
   stakeholders: V3ScenarioState['stakeholders'];
   capacity: V3ScenarioState['capacity'];
@@ -22,7 +24,8 @@ export function projectV3Analytics(state: V3ScenarioState | undefined, pack: V3S
   const definitions = [...(pack.metrics || []), ...(pack.reportedMetrics || [])];
   for (const definition of definitions) {
     const values = history.map((entry) => Number((entry.metrics as Record<string, unknown> | undefined)?.[definition.key] ?? entry[definition.key] ?? NaN)).filter(Number.isFinite);
-    const current = values.length ? values[values.length - 1] : Number(definition.start || 0);
+    const liveValue = Number(legacy?.scenarioState?.metrics?.[definition.key]);
+    const current = Number.isFinite(liveValue) ? liveValue : values.length ? values[values.length - 1] : Number(definition.start || 0);
     const progress = definition.start !== undefined && definition.target !== undefined && definition.start !== definition.target
       ? Math.max(0, Math.min(100, definition.direction === 'lower-is-better'
         ? ((definition.start - current) / (definition.start - definition.target)) * 100
@@ -44,6 +47,8 @@ export function projectV3Analytics(state: V3ScenarioState | undefined, pack: V3S
     dashboard: { quarter: state.currentQuarter, budgetRemaining: state.budget.remaining, activeInitiatives, gateHealth, stakeholderHealth: state.scorecard.stakeholderHealth, evidenceCount: (pack.evidence || []).length },
     metrics,
     ledger: state.ledger.map((entry) => ({ ...entry, initiativeIds: [...entry.initiativeIds], evidenceIds: [...entry.evidenceIds], gateIds: [...entry.gateIds] })),
+    windowHistory: JSON.parse(JSON.stringify(state.windowHistory || [])),
+    researchReviews: JSON.parse(JSON.stringify(state.researchReviews || {})),
     gates: JSON.parse(JSON.stringify(state.gates)),
     stakeholders: JSON.parse(JSON.stringify(state.stakeholders)),
     capacity: JSON.parse(JSON.stringify(state.capacity)),

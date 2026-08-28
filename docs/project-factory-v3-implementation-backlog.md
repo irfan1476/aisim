@@ -1,6 +1,6 @@
 # Project Factory v3: Implementation Backlog
 
-Status: prioritised implementation backlog; PF2/PF3 implementation authorised, analytics-sidecar UI scheduled after the core runtime contract
+Status: implementation checkpoint updated; approved Window 1 V3 runtime/UI and PF6.2 browser coverage complete, later-window content and pilot remain deferred
 Date: 2026-08-21
 Reference: [Project Factory 2030 v3 Design Brief](./project-factory-v3-design-brief.md)
 
@@ -30,7 +30,7 @@ The ordering below separates branch control and content calibration from engine 
 |---|---|---|
 | PF-PLAN-01 | Confirm the V2 implementation baseline. | **Complete:** product owner confirmed tagged commit `Branch1-version-2` / `dc34433` as the intended V3 code base. Later V2 work is not included automatically. |
 | PF-PLAN-02 | Establish the V2-based V3 implementation line and transfer planning artefacts. | **Branch and initial transfer complete:** separate `codex/project-factory-v3-impl` worktree/branch starts exactly at the approved V2 commit; planning artefacts are present as documentation-only commits; no V3 application implementation began; V2 worktree and branch remain untouched. |
-| PF-PLAN-03 | Run the light content review. | **Briefs complete; reviewer assignment and review pending:** one operations/manufacturing reviewer and one learning-design reviewer receive the bounded brief. Each comment is accepted, rejected, or deferred with rationale. Quality-escape and technician-retirement cards remain un-authored until operations review is complete. A plan to identify reviewers later does not satisfy this gate. |
+| PF-PLAN-03 | Run the light content review. | **Complete:** product-owner/architect review accepted the provisional content on 2026-08-21. Quality-escape and technician-retirement cards remain un-authored until operations review is complete. |
 
 ### Parallel workstreams and dependencies
 
@@ -78,8 +78,9 @@ The first P1 foundation slice is implemented on
 - **Complete (pure runtime contracts):** `PF2.0`–`PF2.3b`, `PF3.1`–`PF3.5b`, and initial `PF6.1`/`PF6.1a`/`PF6.1b` coverage are implemented in additive modules (`v3Decisions.ts`, `v3Resolver.ts`) with deterministic focused tests. The resolver was hardened so causal evaluation is source-pure and events require authored trigger conditions.
 - **Integration seam added:** `lib/game/v3Runtime.ts` now composes the pure contracts behind an additive `resolveV3Decision` façade. It is not invoked by legacy `resolveQuarter` or the V2 store path until a V3 pack/UI explicitly opts in.
 - **Complete in this slice:** the façade is available through opt-in `confirmV3Decisions`; PF2.4/PF2.5 evidence-room and initiative-plan panels are mounted only when a pack supplies V3 metadata. Legacy scenario screens remain unchanged.
-- **Complete in this slice:** the provisional Project Factory V3 pack is registered as `project-factory-2030`; PF2.6 selectors, PF6.1c fixtures, and the core P2 sidecar tabs are implemented. The sidecar remains read-only and is not part of the legacy quarter path.
-- **Technical P2 exit:** PF6.2 browser coverage passes for the opt-in Project Factory V3 flow and Standard-mode isolation.
+- **Complete in this slice:** the provisional Project Factory V3 pack is registered as `project-factory-2030`; PF2.6 selectors, PF6.1c fixtures, research-review branches, window history/cursor persistence, capacity scheduling, resolver-authored ledger outcomes, and the Window 1 runtime path are implemented. The analytics sidecar remains read-only and is not part of active play.
+- **Technical P2 exit:** PF6.2 browser coverage passes for the opt-in Project Factory V3 flow and Standard-mode isolation (13/13 full browser tests; 5/5 V3-specific tests).
+- **Implementation verification:** 72/72 unit/regression tests, type-check, production build, and the local browser walkthrough pass. The walkthrough confirms Orient → Compare → Commit → Outcome → Reflect → Next Window, save/resume at the saved cursor, research-only no-benefit semantics, and the explicit Window 2 boundary.
 - **Learning P2 status:** **not accepted yet.** The current panels are technically mounted but do not sufficiently connect evidence, initiative plan, V3 runtime outcome, ledger, and sidecar into one learner-understandable loop.
 - **Corrective slice:** rebuild one end-to-end Predictive Maintenance loop before declaring P2 learner-ready. Acceptance requires evidence citation, lifecycle/capacity/gate decision, resolver-authored metric outcome, ledger replay, and matching sidecar projection.
 - **Next boundary:** P3 reuse, additional event cards, broader calibration, and other operational sidecar tabs remain paused until this corrective slice is accepted.
@@ -195,7 +196,7 @@ The technical sidecar slice is not considered learner-accepted until one decisio
 |---|---|---|
 | P2-COHERENCE-01 | Implemented | Citing PF-E02, entering rationale/prediction/assumption, choosing deferred→research, carrying authored cost/capacity, and recording the immutable ledger entry are covered by `tests/e2e/v3-project-factory.test.cjs` and `tests/pf2-maintenance-loop.test.cjs`. |
 | P2-COHERENCE-02 | Implemented | V3 operating metrics are visible in the live screen; authored capacity pools are initialized; V2 confirm is disabled for V3; type-check/build/unit/E2E suites pass. |
-| P2-COHERENCE-03 | Pending product-owner review | Exercise the local V3 flow and confirm that the evidence, initiative plan, live metric context, result dialog, and Ledger tab are understandable as one decision chain. |
+| P2-COHERENCE-03 | Complete for Window 1 implementation checkpoint | The local V3 walkthrough confirms the connected evidence → research plan → resolver finding → unchanged operating metrics → ledger/reflection chain. Full learner-effectiveness validation remains part of PF6.3 pilot work. |
 
 ### UX reset checkpoint (blocking further implementation)
 
@@ -207,18 +208,18 @@ The current additive UI is explicitly not learner-accepted. Do not add more tabs
 | UX-RESET-02 | Complete — design agreed | An opted-in Project Factory V3 pack uses a dedicated stable V3 workspace; the V2 cockpit and active-play sidecar are not the primary path. |
 | UX-RESET-03 | Complete — design agreed | Blue/action, teal/evidence, amber/constraint, red/blocked, green/resolved, and grey/context are semantic and paired with non-colour labels/icons. |
 | UX-RESET-04 | Complete — design agreed | Window 1 presents three comparable Research packets but permits one primary Research decision, one outcome branch, and one contextual reflection. |
-| UX-RESET-05 | Blocked on walkthrough/approval | Re-author the production V3 screen only after the revised wireframes/contracts pass representative-learner walkthrough and product-owner approval. |
+| UX-RESET-05 | Complete — product-owner approval recorded | The revised Window 1 wireframes/contracts were approved; the dedicated V3 shell is implemented for the authored Window 1 slice. Effectiveness validation remains a pilot activity. |
 
 ### Window 1 design-review checkpoint
 
 | ID | Status | Required outcome |
 |---|---|---|
-| UX-W1-01 | Draft complete — proposed | [Window 1 Wireframes v2](./project-factory-v3-window-1-wireframes-v2.md) includes branch-specific Outcome/Reflect/Next Window states, explicit capacity labels, PF-E05 timing, responsive behavior, keyboard interaction, focus return, non-colour status, and a non-trapping primary action. |
-| UX-W1-02 | Draft complete — proposed | [Window 1 Behavioral Contracts v2](./project-factory-v3-behavioral-contracts-v2.md) defines opt-in window history/cursor, Research review state, three branches and fixtures for all three opening initiatives, action-specific gate semantics, and four evidence meanings. |
+| UX-W1-01 | Approved and implemented for Window 1 | [Window 1 Wireframes v2](./project-factory-v3-window-1-wireframes-v2.md) includes branch-specific Outcome/Reflect/Next Window states, explicit capacity labels, PF-E05 timing, responsive behavior, keyboard interaction, focus return, non-colour status, and a non-trapping primary action. |
+| UX-W1-02 | Approved and implemented for Window 1 | [Window 1 Behavioral Contracts v2](./project-factory-v3-behavioral-contracts-v2.md) defines opt-in window history/cursor, Research review state, three branches and fixtures for all three opening initiatives, action-specific gate semantics, and four evidence meanings. |
 | UX-W1-03 | Complete — one content correction recorded | [Window 1 Consistency Check](./project-factory-v3-window-1-consistency-check.md) aligns state, persistence, content, gates, and UI wording. Before implementation, correct PF-I05's `scale_gate` reference because G-PF-05 is authored as a Pilot gate. |
 | UX-W1-04 | Complete — agent persona panel; conditional acceptance | At the product owner's explicit request, three context-aware reviewer personas substituted for the unavailable live walkthrough: operations/manufacturing SME, non-manufacturing executive learner, and learning-design/accessibility/facilitation reviewer. The panel walked the three opening priorities and all three branch implications. It accepted the method conditionally; it did not claim learning-effectiveness evidence. |
 | UX-W1-05 | Complete — product-owner approval recorded | The corrected wireframes, behavioral contracts, branch content, and PF-I05/G-PF-05 correction were approved for the Window 1 vertical slice. |
-| UX-W1-06 | In progress — Window 1 shell implemented locally | The dedicated V3 workspace is implemented additively and opt-in. The local slice covers Orient → Compare → Commit → Outcome → Reflect → Next Window; full multi-quarter orchestration and branch-specific runtime outcomes remain follow-on work. |
+| UX-W1-06 | Complete for authored Window 1 | The dedicated V3 workspace is implemented additively and opt-in. The slice covers Orient → Compare → Commit → Outcome → Reflect → Next Window, authored branch outcomes, quarter snapshots, saved cursor, and the explicit Window 2 content boundary. |
 | UX-W1-07 | Draft complete — provisional; review required | `PF-RM-01` now bounds “fund the named remediation” as one Q4 quarter, ₹0.15 Cr, Data Engineering 1/4, Governance Assurance 1/2, Frontline Change 1/3, accountable CIO/data owner + Maintenance lead, completion evidence, exit options, and a no-operating-benefit boundary. Deterministic fixtures `PF-W2-RM-A/B` cover complete/incomplete outcomes. Review/calibrate the synthetic values before implementation. |
 | UX-W1-08 | Draft complete — validation pending | All three opening priorities now have the same context pattern: why now, known facts, unknowns, decision test, accountable role, if-deferred trigger, cost/capacity, and plain-language terms. Validate that a non-manufacturing reviewer can make a bounded Research choice from the pack alone. |
 | UX-FLOW-01 | Proposed — method contract added | V3 gameplay follows the six learner-facing states `Orient → Compare → Commit → Outcome → Reflect → Next Window`. Resolve is an internal transition phase, visible only for an authored event/gate pause. One primary action advances state; drawers/reports cannot advance or exit the campaign; pause/resume returns to the saved cursor; stop is a strategic action, not campaign exit. |

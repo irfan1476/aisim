@@ -2,7 +2,7 @@
 
 import { create } from 'zustand';
 import { createJSONStorage, persist, type StateStorage } from 'zustand/middleware';
-import { createV3State, initialGameState, type GameState } from '../lib/game/state';
+import { createV3State, initialGameState, type GameState, type V3BoardMemoState, type V3ResponsibleImpactState } from '../lib/game/state';
 import { causalChain } from '../lib/game/metrics';
 import { generateCrisis } from '../lib/game/crises';
 import { getScenario } from '../lib/scenarios/registry';
@@ -11,8 +11,9 @@ import { generateProactiveRecommendations } from '../lib/game/recommendations';
 import { resolveQuarter, deriveScore } from '../lib/game/engine';
 import { describeSynergies } from '../lib/game/generator';
 import { scenarioInitiativesToStates } from '../lib/game/initiativeAdapter';
-import { resolveV3Decision, type V3DecisionResolution } from '../lib/game/v3Runtime';
+import { resolveV3Decision, resolveV3Window, type V3DecisionResolution, type V3WindowResolution } from '../lib/game/v3Runtime';
 import type { V3LedgerPlan, V3PortfolioPlan } from '../lib/game/v3Decisions';
+import type { V3WindowDefinition } from '../lib/scenarios/types';
 import {
   clearPersistedCampaign,
   clearPersistedGameData,
@@ -52,6 +53,12 @@ type GameStore = GameState & {
   initializeScenario: (scenarioId: string) => void;
   /** Opt-in V3 decision seam; legacy confirmDecisions remains unchanged. */
   confirmV3Decisions: (plan: V3PortfolioPlan[], ledger?: V3LedgerPlan) => V3DecisionResolution;
+  confirmV3Window: (plan: V3PortfolioPlan[], ledger: V3LedgerPlan, window: V3WindowDefinition) => V3WindowResolution;
+  setV3Baseline: (responses: Array<{ questionId: string; response: string }>) => void;
+  saveV3Reflection: (entryId: string, reflection: string) => void;
+  saveV3BoardMemo: (memo: V3BoardMemoState) => void;
+  saveV3ResponsibleImpact: (impact: V3ResponsibleImpactState) => void;
+  setV3Cursor: (phase: 'orient' | 'compare' | 'commit' | 'outcome' | 'reflect' | 'next') => void;
 };
 
 const browserStorage: StateStorage = {
@@ -196,6 +203,48 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
     return resolution;
   },
 
+  confirmV3Window: (plan, ledger, window) => {
+    const state = normalizeGameState(get());
+    const scenario = state.scenarioMode ? getScenario(state.scenarioId) : undefined;
+    if (!scenario?.v3) return { accepted: false, errors: [{ code: 'v3-pack-required', message: 'The current scenario is not opted into V3.' }], metrics: {}, value: [] };
+    const metricKeys = new Set([...(scenario.v3.metrics || []), ...(scenario.v3.reportedMetrics || [])].map((metric) => metric.key));
+    const metrics = Object.fromEntries(Object.entries(state.scenarioState?.metrics || {}).filter(([key]) => metricKeys.has(key)));
+    const resolution = resolveV3Window({ gameState: state, pack: scenario.v3, window, plan, ledger, metrics });
+    if (!resolution.accepted || !resolution.state) return resolution;
+    const nextScenarioMetrics = { ...(state.scenarioState?.metrics || {}) };
+    Object.entries(resolution.metrics).forEach(([key, value]) => { if (metricKeys.has(key)) nextScenarioMetrics[key] = value; });
+    set({
+      ...state,
+      q: window.quarterRange[0],
+      v3State: { ...resolution.state, cursor: { windowId: window.id, phase: 'outcome', nextQuarter: window.quarterRange[1] + 1 } },
+      scenarioState: { ...state.scenarioState, metrics: nextScenarioMetrics },
+      stage: 'results',
+      feedback: 'V3 board window resolved. Review the evidence, research finding, and uncertainty before the next window.',
+    });
+    return resolution;
+  },
+
+  setV3Baseline: (responses) => set((state) => state.v3State ? {
+    v3State: {
+      ...state.v3State,
+      baseline: { version: 'v1', responses: responses.map((item) => ({ questionId: item.questionId, version: 'v1', response: item.response })) },
+    },
+  } : state),
+
+  saveV3Reflection: (entryId, reflection) => set((state) => state.v3State ? {
+    v3State: { ...state.v3State, ledger: state.v3State.ledger.map((entry) => entry.id === entryId ? { ...entry, reflection: reflection.trim() || undefined } : entry) },
+  } : state),
+
+  saveV3BoardMemo: (memo) => set((state) => state.v3State ? {
+    v3State: { ...state.v3State, boardMemo: { ...(state.v3State.boardMemo || {}), ...memo, updatedAt: new Date().toISOString() } },
+  } : state),
+
+  saveV3ResponsibleImpact: (impact) => set((state) => state.v3State ? {
+    v3State: { ...state.v3State, responsibleImpact: { ...(state.v3State.responsibleImpact || {}), ...impact } },
+  } : state),
+
+  setV3Cursor: (phase) => set((state) => state.v3State ? { v3State: { ...state.v3State, cursor: { windowId: state.v3State.cursor?.windowId || 'PF-W1', phase, nextQuarter: state.v3State.cursor?.nextQuarter || state.q } } } : state),
+
   respondToCrisis: (impact, cost = 0) => set((state) => {
     const scenario = state.scenarioMode ? getScenario(state.scenarioId) : undefined;
     const scenarioKeys = new Set(scenario?.progress.map((definition) => definition.key) || []);
@@ -267,7 +316,7 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
       quarterlyCrisisCost: 0,
       scenarioOverspend: 0,
       feedback: `Window ${Math.ceil(quarter / 3)} is ready.`,
-      v3State: { ...state.v3State, currentQuarter: quarter },
+      v3State: { ...state.v3State, currentQuarter: quarter, cursor: { windowId: state.v3State.cursor?.windowId || `PF-W${Math.ceil(quarter / 3)}`, phase: 'orient', nextQuarter: quarter } },
     };
   }),
 

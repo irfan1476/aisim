@@ -48,7 +48,7 @@ test('converted fixture resolves deterministically through the V3 runtime', () =
   const second = resolveV3Decision(input);
   assert.equal(first.accepted, true, JSON.stringify(first.errors));
   assert.deepEqual(first, second);
-  assert.equal(first.metrics.uptime, 75);
+  assert.equal(first.metrics.uptime, 70);
   assert.equal(first.state.gates['asset-evidence'].status, 'met');
 });
 

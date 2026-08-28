@@ -8,12 +8,13 @@ import GameDoneScreen from "./GameDoneScreen";
 import GameResultsModal from "./GameResultsModal";
 import GameSetupScreen from "./GameSetupScreen";
 import GameHypothesisScreen from "./GameHypothesisScreen";
+import V3BaselineReflectionScreen from "./V3BaselineReflectionScreen";
 import type { GameViewState, Metric } from "./gameViewTypes";
 import { useLLMStore } from "../stores/llmStore";
 import { useGameStore } from "../stores/gameStore";
 import NextQuarterGuidance from "./NextQuarterGuidance";
 import QuarterRoadmap from "./QuarterRoadmap";
-import { createInferredGeneration } from "../lib/game/generator";
+import { createInferredGeneration, createInitiativeGeneration } from "../lib/game/generator";
 import { initialGameState } from "../lib/game/state";
 import { getScenario } from "../lib/scenarios/registry";
 import type { CurrencyMode } from "../lib/scenarios/types";
@@ -203,7 +204,9 @@ export default function Game() {
     const capacity = profile?.capacityRequired?.research || {};
     const cost = profile?.costInrCr?.researchCapital || 0;
     const gateIds = s.v3State?.initiatives[initiativeId]?.gateIds || [];
-    return store.confirmV3Decisions([{ initiativeId, lifecycle: "research", cost, capacity, gateIds }], {
+    const window = v3Scenario.v3.windowOne;
+    if (!window) return { accepted: false, errors: [{ code: "v3-window-required", message: "This V3 pack has no authored board window." }], metrics: {}, value: [] };
+    return store.confirmV3Window([{ initiativeId, lifecycle: "research", cost, capacity, gateIds }], {
       id: `window-${s.q}-${initiativeId}`,
       quarter: s.q,
       initiativeIds: [initiativeId],
@@ -212,7 +215,7 @@ export default function Game() {
       assumption: note || "The declared research findings will be available before the next Pilot decision.",
       evidenceIds,
       gateIds,
-    });
+    }, window);
   };
 
   if (screen === "setup")
@@ -243,15 +246,20 @@ export default function Game() {
           })
         }
         onComplete={() => {
-          const generation = createInferredGeneration(assessment);
           const scenario = scenarioMode ? getScenario(scenarioId) : undefined;
+          const generation = scenario?.v3
+            ? createInitiativeGeneration('balanced', [3, 3, 3, 3, 3], 2030)
+            : createInferredGeneration(assessment);
           store.resetCampaign();
           store.loadGame({
             ...initialGameState(generation, { currencyMode }),
             baseline: assessment,
             experimental,
           });
-          if (scenario) store.initializeScenario(scenario.id);
+          if (scenario) {
+            store.initializeScenario(scenario.id);
+            if (scenario.v3) store.setV3Baseline(assessment.map((response, index) => ({ questionId: `baseline-${index + 1}`, response: String(response) })));
+          }
           setScreen("hypothesis");
         }}
         canContinue={assessment.length === 5}
@@ -261,12 +269,9 @@ export default function Game() {
     />
   );
   if (screen === "hypothesis")
-    return (
-      <GameHypothesisScreen
-        answers={assessment}
-        onBegin={() => setScreen("game")}
-      />
-    );
+    return v3Scenario?.v3
+      ? <V3BaselineReflectionScreen answers={assessment} onBegin={() => setScreen("game")} />
+      : <GameHypothesisScreen answers={assessment} onBegin={() => setScreen("game")} />;
   if (screen === "done")
     return <GameDoneScreen state={s} onPlayAgain={reset} />;
   if (v3Scenario?.v3 && s.v3State)
@@ -274,6 +279,8 @@ export default function Game() {
       state={s}
       pack={v3Scenario.v3}
       onCommit={commitV3Window}
+      onReflect={(entryId, reflection) => store.saveV3Reflection(entryId, reflection)}
+      onPhaseChange={(phase) => store.setV3Cursor(phase)}
       onNextWindow={(nextQuarter) => store.advanceV3Window(nextQuarter)}
       onReset={reset}
     />;
