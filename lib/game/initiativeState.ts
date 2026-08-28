@@ -108,6 +108,26 @@ export const maturityFor = (funded: number, neglected: number): MaturityLevel =>
   return levels[Math.max(0, earned - decay)];
 };
 
+/**
+ * Count completed quarters with real attributable investment. The persisted
+ * counter is retained for fast reads, but history reconciles it so tiles and
+ * analytics cannot disagree after migration or an older save.
+ */
+export function investmentQuarterCount(
+  snapshots: Array<{ initiativeFunding?: Record<string, { total?: number }>; initiativeStates?: Record<string, { totalInvestment?: number }> }>,
+  initiativeId: string,
+  current?: Pick<InitiativeState, 'quartersInvested'>,
+): number {
+  const persisted = Number(current?.quartersInvested);
+  const historical = snapshots.filter((snapshot, index) => {
+    const funding = Number(snapshot.initiativeFunding?.[initiativeId]?.total || 0);
+    const total = Number(snapshot.initiativeStates?.[initiativeId]?.totalInvestment || 0);
+    const previous = Number(snapshots[index - 1]?.initiativeStates?.[initiativeId]?.totalInvestment || 0);
+    return funding > 0 || total > previous;
+  }).length;
+  return Math.max(Number.isFinite(persisted) ? Math.max(0, persisted) : 0, historical);
+}
+
 export function initializeInitiativeStates(generated: DynamicInitiative[] = initiatives as DynamicInitiative[]): Record<string, InitiativeState> {
   return Object.fromEntries(generated.map(init => {
     const seed = {

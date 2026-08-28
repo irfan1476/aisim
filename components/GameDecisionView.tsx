@@ -31,24 +31,19 @@ import { calculateActionCapitalPlan, calculateCapitalRunway } from "../lib/game/
 import { validatePortfolioCapacity } from "../lib/game/capacity";
 import type { InitiativeAction, InitiativeActionSet } from "../lib/game/businessModel";
 import { lifecycleActionError, suggestedLifecycleAction } from "../lib/game/lifecycleResolver";
+import { investmentQuarterCount } from "../lib/game/initiativeState";
 import { allocationForInitiative, allocationTotal, derivePortfolioAllocation, OPERATING_ALLOCATION_KEYS } from "../lib/game/initiativeAllocation";
 import { fundingIntensityFor } from "../lib/game/effectResolver";
 import { downloadExport } from "../lib/exportGameplay";
 import { useGameStore } from "../stores/gameStore";
 import QuarterRoadmap from "./QuarterRoadmap";
 
-const investmentActions = new Set(["discover", "pilot", "scale", "maintain", "retire"]);
 function completedInvestmentQuarters(state: any, initiativeId: string): number {
-  const persisted = Number(state.initiativeStates?.[initiativeId]?.quartersInvested);
-  if (Number.isFinite(persisted)) return Math.max(0, persisted);
-  const history = Array.isArray(state.history) ? state.history : [];
-  return history.filter((snapshot: any, index: number) => {
-    const action = snapshot.initiativeActions?.[initiativeId];
-    if (investmentActions.has(action)) return true;
-    const current = Number(snapshot.initiativeStates?.[initiativeId]?.totalInvestment || 0);
-    const previous = Number(history[index - 1]?.initiativeStates?.[initiativeId]?.totalInvestment || 0);
-    return current > previous;
-  }).length;
+  return investmentQuarterCount(
+    Array.isArray(state.history) ? state.history : [],
+    initiativeId,
+    state.initiativeStates?.[initiativeId],
+  );
 }
 
 interface Props {
@@ -252,6 +247,11 @@ export default function GameDecisionView({
     const action = actionFor(initiative.id, Number(live?.quartersFunded || 0));
     const funding = capitalPlan.byInitiative?.[initiative.id] || { discovery: 0, delivery: 0, scaleUp: 0, run: 0, retirement: 0, total: 0 };
     const allocation = allocationForInitiative(initiative.id, state.initiativeAllocationMode, state.initiativeAllocations, state.alloc);
+    const completedInvestment = completedInvestmentQuarters(state, initiative.id);
+    const hasNewInvestment = Number(funding.total) > 0;
+    const investmentStatus = hasNewInvestment
+      ? completedInvestment > 0 ? 'Continuing investment' : 'New investment'
+      : action === 'pause' ? 'Paused · no new investment' : 'Selected · no new investment';
     const directEffects = action === 'discover'
       ? [`Data asset +${((.04 + allocation.data / 110) * planIntensity).toFixed(2)}/5. Discovery builds evidence; it does not claim operating value yet.`]
       : action === 'pilot' || action === 'scale'
@@ -266,7 +266,7 @@ export default function GameDecisionView({
           : action === 'pause'
             ? ['No positive delivery effect this quarter. Pausing preserves the option to adapt, while readiness and benefit can decay.']
             : ['No further operating investment. Retirement closes the capability and stops ongoing delivery work.'];
-    return { initiative, action, funding, allocation, directEffects };
+    return { initiative, action, funding, allocation, directEffects, completedInvestment, hasNewInvestment, investmentStatus };
   });
   const runway = calculateCapitalRunway(state, deployment);
   const requiresMoreDeployment = capitalPlan.requiredCapital > deployment + 1e-9;
@@ -584,10 +584,10 @@ export default function GameDecisionView({
                 <div className="mt-3 grid gap-3 xl:grid-cols-1 2xl:grid-cols-2">
                   {initiativeFundingBriefs.map((brief) => <article key={brief.initiative.id} className="rounded-xl border border-[#0969da]/20 bg-white/80 p-3">
                     <div className="flex flex-wrap items-start justify-between gap-2">
-                      <div><p className="text-sm font-bold text-[#24292f]">{brief.initiative.name}</p><p className="mt-1 text-[10px] font-bold uppercase tracking-wide text-[#57606a]">{brief.action} · {formatBudget(brief.funding.total, state.currencyMode)} assigned</p></div>
+                      <div><p className="text-sm font-bold text-[#24292f]">{brief.initiative.name}</p><p className="mt-1 text-[10px] font-bold uppercase tracking-wide text-[#57606a]">{brief.action} · {formatBudget(brief.funding.total, state.currencyMode)} assigned</p><p className={`mt-1 text-[10px] font-semibold ${brief.hasNewInvestment ? 'text-[#176b36]' : 'text-[#8a5a00]'}`}>{brief.investmentStatus} · {brief.completedInvestment} completed quarter{brief.completedInvestment === 1 ? '' : 's'}</p></div>
                       {brief.funding.scaleUp > 0 && <span className="rounded-full bg-[#dafbe1] px-2 py-1 text-[10px] font-bold text-[#176b36]">+{formatBudget(brief.funding.scaleUp, state.currencyMode)} extra delivery</span>}
                     </div>
-                    <p className="mt-2 text-[11px] leading-5 text-[#57606a]">Action commitment: {formatBudget(brief.funding.discovery + brief.funding.delivery + brief.funding.run + brief.funding.retirement, state.currencyMode)}{brief.funding.scaleUp > 0 ? ` · accelerated by ${formatBudget(brief.funding.scaleUp, state.currencyMode)}` : ''}.</p>
+                    <p className="mt-2 text-[11px] leading-5 text-[#57606a]">Action commitment: {formatBudget(brief.funding.discovery + brief.funding.delivery + brief.funding.run + brief.funding.retirement, state.currencyMode)}{brief.funding.scaleUp > 0 ? ` · accelerated by ${formatBudget(brief.funding.scaleUp, state.currencyMode)}` : ''}{brief.hasNewInvestment ? ' · +1 investment quarter pending confirmation.' : ' · no new investment is recorded this quarter.'}</p>
                     <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
                       {OPERATING_ALLOCATION_KEYS.map((key) => <label key={key} className="rounded-lg border border-[#d0d7de] bg-white p-2 text-[10px] text-[#57606a]">
                         <span className="flex justify-between gap-1"><span className="font-bold text-[#24292f]">{allocationLabel[key]}</span><span>{brief.allocation[key]}%</span></span>
