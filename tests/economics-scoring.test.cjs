@@ -84,13 +84,13 @@ test('validated learning recognises deliberate early-stage work but not passive 
   assert.ok(validatedLearningScore(state) > 0);
 });
 
-test('scenario score refresh averages target percentages, not raw domain metric values', () => {
+test('scenario score refresh uses mission-weighted target progress, not raw domain metric values', () => {
   const state = initialGameState(undefined, { scenarioMode: true, scenarioId: 'projectFactory' });
   state.scenarioState = {
     ...state.scenarioState,
     metrics: {
       ...(state.scenarioState?.metrics || {}),
-      // One of five targets is met; the other four remain at their baselines.
+  // One guardrail target is met; the other four remain at their baselines.
       supplyContinuity: 85,
     },
   };
@@ -104,7 +104,9 @@ test('scenario score refresh averages target percentages, not raw domain metric 
     supplyContinuity: 85,
   };
   const refreshed = refreshCampaignScore(state);
-  assert.equal(refreshed.scoreBreakdown.values.scenarioTargetProgress, 20);
-  assert.equal(refreshed.scoreBreakdown.contributions.scenarioTargetProgress, 7);
-  assert.equal(explainScore(state).values.scenarioTargetProgress, 20);
+  // Guardrails are tracked separately from mission progress, so this gives
+  // 15%: primary 0 × .60 + supporting 0 × .25 + guardrail 100 × .15.
+  assert.equal(refreshed.scoreBreakdown.values.scenarioTargetProgress, 15);
+  assert.equal(refreshed.scoreBreakdown.contributions.scenarioTargetProgress, 5.25);
+  assert.equal(explainScore(state).values.scenarioTargetProgress, 15);
 });

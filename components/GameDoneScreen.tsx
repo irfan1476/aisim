@@ -21,6 +21,7 @@ import SelfAwarenessScore from "./SelfAwarenessScore";
 import { formatBudget, formatCurrency } from "../lib/currency";
 import { getScenario } from "../lib/scenarios/registry";
 import type { ScenarioProgressDefinition } from "../lib/scenarios/types";
+import { calculateScenarioMissionProgress } from "../lib/scenarios/progress";
 import { explainScore } from "../lib/game/scoring";
 import { buildReplayRun, deleteReplayRun, readReplayRuns, saveReplayRun, type ReplayRun } from "../lib/replay";
 import RunComparison from "./RunComparison";
@@ -47,30 +48,71 @@ type Snapshot = {
 };
 const n = (value: unknown, digits = 1) => Number(value || 0).toFixed(digits);
 
+type MissionRole = "primary" | "supporting" | "guardrail";
+type MissionOutcome = ScenarioProgressDefinition & { role: MissionRole };
+type MissionOutcomeView = MissionOutcome & {
+  current: number;
+  progress: number;
+  delta: number;
+  status: "achieved" | "on-track" | "watch" | "exposed";
+};
+type MissionView = {
+  outcomes: MissionOutcomeView[];
+  summary: ReturnType<typeof calculateScenarioMissionProgress>;
+};
+
+function buildMissionView(scenario: any, metrics: Record<string, number> | undefined): MissionView {
+  const summary = calculateScenarioMissionProgress(metrics, scenario);
+  const primaryKeys = new Set(summary.roles.primary.outcomeKeys);
+  const guardrailKeys = new Set(summary.roles.guardrail.outcomeKeys);
+  const outcomes: MissionOutcomeView[] = (scenario?.progress || []).map((definition: ScenarioProgressDefinition) => {
+    const role = (definition.role || (primaryKeys.has(definition.key) ? "primary" : guardrailKeys.has(definition.key) ? "guardrail" : "supporting")) as MissionRole;
+    const current = summary.values[definition.key] ?? definition.start;
+    const progress = summary.scores[definition.key] ?? 0;
+    const delta = current - definition.start;
+    const worsened = definition.direction === "higher-is-better" ? delta < 0 : delta > 0;
+    const status = role === "guardrail"
+      ? worsened ? "exposed" : progress >= 60 ? "achieved" : "on-track"
+      : progress >= 80 ? "achieved" : progress >= 35 ? "on-track" : "watch";
+    return { ...definition, role, current, progress, delta, status } as MissionOutcomeView;
+  });
+  return { outcomes, summary };
+}
+
+function averageMissionProgress(outcomes: MissionOutcomeView[], role: MissionRole) {
+  const values = outcomes.filter((item) => item.role === role);
+  return values.length ? values.reduce((sum, item) => sum + item.progress, 0) / values.length : 0;
+}
+
 function verdict(
   score: number,
   adoption: number,
   risk: number,
   people: number,
+  missionReady = true,
+  masteryReady = false,
+  scenarioMode = false,
 ) {
   // The rating is a motivational summary of the full campaign score. The
   // score already includes value, operating health, execution, governance,
   // scenario progress, and validated learning; requiring every health metric
   // again here made strategic campaigns collapse into a discouraging B.
-  if (score >= 82)
-    return [
+  if (score >= 82) {
+    if (!scenarioMode || masteryReady) return [
       "A+",
       "Transformation Leader",
       "You built value and the operating system required to sustain it.",
       "text-[#1a7f37]",
     ];
-  if (score >= 66)
-    return [
+  }
+  if (score >= 66) {
+    if (!scenarioMode || missionReady) return [
       "A",
       "Strategic Driver",
       "You combined strong value creation with a credible path to scale.",
       "text-[#0969da]",
     ];
+  }
   if (score >= 52)
     return [
       "B+",
@@ -113,6 +155,13 @@ export default function GameDoneScreen({
     setSaved(true);
   };
   const history = (state.history || []) as Snapshot[];
+  const scenario = state.scenarioMode ? getScenario(state.scenarioId) : undefined;
+  const liveScenarioMetrics = (
+    state as GameViewState & { scenarioState?: { metrics?: Record<string, number> } }
+  ).scenarioState?.metrics;
+  const missionContract = scenario
+    ? calculateScenarioMissionProgress(liveScenarioMetrics || state.scenarioStartingMetrics, scenario)
+    : undefined;
   const reflection = calculateReflection(state as any);
   const averageAllocation = (key: keyof GameViewState['alloc']) => {
     const captured = history.filter((item) => item.allocation);
@@ -132,6 +181,9 @@ export default function GameDoneScreen({
     state.adoption,
     state.risk,
     averagePeople,
+    missionContract?.missionReady ?? true,
+    missionContract?.masteryReady ?? false,
+    Boolean(scenario),
   );
   const campaignInference = inferArchetypeFromCampaignDetailed(
     state.baseline as number[],
@@ -150,11 +202,7 @@ export default function GameDoneScreen({
       return a;
     }, {});
   const rankedBets = Object.entries(counts).sort((a, b) => b[1] - a[1]);
-  const scenario = state.scenarioMode ? getScenario(state.scenarioId) : undefined;
   const availableInitiatives = scenario?.initiatives || initiatives;
-  const liveScenarioMetrics = (
-    state as GameViewState & { scenarioState?: { metrics?: Record<string, number> } }
-  ).scenarioState?.metrics;
   const topBets = rankedBets
     .slice(0, 3)
     .map(([id]) => availableInitiatives.find((x) => x.id === id)?.name || id);
@@ -210,6 +258,30 @@ export default function GameDoneScreen({
   };
   const formatScenarioMetric = (value: number, unit: string) =>
     `${Number.isInteger(value) ? value : value.toFixed(1)} ${unit}`;
+  const missionView = scenario
+    ? buildMissionView(scenario, liveScenarioMetrics || state.scenarioStartingMetrics)
+    : undefined;
+  const missionOutcomes = missionView?.outcomes || [];
+  const missionRoles: MissionRole[] = ["primary", "supporting", "guardrail"];
+  const primaryMissionProgress = missionContract?.primaryProgress ?? averageMissionProgress(missionOutcomes, "primary");
+  const guardrailOutcomes = missionOutcomes.filter((item) => item.role === "guardrail");
+  const exposedGuardrails = guardrailOutcomes.filter((item) => item.status === "exposed");
+  const missionReady = missionContract?.missionReady ?? (primaryMissionProgress >= 75 && exposedGuardrails.length === 0);
+  const missionStatus = exposedGuardrails.length
+    ? "Guardrail exposed"
+    : primaryMissionProgress >= 80
+      ? "Mission achieved"
+      : missionReady
+        ? "Mission on track"
+        : "Mission still forming";
+  const missionBlocker = exposedGuardrails[0] || missionOutcomes
+    .filter((item) => item.role === "primary")
+    .sort((a, b) => a.progress - b.progress)[0];
+  const nextMissionExperiment = missionBlocker
+    ? missionBlocker.role === "guardrail"
+      ? `Next experiment: protect ${missionBlocker.label} earlier, then repeat your strongest value move. Change one control or operating allocation and compare the guardrail result.`
+      : `Next experiment: address ${missionBlocker.label} earlier. Keep your strongest value move, then change one timing or funding decision so the mission has more time to mature.`
+    : "Next experiment: keep the mission stable and change one timing decision to test whether you can improve the result without weakening a guardrail.";
   const scenarioEvidence = scenario
     ? scenario.progress
         .map((item) => {
@@ -344,6 +416,43 @@ export default function GameDoneScreen({
         </section>
         {scenario && <section className="mt-6 rounded-3xl border border-[#1a7f37]/25 bg-[#f1f8f3] p-6 shadow-sm"><p className="text-xs font-bold uppercase tracking-[.2em] text-[#1a7f37]">Campaign budget ledger</p><div className="mt-4 grid gap-3 sm:grid-cols-3"><div><p className="text-xs text-[#656d76]">Total purse</p><b className="text-xl">{formatBudget(state.campaignBudget || state.quarterlyBudget * 12, state.currencyMode)}</b></div><div><p className="text-xs text-[#656d76]">Spent</p><b className="text-xl">{formatCurrency(state.spent, state.currencyMode)}</b></div><div><p className="text-xs text-[#656d76]">Remaining</p><b className="text-xl text-[#1a7f37]">{formatCurrency(state.campaignBudgetRemaining ?? 0, state.currencyMode)}</b></div></div><p className="mt-3 text-xs text-[#656d76]">The purse is finite across all twelve quarters; unused capital is not automatically a failure.</p></section>}
         {scenario && <section className="mt-6 rounded-3xl border border-[#1a7f37]/25 bg-[#f1f8f3] p-6 shadow-sm md:p-8"><div className="flex flex-wrap items-start justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-[.2em] text-[#1a7f37]">Scenario performance</p><h2 className="mt-2 text-2xl font-bold">{scenario.name}</h2><p className="mt-2 text-sm text-[#57606a]">Budget framing: {formatBudget(state.quarterlyBudget, state.currencyMode)} per quarter · campaign spend: {formatCurrency(state.spent, state.currencyMode)}</p></div><div className="rounded-2xl bg-white px-5 py-3 text-center"><p className="text-xs text-[#57606a]">Scenario bonus</p><b className="text-3xl text-[#1a7f37]">+{state.scenarioBonus || 0}</b></div></div><p className="mt-5 rounded-2xl border border-[#1a7f37]/20 bg-white p-4 text-sm leading-6 text-[#57606a]">{scenarioDiagnosis}</p><div className="mt-6 grid gap-3 sm:grid-cols-2">{scenario.progress.map((item) => { const value = scenarioMetricValue(item); const score = scenarioMetricScore(item); return <div key={item.key} className="rounded-xl bg-white p-4"><div className="flex items-start justify-between gap-3 text-sm font-bold"><span>{item.label}</span><span className="text-right text-[#1a7f37]">{formatScenarioMetric(value, item.unit)}</span></div><div className="mt-3 h-2 rounded-full bg-[#d0d7de]"><div className="h-full rounded-full bg-[#1a7f37]" style={{ width: `${score}%` }} /></div><div className="mt-2 flex justify-between gap-2 text-xs text-[#656d76]"><span>{Math.round(score)}% toward target</span><span>Target {formatScenarioMetric(item.target, item.unit)}</span></div></div>; })}</div></section>}
+        {scenario && missionOutcomes.length > 0 && <section className="mt-6 rounded-3xl border border-[#0969da]/25 bg-[#f6faff] p-6 shadow-sm md:p-8" aria-labelledby="mission-scorecard">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[.2em] text-[#0969da]">Mission scorecard</p>
+              <h2 id="mission-scorecard" className="mt-2 text-2xl font-bold">What counted as success in this campaign</h2>
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-[#57606a]">Primary outcomes define the mission. Supporting outcomes show the quality of the transformation. Guardrails protect the value you created from unacceptable exposure.</p>
+            </div>
+            <div className={`rounded-2xl border px-5 py-3 text-center ${exposedGuardrails.length ? "border-[#cf222e]/30 bg-[#fff1f0]" : missionReady ? "border-[#1a7f37]/25 bg-[#eef7f0]" : "border-[#d0d7de] bg-white"}`}>
+              <p className="text-xs text-[#57606a]">Mission status</p>
+              <b className={`mt-1 block text-lg ${exposedGuardrails.length ? "text-[#cf222e]" : missionReady ? "text-[#1a7f37]" : "text-[#9a6700]"}`}>{missionStatus}</b>
+              <p className="mt-1 text-xs text-[#656d76]">Primary progress {Math.round(primaryMissionProgress)}%</p>
+            </div>
+          </div>
+          <div className="mt-6 grid gap-4 lg:grid-cols-3">
+            {missionRoles.map((role) => {
+              const outcomes = missionOutcomes.filter((item) => item.role === role);
+              if (!outcomes.length) return null;
+              const average = averageMissionProgress(missionOutcomes, role);
+              const roleLabel = role === "primary" ? "Primary mission" : role === "supporting" ? "Supporting outcomes" : "Guardrails";
+              const roleDescription = role === "primary" ? "The outcomes this campaign was meant to move." : role === "supporting" ? "Useful breadth that strengthens a durable result." : "Conditions that must not deteriorate while value is created.";
+              return <div key={role} className="rounded-2xl border border-[#d0d7de] bg-white p-4">
+                <div className="flex items-start justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-wide text-[#57606a]">{roleLabel}</p><p className="mt-1 text-xs leading-5 text-[#656d76]">{roleDescription}</p></div><b className="text-lg text-[#0969da]">{Math.round(average)}%</b></div>
+                <div className="mt-3 h-2 rounded-full bg-[#eaeef2]"><div className={`h-full rounded-full ${role === "guardrail" && exposedGuardrails.length ? "bg-[#cf222e]" : "bg-[#0969da]"}`} style={{ width: `${Math.max(3, Math.min(100, average))}%` }} /></div>
+                <div className="mt-4 space-y-3">{outcomes.map((item) => <div key={item.key}>
+                  <div className="flex items-start justify-between gap-3 text-sm"><span className="font-bold">{item.label}</span><span className={`shrink-0 text-xs font-bold ${item.status === "exposed" ? "text-[#cf222e]" : item.status === "achieved" ? "text-[#1a7f37]" : "text-[#9a6700]"}`}>{item.status === "exposed" ? "Exposed" : item.status === "achieved" ? "Achieved" : item.status === "on-track" ? "On track" : "Watch"}</span></div>
+                  <p className="mt-1 text-xs text-[#656d76]">Current {formatScenarioMetric(item.current, item.unit)} · target {formatScenarioMetric(item.target, item.unit)}</p>
+                  <div className="mt-2 h-1.5 rounded-full bg-[#eaeef2]"><div className={`h-full rounded-full ${item.status === "exposed" ? "bg-[#cf222e]" : item.status === "achieved" ? "bg-[#1a7f37]" : "bg-[#d29922]"}`} style={{ width: `${Math.max(3, Math.min(100, item.progress))}%` }} /></div>
+                </div>)}</div>
+              </div>;
+            })}
+          </div>
+          <div className={`mt-5 rounded-2xl border p-4 ${missionBlocker?.status === "exposed" ? "border-[#cf222e]/25 bg-[#fff1f0]" : "border-[#0969da]/20 bg-white"}`}>
+            <p className="text-xs font-bold uppercase tracking-wide text-[#0969da]">Replay hypothesis</p>
+            <p className="mt-2 text-sm font-semibold leading-6 text-[#0d1117]">{nextMissionExperiment}</p>
+            <p className="mt-2 text-xs leading-5 text-[#656d76]">A replay is a focused experiment, not a demand to repeat the whole campaign. Keep the strongest choice visible and change one meaningful lever.</p>
+          </div>
+        </section>}
         <section className="mt-6 rounded-3xl border border-[#d0d7de] bg-white p-6 shadow-sm md:p-8">
           <div className="flex items-center justify-between gap-4">
             <div>
@@ -354,7 +463,7 @@ export default function GameDoneScreen({
           </div>
           <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {[
-              ["Scenario progress", scoreBreakdown.contributions.scenarioTargetProgress, scoreBreakdown.values.scenarioTargetProgress, scenario ? "Movement against this scenario's targets" : "Not applicable in Standard mode"],
+              ["Mission progress", scoreBreakdown.contributions.scenarioTargetProgress, scoreBreakdown.values.scenarioTargetProgress, scenario ? "Weighted progress across mission outcomes and guardrails" : "Not applicable in Standard mode"],
               ["Realised value", scoreBreakdown.contributions.realisedFinancialValue, scoreBreakdown.values.realisedFinancialValue, "Observed financial benefit—not forecast ROI"],
               ["Operating health", scoreBreakdown.contributions.operatingHealth, scoreBreakdown.values.operatingHealth, "Adoption, efficiency, data, and risk"],
               ["Execution discipline", scoreBreakdown.contributions.executionDiscipline, scoreBreakdown.values.executionDiscipline, "Sequencing, pacing, and delivery follow-through"],

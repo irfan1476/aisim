@@ -5,6 +5,13 @@ import type { CapacityState, InitiativeRequirements } from '../game/businessMode
 
 export type CurrencyMode = '$' | '₹';
 export type ScenarioDirection = 'higher-is-better' | 'lower-is-better';
+/**
+ * The role an outcome plays in the scenario mission.  Primary outcomes define
+ * the campaign's main promise, supporting outcomes reward breadth, and
+ * guardrails prevent a superficially successful strategy from creating an
+ * unacceptable exposure.
+ */
+export type ScenarioOutcomeRole = 'primary' | 'supporting' | 'guardrail';
 export type ScenarioMetrics = Partial<Record<'roi' | 'revenue' | 'efficiency' | 'adoption' | 'risk' | 'data' | 'satisfaction' | 'literacy' | 'turnover' | 'compliance' | 'innovation', number>> & Record<string, number>;
 
 export type ScenarioChallenge = {
@@ -25,6 +32,13 @@ export type ScenarioProgressDefinition = {
   min: number;
   max: number;
   direction: ScenarioDirection;
+  /**
+   * Optional for backwards compatibility with older scenario packs. When no
+   * role is authored, mission calculation treats the outcome as supporting
+   * (and promotes the first outcome to primary only when a pack has no primary
+   * outcomes at all).
+   */
+  role?: ScenarioOutcomeRole;
 };
 
 export type ScenarioNeglectConfig = {

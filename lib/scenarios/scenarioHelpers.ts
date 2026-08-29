@@ -1,4 +1,4 @@
-import type { ScenarioInitiative, ScenarioLifecycleProfile, ScenarioProgressDefinition, ScenarioSynergyDefinition } from './types';
+import type { ScenarioInitiative, ScenarioLifecycleProfile, ScenarioOutcomeRole, ScenarioProgressDefinition, ScenarioSynergyDefinition } from './types';
 
 export function defaultLifecycleProfile(initiative: Pick<ScenarioInitiative, 'baseEffect' | 'primaryMetric' | 'risk' | 'data' | 'human'>): ScenarioLifecycleProfile {
   const higherIsBetter = initiative.baseEffect >= 0;
@@ -107,8 +107,9 @@ export function metric(
   direction: ScenarioProgressDefinition['direction'],
   min = 0,
   max = 100,
+  role?: ScenarioOutcomeRole,
 ): ScenarioProgressDefinition {
-  return { key, label, unit, start, target, min, max, direction };
+  return { key, label, unit, start, target, min, max, direction, ...(role ? { role } : {}) };
 }
 
 export function synergy(

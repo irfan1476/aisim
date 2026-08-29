@@ -33,11 +33,11 @@ export const projectFactory: ScenarioDefinition = {
     startingMetrics: { efficiency: 20, satisfaction: 40, adoption: 38, data: 54, downtimePressure: 65, defectRate: 500, energyPressure: 70, workforceResilience: 55, supplyContinuity: 65 },
   },
   progress: [
-    { key: 'downtimePressure', label: 'Downtime pressure', unit: 'index', start: 65, target: 35, min: 0, max: 100, direction: 'lower-is-better' },
-    { key: 'defectRate', label: 'Defect rate', unit: 'PPM', start: 500, target: 200, min: 0, max: 1000, direction: 'lower-is-better' },
-    { key: 'energyPressure', label: 'Energy pressure', unit: 'index', start: 70, target: 40, min: 0, max: 100, direction: 'lower-is-better' },
-    { key: 'workforceResilience', label: 'Workforce resilience', unit: 'index', start: 55, target: 85, min: 0, max: 100, direction: 'higher-is-better' },
-    { key: 'supplyContinuity', label: 'Supply continuity', unit: '% on time', start: 65, target: 85, min: 0, max: 100, direction: 'higher-is-better' },
+    { key: 'downtimePressure', label: 'Downtime pressure', unit: 'index', start: 65, target: 35, min: 0, max: 100, direction: 'lower-is-better', role: 'primary' },
+    { key: 'defectRate', label: 'Defect rate', unit: 'PPM', start: 500, target: 200, min: 0, max: 1000, direction: 'lower-is-better', role: 'primary' },
+    { key: 'energyPressure', label: 'Energy pressure', unit: 'index', start: 70, target: 40, min: 0, max: 100, direction: 'lower-is-better', role: 'supporting' },
+    { key: 'workforceResilience', label: 'Workforce resilience', unit: 'index', start: 55, target: 85, min: 0, max: 100, direction: 'higher-is-better', role: 'supporting' },
+    { key: 'supplyContinuity', label: 'Supply continuity', unit: '% on time', start: 65, target: 85, min: 0, max: 100, direction: 'higher-is-better', role: 'guardrail' },
   ],
   initiatives,
   synergies: [

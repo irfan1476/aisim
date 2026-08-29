@@ -107,7 +107,13 @@ export function calculateStandardEffects(
   const portfolioActive = current.scenarioMode || chosen.length < 3;
   const coordinationFactor = portfolioActive ? 1 - portfolio.coordinationPressure / 100 : 1;
   const portfolioEffect = portfolioActive ? portfolio.focusMultiplier * coordinationFactor : 1;
-  const portfolioRisk = portfolioActive ? portfolio.concentrationRisk + portfolio.coordinationPressure : 0;
+  // Concentration and coordination are quarterly pressure signals, not a
+  // fresh full risk charge every turn. Applying the raw signal here made a
+  // perfectly valid focused strategy hit the 95 risk ceiling before its
+  // capability could mature. Keep the trade-off material but survivable.
+  const portfolioRisk = portfolioActive
+    ? (portfolio.concentrationRisk + portfolio.coordinationPressure) * 0.35
+    : 0;
   const averageRiskScore = chosen.length
     ? chosen.reduce((sum, item) => sum + Number(item.riskScore ?? 48), 0) / chosen.length
     : 48;

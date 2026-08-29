@@ -1,7 +1,30 @@
 import type { GameState } from '../game/state';
-import type { ScenarioDefinition, ScenarioProgressDefinition } from './types';
+import type { ScenarioDefinition, ScenarioOutcomeRole, ScenarioProgressDefinition } from './types';
 
 export type ScenarioProgress = { values: Record<string, number>; overall: number };
+export type ScenarioMissionRoleProgress = {
+  role: ScenarioOutcomeRole;
+  /** Progress against the authored target, averaged across this role. */
+  progress: number;
+  /** Lowest individual outcome progress in this role. */
+  minimum: number;
+  outcomeKeys: string[];
+};
+export type ScenarioMissionProgress = {
+  values: Record<string, number>;
+  scores: Record<string, number>;
+  roles: Record<ScenarioOutcomeRole, ScenarioMissionRoleProgress>;
+  primaryProgress: number;
+  supportingProgress: number;
+  guardrailProgress: number;
+  /** 100 means no guardrail has deteriorated from its starting position. */
+  guardrailProtection: number;
+  /** Weighted mission view used by the campaign score in a later phase. */
+  missionProgress: number;
+  missionReady: boolean;
+  masteryReady: boolean;
+  blockers: string[];
+};
 export type ScenarioChallengeStatus = 'critical' | 'watch' | 'recovering' | 'controlled';
 
 export type ScenarioChallengePresentation = {
@@ -95,6 +118,91 @@ export function calculateProgressPercentages(
     const current = scenarioProgressValue(metrics, definition);
     return [definition.key, scenarioProgressScore(current, definition)];
   }));
+}
+
+/**
+ * Return the authored role, retaining a safe default for scenario packs that
+ * pre-date mission roles.  `calculateScenarioMissionProgress` handles the
+ * additional no-primary fallback so old packs remain useful as missions.
+ */
+export function scenarioOutcomeRole(definition: ScenarioProgressDefinition): ScenarioOutcomeRole {
+  return definition.role || 'supporting';
+}
+
+function emptyRoleProgress(role: ScenarioOutcomeRole): ScenarioMissionRoleProgress {
+  return { role, progress: 0, minimum: 0, outcomeKeys: [] };
+}
+
+/**
+ * Calculate a mission-oriented view without changing the raw scenario
+ * progress contract. Primary outcomes carry the mission, supporting outcomes
+ * add breadth, and guardrails are reported separately so a deterioration is
+ * visible even when the other outcomes improve.
+ */
+export function calculateScenarioMissionProgress(
+  metrics: Record<string, number> | undefined,
+  scenario: ScenarioDefinition,
+): ScenarioMissionProgress {
+  const definitions = scenario.progress;
+  const hasAuthoredPrimary = definitions.some((definition) => definition.role === 'primary');
+  const classified = definitions.map((definition, index) => ({
+    definition,
+    role: definition.role || (!hasAuthoredPrimary && index === 0 ? 'primary' : 'supporting') as ScenarioOutcomeRole,
+  }));
+  const values: Record<string, number> = {};
+  const scores: Record<string, number> = {};
+  const roleBuckets: Record<ScenarioOutcomeRole, ScenarioMissionRoleProgress> = {
+    primary: emptyRoleProgress('primary'),
+    supporting: emptyRoleProgress('supporting'),
+    guardrail: emptyRoleProgress('guardrail'),
+  };
+
+  classified.forEach(({ definition, role }) => {
+    const current = scenarioProgressValue(metrics, definition);
+    const score = scenarioProgressScore(current, definition);
+    values[definition.key] = current;
+    scores[definition.key] = score;
+    const bucket = roleBuckets[role];
+    bucket.outcomeKeys.push(definition.key);
+    bucket.progress += score;
+    bucket.minimum = bucket.outcomeKeys.length === 1 ? score : Math.min(bucket.minimum, score);
+  });
+
+  (Object.keys(roleBuckets) as ScenarioOutcomeRole[]).forEach((role) => {
+    const bucket = roleBuckets[role];
+    if (bucket.outcomeKeys.length) bucket.progress = bucket.progress / bucket.outcomeKeys.length;
+  });
+
+  const primaryProgress = roleBuckets.primary.progress;
+  const supportingProgress = roleBuckets.supporting.outcomeKeys.length ? roleBuckets.supporting.progress : primaryProgress;
+  const guardrailProgress = roleBuckets.guardrail.outcomeKeys.length ? roleBuckets.guardrail.progress : 100;
+  const guardrailDefinitions = classified.filter(({ role }) => role === 'guardrail');
+  const guardrailProtection = guardrailDefinitions.length
+    ? guardrailDefinitions.reduce((sum, { definition }) => {
+      const current = scenarioProgressValue(metrics, definition);
+      const protectedValue = definition.direction === 'higher-is-better'
+        ? current >= definition.start
+        : current <= definition.start;
+      return sum + (protectedValue ? 100 : Math.max(0, 100 - Math.abs(current - definition.start) / Math.max(1, Math.abs(definition.target - definition.start)) * 100));
+    }, 0) / guardrailDefinitions.length
+    : 100;
+  const missionProgress = primaryProgress * .6 + supportingProgress * .25 + guardrailProgress * .15;
+  const blockers: string[] = [];
+  if (primaryProgress < 75) blockers.push('Primary mission outcomes are not yet at 75% progress.');
+  if (guardrailProtection < 100) blockers.push('At least one guardrail has deteriorated from its starting position.');
+  return {
+    values,
+    scores,
+    roles: roleBuckets,
+    primaryProgress,
+    supportingProgress,
+    guardrailProgress,
+    guardrailProtection,
+    missionProgress,
+    missionReady: primaryProgress >= 75 && guardrailProtection >= 100,
+    masteryReady: missionProgress >= 85 && supportingProgress >= 70 && guardrailProtection >= 100,
+    blockers,
+  };
 }
 
 export function calculateScenarioProgress(state: GameState, scenario?: ScenarioDefinition): ScenarioProgress | undefined {

@@ -3,7 +3,7 @@ import { averageFrameworkContribution } from '../scenarios/framework';
 import type { FinancialLedger } from './businessModel';
 import { realisedROI } from './economics';
 import { getScenario } from '../scenarios/registry';
-import { calculateProgressPercentages } from '../scenarios/progress';
+import { calculateProgressPercentages, calculateScenarioMissionProgress } from '../scenarios/progress';
 
 export type ScoreInputs = {
   /** 0–100 progress against the active scenario's domain targets. */
@@ -51,9 +51,11 @@ function scenarioTargetProgressFor(state: Pick<GameState, 'scenarioMode' | 'scen
   if (!state.scenarioMode) return 0;
   const scenario = getScenario(state.scenarioId);
   const metrics = state.scenarioState?.metrics;
-  const progress = scenario && metrics
-    ? calculateProgressPercentages(metrics, scenario)
-    : state.scenarioProgress || {};
+  // Scenario packs now distinguish mission outcomes from supporting signals
+  // and guardrails. Score the weighted mission view when available; retain
+  // the historical equal-average fallback for older packs/saves.
+  if (scenario && metrics) return calculateScenarioMissionProgress(metrics, scenario).missionProgress;
+  const progress = state.scenarioProgress || {};
   const values = Object.values(progress).map(Number).filter(Number.isFinite);
   return values.length ? values.reduce((sum, value) => sum + clampScore(value), 0) / values.length : 0;
 }
