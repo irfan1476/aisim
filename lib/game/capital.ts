@@ -1,5 +1,6 @@
 import { deploymentCapacity, type GameState } from './state';
 import type { InitiativeAction, InitiativeActionSet, InitiativeFunding } from './businessModel';
+import { isAccelerableAction } from './fundingDynamics';
 
 /**
  * Continuity is deliberately modest. It represents keeping previously funded
@@ -60,6 +61,7 @@ export function calculateActionCapitalPlan(
   const byInitiative: Record<string, InitiativeFunding> = {};
   let fixedCapital = 0;
   const deliveryIds: string[] = [];
+  const accelerableIds: string[] = [];
   Object.entries(state.initiativeStates || {}).forEach(([id, initiative]) => {
     const action = actions[id] as InitiativeAction | undefined;
     const cost = finite(initiative.currentCost ?? initiative.baseCost ?? initiative.cost);
@@ -72,6 +74,7 @@ export function calculateActionCapitalPlan(
     funding.total = round(funding.discovery + funding.delivery + funding.run + funding.retirement);
     fixedCapital += funding.total;
     byInitiative[id] = funding;
+    if (isAccelerableAction(action) && funding.total > 0) accelerableIds.push(id);
   });
   // Keep the unscaled commitment for the decision gate. Scaling the
   // attribution below is useful only after a valid release is known; using it
@@ -91,11 +94,15 @@ export function calculateActionCapitalPlan(
     fixedCapital = Object.values(byInitiative).reduce((sum, funding) => sum + funding.total, 0);
   }
   const scaleUp = Math.max(0, initiativeCapacity - fixedCapital);
-  const deliveryBase = deliveryIds.reduce((sum, id) => sum + (byInitiative[id]?.delivery || 0), 0);
-  if (scaleUp > 0 && deliveryBase > 0) {
-    deliveryIds.forEach((id) => {
+  const accelerationBase = accelerableIds.reduce((sum, id) => {
+    const funding = byInitiative[id];
+    return sum + funding.discovery + funding.delivery + funding.run;
+  }, 0);
+  if (scaleUp > 0 && accelerationBase > 0) {
+    accelerableIds.forEach((id) => {
       const funding = byInitiative[id];
-      funding.scaleUp = round(scaleUp * (funding.delivery / deliveryBase));
+      const commitment = funding.discovery + funding.delivery + funding.run;
+      funding.scaleUp = round(scaleUp * (commitment / accelerationBase));
       funding.total = round(funding.total + funding.scaleUp);
     });
   }
@@ -104,7 +111,7 @@ export function calculateActionCapitalPlan(
   const targetInitiativeSpend = round(Math.max(0, initiativeCapacity));
   const actualInitiativeSpend = Object.values(byInitiative).reduce((sum, funding) => sum + funding.total, 0);
   const correction = round(targetInitiativeSpend - actualInitiativeSpend);
-  const correctionId = deliveryIds[0] || Object.keys(byInitiative).find((id) => byInitiative[id].total > 0);
+  const correctionId = accelerableIds[0] || Object.keys(byInitiative).find((id) => byInitiative[id].total > 0);
   if (correctionId && correction !== 0) {
     byInitiative[correctionId].scaleUp = round(Math.max(0, byInitiative[correctionId].scaleUp + correction));
     byInitiative[correctionId].total = round(byInitiative[correctionId].total + correction);
@@ -119,7 +126,13 @@ export function calculateActionCapitalPlan(
     maintenanceSpend,
     continuityAllocations: Object.fromEntries(Object.entries(byInitiative).filter(([, funding]) => funding.continuity > 0).map(([id, funding]) => [id, funding.continuity])),
     accelerationSpend,
-    deliveryCapital: round(initiativeMinimum + accelerationSpend),
+    // Only pilot/scale capital changes immediate operating outcomes.
+    // Discovery and maintenance still get durable, stage-specific benefits,
+    // but cannot manufacture same-quarter operating ROI.
+    deliveryCapital: round(deliveryIds.reduce((sum, id) => {
+      const funding = byInitiative[id];
+      return sum + funding.delivery + funding.scaleUp;
+    }, 0)),
     crisisResponseSpend: crisis,
     requiredCapital: requiredCommitment,
     totalReleased: round(totalReleased),

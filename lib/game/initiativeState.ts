@@ -17,6 +17,7 @@ import type {
 import type { Allocation, InitiativeAllocationMode, InitiativeAllocationSet } from './state';
 import { allocationForInitiative } from './initiativeAllocation';
 import { aggregateAiRiskScore, evolveInitiativeForQuarter } from './lifecycleResolver';
+import { accelerationMultiplierForAction } from './fundingDynamics';
 
 export type MaturityLevel = 'nascent' | 'developing' | 'mature' | 'optimized';
 export interface InitiativeState extends Initiative {
@@ -316,8 +317,6 @@ export function updateInitiativeStatesForActions(
   metrics: LifecycleUpdateMetrics,
 ): Record<string, InitiativeState> {
   const next = Object.fromEntries(Object.entries(states || {}).map(([id, value]) => [id, { ...value }])) as Record<string, InitiativeState>;
-  const intensity = Math.max(0, Math.min(1.35, Number(metrics.fundingIntensity) || 1));
-  const investmentMultiplier = Math.max(0, Number(metrics.investmentMultiplier) || 1);
   Object.values(next).forEach((item) => {
     const initiativeAllocation = allocationForInitiative(
       item.id,
@@ -330,6 +329,7 @@ export function updateInitiativeStatesForActions(
     // progress merely because the action map omitted it.
     const action = isInitiativeAction(actions[item.id]) ? actions[item.id] : (item.lifecycle === 'run' ? 'maintain' : 'pause');
     const funding = metrics.fundingByInitiative?.[item.id] || emptyFunding();
+    const stageAcceleration = accelerationMultiplierForAction(action, funding);
     const attributableInvestment = Math.max(0, Number(funding.total) || 0);
     if (attributableInvestment > 0) item.quartersInvested = Math.max(0, Number(item.quartersInvested) || 0) + 1;
     const priorLifecycle = isInitiativeLifecycle(item.lifecycle) ? item.lifecycle : (item.quartersFunded > 0 ? 'run' : 'discovery');
@@ -348,11 +348,10 @@ export function updateInitiativeStatesForActions(
       // Discovery funds the evidence base. It can improve persistent data
       // readiness, but it never creates realised operating value on its own.
       const discoveryCapital = Math.max(0, Number(funding.discovery) || 0);
-      const evidenceCapital = Math.max(0, Number(funding.scaleUp) || 0);
-      // Excess release is still a discovery investment: convert it into
-      // durable evidence/data readiness instead of leaving it unrepresented.
-      item.dataInvestment = roundMetric(item.dataInvestment + (Number(initiativeAllocation.data || 0) / 14 + evidenceCapital / 10) * intensity);
-      item.currentData = roundMetric(Math.min(5, item.currentData + (.04 + Number(initiativeAllocation.data || 0) / 110 + discoveryCapital / 100 + evidenceCapital / 20) * intensity));
+      // Extra discovery capital buys faster data/evidence work only. It never
+      // creates operating value or skips the pilot and evaluation decisions.
+      item.dataInvestment = roundMetric(item.dataInvestment + (Number(initiativeAllocation.data || 0) / 14 + discoveryCapital / 10) * stageAcceleration);
+      item.currentData = roundMetric(Math.min(5, item.currentData + (.04 + Number(initiativeAllocation.data || 0) / 110 + discoveryCapital / 100) * stageAcceleration));
       item.totalInvestment = roundMetric(item.totalInvestment + attributableInvestment);
       item.quartersSinceLastFund += 1;
     } else if (action === 'pilot' || action === 'scale') {
@@ -361,20 +360,24 @@ export function updateInitiativeStatesForActions(
       item.quartersFunded += 1;
       item.quartersSinceLastFund = 0;
       item.totalInvestment = roundMetric(item.totalInvestment + Math.max(delivery, funding.total || 0));
-      item.maturityCredits = roundMetric((Number(item.maturityCredits) || 0) + progress + Math.min(1, Math.max(0, investmentMultiplier - 1)));
-      item.benefitRealization = roundMetric(Math.min(1, item.benefitRealization + (action === 'pilot' ? .18 : .3) * intensity));
-      item.controlMaturity = roundMetric(Math.min(1, item.controlMaturity + (Number(initiativeAllocation.compliance) || 0) / 1000 * intensity));
-      item.changeReadiness = roundMetric(Math.min(1, item.changeReadiness + (Number(initiativeAllocation.people) || 0) / 500 * intensity));
-      item.dataInvestment = roundMetric(item.dataInvestment + Number(initiativeAllocation.data || 0) / 10 * intensity);
-      item.currentData = roundMetric(Math.min(5, item.currentData + (.05 + Number(initiativeAllocation.data || 0) / 100) * intensity));
-      item.technicalDebt = roundMetric(Math.max(0, item.technicalDebt - (Number(initiativeAllocation.mlops) || 0) / 20));
+      item.maturityCredits = roundMetric((Number(item.maturityCredits) || 0) + progress + Math.min(1, Math.max(0, stageAcceleration - 1)));
+      item.benefitRealization = roundMetric(Math.min(1, item.benefitRealization + (action === 'pilot' ? .18 : .3) * stageAcceleration));
+      item.controlMaturity = roundMetric(Math.min(1, item.controlMaturity + (Number(initiativeAllocation.compliance) || 0) / 1000 * stageAcceleration));
+      item.changeReadiness = roundMetric(Math.min(1, item.changeReadiness + (Number(initiativeAllocation.people) || 0) / 500 * stageAcceleration));
+      item.dataInvestment = roundMetric(item.dataInvestment + Number(initiativeAllocation.data || 0) / 10 * stageAcceleration);
+      item.currentData = roundMetric(Math.min(5, item.currentData + (.05 + Number(initiativeAllocation.data || 0) / 100) * stageAcceleration));
+      item.technicalDebt = roundMetric(Math.max(0, item.technicalDebt - (Number(initiativeAllocation.mlops) || 0) / 20 * stageAcceleration));
       item.maturityLevel = maturityFor(item.maturityCredits, 0);
     } else if (action === 'maintain') {
       item.quartersSinceLastFund = 0;
       item.totalInvestment = roundMetric(item.totalInvestment + Math.max(0, Number(funding.run) || Number(funding.continuity) || 0));
       item.continuityInvestment = roundMetric(item.continuityInvestment + Math.max(0, Number(funding.continuity) || Number(funding.run) || 0));
-      item.benefitRealization = roundMetric(Math.min(1, item.benefitRealization + .02 * intensity));
-      item.technicalDebt = roundMetric(Math.max(0, item.technicalDebt - .5));
+      // Extra run funding cannot leap maturity, but it can improve operating
+      // reliability: monitoring, controls, change support, and debt reduction.
+      item.benefitRealization = roundMetric(Math.min(1, item.benefitRealization + .02 * stageAcceleration));
+      item.controlMaturity = roundMetric(Math.min(1, item.controlMaturity + (Number(initiativeAllocation.compliance) || 0) / 5000 * Math.max(0, stageAcceleration - 1)));
+      item.changeReadiness = roundMetric(Math.min(1, item.changeReadiness + (Number(initiativeAllocation.people) || 0) / 3000 * Math.max(0, stageAcceleration - 1)));
+      item.technicalDebt = roundMetric(Math.max(0, item.technicalDebt - .5 * stageAcceleration));
       item.maturityLevel = maturityFor(Number(item.maturityCredits) || item.quartersFunded, 0);
     } else if (action === 'pause') {
       item.quartersSinceLastFund += 1;

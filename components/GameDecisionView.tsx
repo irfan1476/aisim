@@ -33,7 +33,7 @@ import type { InitiativeAction, InitiativeActionSet } from "../lib/game/business
 import { lifecycleActionError, suggestedLifecycleAction } from "../lib/game/lifecycleResolver";
 import { investmentQuarterCount } from "../lib/game/initiativeState";
 import { allocationForInitiative, allocationTotal, derivePortfolioAllocation, OPERATING_ALLOCATION_KEYS } from "../lib/game/initiativeAllocation";
-import { fundingIntensityFor } from "../lib/game/effectResolver";
+import { accelerationEffectLabel, accelerationMultiplierForAction } from "../lib/game/fundingDynamics";
 import { downloadExport } from "../lib/exportGameplay";
 import { useGameStore } from "../stores/gameStore";
 import QuarterRoadmap from "./QuarterRoadmap";
@@ -236,37 +236,33 @@ export default function GameDecisionView({
       OPERATING_ALLOCATION_KEYS.forEach((key) => { if (next[key] !== state.alloc[key]) onAllocationChange(key, next[key]); });
     }
   };
-  const deliveryBase = selectedInitiatives.reduce((sum, initiative) => {
-    const action = actionFor(initiative.id, Number(state.initiativeStates?.[initiative.id]?.quartersFunded || 0));
-    return sum + (action === 'pilot' || action === 'scale' ? Number(state.initiativeStates?.[initiative.id]?.currentCost || initiative.cost || 0) : 0);
-  }, 0);
-  const planIntensity = fundingIntensityFor(capitalPlan.deliveryCapital, deliveryBase);
   const allocationLabel: Record<keyof Allocation, string> = { infra: 'Infrastructure', data: 'Data', people: 'People', mlops: 'Ops & maintenance', compliance: 'Compliance', innovation: 'Innovation' };
   const initiativeFundingBriefs = selectedInitiatives.map((initiative) => {
     const live = state.initiativeStates?.[initiative.id];
     const action = actionFor(initiative.id, Number(live?.quartersFunded || 0));
     const funding = capitalPlan.byInitiative?.[initiative.id] || { discovery: 0, delivery: 0, scaleUp: 0, run: 0, retirement: 0, total: 0 };
     const allocation = allocationForInitiative(initiative.id, state.initiativeAllocationMode, state.initiativeAllocations, state.alloc);
+    const stageAcceleration = accelerationMultiplierForAction(action, funding);
     const completedInvestment = completedInvestmentQuarters(state, initiative.id);
     const hasNewInvestment = Number(funding.total) > 0;
     const investmentStatus = hasNewInvestment
       ? completedInvestment > 0 ? 'Continuing investment' : 'New investment'
       : action === 'pause' ? 'Paused · no new investment' : 'Selected · no new investment';
     const directEffects = action === 'discover'
-      ? [`Data asset +${((.04 + allocation.data / 110) * planIntensity).toFixed(2)}/5. Discovery builds evidence; it does not claim operating value yet.`]
+      ? [`Data asset +${((.04 + allocation.data / 110 + Number(funding.discovery || 0) / 100) * stageAcceleration).toFixed(2)}/5. Discovery builds evidence; it does not claim operating value yet.`]
       : action === 'pilot' || action === 'scale'
         ? [
-            `Data asset +${((.05 + allocation.data / 100) * planIntensity).toFixed(2)}/5`,
-            `Change readiness +${(allocation.people / 500 * planIntensity).toFixed(2)}`,
-            `Control maturity +${(allocation.compliance / 1000 * planIntensity).toFixed(2)}`,
-            `Technical debt −${(allocation.mlops / 20).toFixed(2)}`,
+            `Data asset +${((.05 + allocation.data / 100) * stageAcceleration).toFixed(2)}/5`,
+            `Change readiness +${(allocation.people / 500 * stageAcceleration).toFixed(2)}`,
+            `Control maturity +${(allocation.compliance / 1000 * stageAcceleration).toFixed(2)}`,
+            `Technical debt −${(allocation.mlops / 20 * stageAcceleration).toFixed(2)}`,
           ]
         : action === 'maintain'
-          ? [`Run funding preserves realised benefit. The tailored mix supports people, controls, and monitoring: ${allocation.people}% people, ${allocation.compliance}% compliance, ${allocation.mlops}% ops.`]
+          ? [`Run funding preserves realised benefit. ${stageAcceleration > 1 ? `Extra funding strengthens monitoring and reliability at ${stageAcceleration.toFixed(2)}×.` : 'The tailored mix supports people, controls, and monitoring.'} ${allocation.people}% people, ${allocation.compliance}% compliance, ${allocation.mlops}% ops.`]
           : action === 'pause'
             ? ['No positive delivery effect this quarter. Pausing preserves the option to adapt, while readiness and benefit can decay.']
             : ['No further operating investment. Retirement closes the capability and stops ongoing delivery work.'];
-    return { initiative, action, funding, allocation, directEffects, completedInvestment, hasNewInvestment, investmentStatus };
+    return { initiative, action, funding, allocation, directEffects, stageAcceleration, accelerationEffect: accelerationEffectLabel(action), completedInvestment, hasNewInvestment, investmentStatus };
   });
   const runway = calculateCapitalRunway(state, deployment);
   const requiresMoreDeployment = capitalPlan.requiredCapital > deployment + 1e-9;
@@ -576,7 +572,7 @@ export default function GameDecisionView({
                   </div>
                   <button type="button" onClick={() => setAdvancedAllocationOpen((open) => !open)} className="rounded-lg border border-[#0969da]/25 bg-white px-3 py-2 text-[10px] font-bold text-[#0969da] transition hover:bg-[#f6f8fa]" aria-expanded={advancedAllocationOpen || state.initiativeAllocationMode === 'custom'}>Advanced: tailor each initiative</button>
                 </div>
-                <p className="mt-2 text-xs leading-5 text-[#57606a]">The recommended shared mix is active by default. It gives every selected initiative the same balanced operating support.{capitalPlan.accelerationSpend > 0 ? ` ${formatBudget(capitalPlan.accelerationSpend, state.currencyMode)} of extra investment will accelerate the selected delivery work.` : ''}</p>
+                <p className="mt-2 text-xs leading-5 text-[#57606a]">The recommended shared mix is active by default. It gives every selected initiative the same balanced operating support.{capitalPlan.accelerationSpend > 0 ? ` ${formatBudget(capitalPlan.accelerationSpend, state.currencyMode)} of extra investment is attributed to each selected initiative and accelerates its current lifecycle work.` : ''}</p>
                 {(advancedAllocationOpen || state.initiativeAllocationMode === 'custom') && <div className="mt-3 rounded-xl border border-[#0969da]/20 bg-white/75 p-3">
                   <div className="flex flex-wrap items-center justify-between gap-2"><div><p className="text-xs font-bold text-[#24292f]">Tailor the operating mix</p><p className="mt-1 text-[10px] leading-4 text-[#57606a]">Use this only when different initiatives need genuinely different support.</p></div><div className="flex rounded-lg border border-[#0969da]/25 bg-white p-1 text-[10px] font-bold"><button type="button" onClick={() => onInitiativeAllocationModeChange('shared')} className={`rounded-md px-2.5 py-1.5 transition ${state.initiativeAllocationMode === 'shared' ? 'bg-[#0969da] text-white' : 'text-[#57606a] hover:bg-[#f6f8fa]'}`}>Use shared mix</button><button type="button" onClick={() => onInitiativeAllocationModeChange('custom')} className={`rounded-md px-2.5 py-1.5 transition ${state.initiativeAllocationMode === 'custom' ? 'bg-[#0969da] text-white' : 'text-[#57606a] hover:bg-[#f6f8fa]'}`}>Customize</button></div></div>
                   {state.initiativeAllocationMode === 'custom' && <p className={`mt-3 rounded-lg border px-3 py-2 text-[11px] leading-5 ${unbalancedInitiatives.length ? 'border-[#bf8700]/35 bg-[#fff8c5] text-[#6b4f00]' : 'border-[#0969da]/20 bg-white/75 text-[#57606a]'}`}>{unbalancedInitiatives.length ? `Your custom mixes: ${unbalancedInitiatives.length} initiative${unbalancedInitiatives.length === 1 ? '' : 's'} still need${unbalancedInitiatives.length === 1 ? 's' : ''} to total 100%.` : 'Your custom mixes are balanced. Local choices also change the combined capacity mix.'}</p>}
@@ -585,9 +581,9 @@ export default function GameDecisionView({
                   {initiativeFundingBriefs.map((brief) => <article key={brief.initiative.id} className="rounded-xl border border-[#0969da]/20 bg-white/80 p-3">
                     <div className="flex flex-wrap items-start justify-between gap-2">
                       <div><p className="text-sm font-bold text-[#24292f]">{brief.initiative.name}</p><p className="mt-1 text-[10px] font-bold uppercase tracking-wide text-[#57606a]">{brief.action} · {formatBudget(brief.funding.total, state.currencyMode)} assigned</p><p className={`mt-1 text-[10px] font-semibold ${brief.hasNewInvestment ? 'text-[#176b36]' : 'text-[#8a5a00]'}`}>{brief.investmentStatus} · {brief.completedInvestment} completed quarter{brief.completedInvestment === 1 ? '' : 's'}</p></div>
-                      {brief.funding.scaleUp > 0 && <span className="rounded-full bg-[#dafbe1] px-2 py-1 text-[10px] font-bold text-[#176b36]">+{formatBudget(brief.funding.scaleUp, state.currencyMode)} extra delivery</span>}
+                      {brief.funding.scaleUp > 0 && <span className="rounded-full bg-[#dafbe1] px-2 py-1 text-[10px] font-bold text-[#176b36]">+{formatBudget(brief.funding.scaleUp, state.currencyMode)} · {brief.stageAcceleration.toFixed(2)}×</span>}
                     </div>
-                    <p className="mt-2 text-[11px] leading-5 text-[#57606a]">Action commitment: {formatBudget(brief.funding.discovery + brief.funding.delivery + brief.funding.run + brief.funding.retirement, state.currencyMode)}{brief.funding.scaleUp > 0 ? ` · accelerated by ${formatBudget(brief.funding.scaleUp, state.currencyMode)}` : ''}{brief.hasNewInvestment ? ' · +1 investment quarter pending confirmation.' : ' · no new investment is recorded this quarter.'}</p>
+                    <p className="mt-2 text-[11px] leading-5 text-[#57606a]">Action commitment: {formatBudget(brief.funding.discovery + brief.funding.delivery + brief.funding.run + brief.funding.retirement, state.currencyMode)}{brief.funding.scaleUp > 0 ? ` · ${formatBudget(brief.funding.scaleUp, state.currencyMode)} accelerates ${brief.accelerationEffect} at ${brief.stageAcceleration.toFixed(2)}×` : ''}{brief.hasNewInvestment ? ' · +1 investment quarter pending confirmation.' : ' · no new investment is recorded this quarter.'}</p>
                     <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
                       {OPERATING_ALLOCATION_KEYS.map((key) => <label key={key} className="rounded-lg border border-[#d0d7de] bg-white p-2 text-[10px] text-[#57606a]">
                         <span className="flex justify-between gap-1"><span className="font-bold text-[#24292f]">{allocationLabel[key]}</span><span>{brief.allocation[key]}%</span></span>

@@ -161,7 +161,7 @@ export default function OperatingSystemControls({
         </div>
         {plan.accelerationSpend > 0 && plan.initiativeMinimum > 0 && state.selected.length > 0 && (
           <div className="mt-3 rounded-lg border border-[#9bc9a7] bg-white px-3 py-2 text-[10px] leading-4 text-[#57606a]">
-            <b className="text-[#176b36]">Scale-up is active.</b> {formatBudget(plan.accelerationSpend, state.currencyMode)} above the floor is distributed across the selected work. It raises this quarter&apos;s delivery intensity to <b className="text-[#24292f]">{deliveryIntensity.toFixed(2)}×</b> and earns up to <b className="text-[#24292f]">{additionalMaturityCredit.toFixed(1)} extra maturity credit</b> per selected initiative; later-quarter capability and risk effects compound from that faster maturity.
+            <b className="text-[#176b36]">Acceleration is active.</b> {formatBudget(plan.accelerationSpend, state.currencyMode)} above the floor is allocated across the selected lifecycle work. Discovery gains evidence and data readiness; pilots gain evidence, controls, and workflow readiness; scale gains rollout maturity; and maintain gains monitoring and reliability. {plan.deliveryCapital > 0 ? <>Pilot/scale work reaches up to <b className="text-[#24292f]">{deliveryIntensity.toFixed(2)}×</b> delivery intensity and can earn up to <b className="text-[#24292f]">{additionalMaturityCredit.toFixed(1)} extra maturity credit</b>.</> : <>No immediate operating value is claimed until a pilot or scale decision is made.</>}
           </div>
         )}
         <p className={`mt-2 text-[10px] leading-4 ${runway.depletionQuarter ? "text-[#9a6700]" : "text-[#1a7f37]"}`}>{runway.message}</p>

@@ -29,6 +29,9 @@ const { getScenario } = require('../lib/scenarios/registry.ts');
 const { defaultLifecycleProfile } = require('../lib/scenarios/scenarioHelpers.ts');
 const { scenarioInitiativesToStates } = require('../lib/game/initiativeAdapter.ts');
 const { initialGameState } = require('../lib/game/state.ts');
+const { updateInitiativeStatesForActions } = require('../lib/game/initiativeState.ts');
+const { calculateActionCapitalPlan } = require('../lib/game/capital.ts');
+const { accelerationMultiplierForAction } = require('../lib/game/fundingDynamics.ts');
 const { applyTurnDecision, advanceTurn } = require('../lib/game/turnResolver.ts');
 const { applyAdaptation, applyDeploymentMode, applyLifecycleReview, normalizeLifecycleReviewInput, recordEvaluationEvidence, suggestedLifecycleAction, lifecycleActionError } = require('../lib/game/lifecycleResolver.ts');
 const {
@@ -47,6 +50,47 @@ test('shared and tailored allocation changes rebalance the full 100% mix', () =>
   assert.equal(allocationTotal(next), 100);
   assert.equal(next.data, 40);
   assert.ok(Object.keys(allocation).filter((key) => key !== 'data' && next[key] !== allocation[key]).length > 1);
+});
+
+test('extra capital is attributed to every accelerable lifecycle stage, not only delivery', () => {
+  const state = initialGameState();
+  const actions = { demand: 'pilot', energy: 'discover', maintenance: 'maintain' };
+  const floor = calculateActionCapitalPlan(state, actions, 100).requiredCapital;
+  const plan = calculateActionCapitalPlan(state, actions, floor + 3);
+
+  for (const id of ['demand', 'energy', 'maintenance']) {
+    assert.ok(plan.byInitiative[id].scaleUp > 0, `${id} receives attributed acceleration`);
+  }
+  assert.ok(accelerationMultiplierForAction('pilot', plan.byInitiative.demand) > 1);
+  assert.ok(accelerationMultiplierForAction('discover', plan.byInitiative.energy) > 1);
+  assert.ok(accelerationMultiplierForAction('maintain', plan.byInitiative.maintenance) > 1);
+});
+
+test('stage acceleration produces the right durable effect without bypassing lifecycle evidence', () => {
+  const state = initialGameState();
+  const actions = { demand: 'pilot', energy: 'discover', maintenance: 'maintain' };
+  const normalFunding = {
+    demand: { discovery: 0, delivery: 1, scaleUp: 0, run: 0, continuity: 0, retirement: 0, total: 1 },
+    energy: { discovery: .2, delivery: 0, scaleUp: 0, run: 0, continuity: 0, retirement: 0, total: .2 },
+    maintenance: { discovery: 0, delivery: 0, scaleUp: 0, run: .2, continuity: .2, retirement: 0, total: .2 },
+  };
+  const acceleratedFunding = Object.fromEntries(Object.entries(normalFunding).map(([id, funding]) => [id, {
+    ...funding,
+    scaleUp: funding.total,
+    total: funding.total * 2,
+  }]));
+  const seeded = {
+    ...state.initiativeStates,
+    maintenance: { ...state.initiativeStates.maintenance, technicalDebt: 10 },
+  };
+  const normal = updateInitiativeStatesForActions(seeded, actions, allocation, { adoption: 38, fundingByInitiative: normalFunding });
+  const accelerated = updateInitiativeStatesForActions(seeded, actions, allocation, { adoption: 38, fundingByInitiative: acceleratedFunding });
+
+  assert.ok(accelerated.energy.currentData > normal.energy.currentData, 'discovery acceleration strengthens data readiness');
+  assert.ok(accelerated.demand.maturityCredits > normal.demand.maturityCredits, 'pilot acceleration earns bounded additional maturity');
+  assert.ok(accelerated.demand.controlMaturity > normal.demand.controlMaturity, 'pilot acceleration strengthens controls');
+  assert.ok(accelerated.maintenance.technicalDebt < normal.maintenance.technicalDebt, 'maintenance acceleration improves reliability');
+  assert.equal(accelerated.energy.quartersFunded, 0, 'extra discovery capital cannot skip the required pilot and evaluation path');
 });
 
 test('every scenario initiative receives a stable AI lifecycle profile', () => {
