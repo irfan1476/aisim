@@ -89,6 +89,50 @@ function actionForWindow(quarterInWindow) {
   return "maintain";
 }
 
+function actionForFocusedQuarter(quarter) {
+  // A focused learner can run a second improvement loop after the first
+  // deployment. Deployment is not the end of learning; a later pilot can
+  // refine a live capability without resetting the campaign.
+  if (quarter <= 6) return actionForWindow(quarter);
+  if (quarter <= 8) return "pilot";
+  if (quarter === 9) return "scale";
+  return "maintain";
+}
+
+function shiftAllocation(base, changes) {
+  const next = { ...base };
+  Object.entries(changes).forEach(([key, delta]) => {
+    next[key] = Number(next[key] || 0) + Number(delta || 0);
+  });
+  const total = Object.values(next).reduce((sum, value) => sum + Number(value || 0), 0);
+  next.infra = Number(next.infra || 0) + (100 - total);
+  return next;
+}
+
+function customAllocations(scenario, strategy, strategyIds) {
+  const base = scenario.startingState.defaultAllocation;
+  if (strategy === "focused") {
+    return { [strategyIds[0]]: shiftAllocation(base, { infra: -5, data: 5 }) };
+  }
+  // The paired strategy gives each capability a different operating emphasis
+  // while keeping every initiative mix at 100%.
+  return {
+    [strategyIds[0]]: shiftAllocation(base, { infra: -5, data: 5 }),
+    [strategyIds[1]]: shiftAllocation(base, { infra: -5, people: 5 }),
+  };
+}
+
+function deploymentForQuarter(strategy, quarter, state) {
+  const remaining = Math.max(0, Number(state.campaignBudgetRemaining) || 0);
+  // These are explicit learner choices: focused acceleration funds a second
+  // learning loop; paired delivery preserves reserve while two capabilities
+  // progress in sequence.
+  const requested = strategy === "focused"
+    ? (quarter <= 4 ? 4.5 : 3.2)
+    : (quarter <= 6 ? 3.2 : 2.8);
+  return Math.min(requested, remaining);
+}
+
 function crisisResponseFor(state) {
   const option = state.crisis?.options?.[0];
   if (!option) return null;
@@ -103,14 +147,18 @@ function crisisResponseFor(state) {
 function runCampaign(scenarioId, strategy, seed = 240829) {
   const scenario = getScenario(scenarioId);
   const strategyIds = scenario.initiatives.slice(0, strategy === "focused" ? 1 : 2).map((item) => item.id);
+  const initiativeAllocations = customAllocations(scenario, strategy, strategyIds);
   let state = createScenarioState(scenarioId, seed);
   const blocked = [];
+  const decisions = [];
 
   for (let quarter = 1; quarter <= 12; quarter += 1) {
     const actions = {};
     const activeIndex = strategy === "focused" ? 0 : quarter <= 6 ? 0 : 1;
     const activeId = strategyIds[activeIndex];
-    actions[activeId] = actionForWindow(strategy === "focused" ? quarter : ((quarter - 1) % 6) + 1);
+    actions[activeId] = strategy === "focused"
+      ? actionForFocusedQuarter(quarter)
+      : actionForWindow(((quarter - 1) % 6) + 1);
 
     // A balanced portfolio keeps the first capability alive while bringing a
     // second one through its own evidence-to-deployment cycle.
@@ -123,7 +171,9 @@ function runCampaign(scenarioId, strategy, seed = 240829) {
       selected,
       initiativeActions: actions,
       alloc: state.alloc,
-      deploymentAmount: Math.min(3, Math.max(0, Number(state.campaignBudgetRemaining) || 0)),
+      initiativeAllocationMode: "custom",
+      initiativeAllocations,
+      deploymentAmount: deploymentForQuarter(strategy, quarter, state),
     };
 
     if (decision.initiativeActions[activeId] === "scale") {
@@ -142,9 +192,23 @@ function runCampaign(scenarioId, strategy, seed = 240829) {
 
     const result = applyTurnDecision(state, decision);
     if (!result.accepted) {
-      blocked.push({ quarter, action: decision.initiativeActions, reason: result.reason });
+      blocked.push({
+        quarter,
+        selected: decision.selected,
+        action: decision.initiativeActions,
+        released: decision.deploymentAmount,
+        reason: result.reason,
+        feedback: result.nextState.feedback,
+      });
       break;
     }
+    decisions.push({
+      quarter,
+      selected: [...decision.selected],
+      actions: { ...decision.initiativeActions },
+      released: decision.deploymentAmount,
+      delivered: result.nextState.history.at(-1)?.deliveryIds || [],
+    });
     state = result.nextState;
 
     const crisisResponse = crisisResponseFor(state);
@@ -180,6 +244,17 @@ function runCampaign(scenarioId, strategy, seed = 240829) {
     discoveryQuarters,
     quartersResolved: state.history.length,
     blocked,
+    decisions,
+    finalFeedback: state.feedback,
+    finalInitiatives: Object.fromEntries(strategyIds.map((id) => {
+      const initiative = state.initiativeStates[id];
+      return [id, {
+        lifecycle: initiative.lifecycle,
+        quartersInvested: initiative.quartersInvested,
+        totalInvestment: initiative.totalInvestment,
+        maturity: initiative.maturityLevel,
+      }];
+    })),
     finalMetrics: { ...state.scenarioState.metrics },
   };
 }
@@ -203,6 +278,8 @@ test("live resolver feasibility matrix completes focused and balanced campaigns"
     // the 75% mission-ready threshold so an honest first campaign can still
     // leave room for a stronger replay.
     assert.ok(result.primaryProgress >= 50, `${result.scenarioId}/${result.strategy} produced less than 50% primary-outcome progress`);
+    assert.equal(result.decisions.length, 12, `${result.scenarioId}/${result.strategy} did not record all decisions`);
+    assert.ok(Object.values(result.finalInitiatives).every((item) => item.quartersInvested > 0), `${result.scenarioId}/${result.strategy} did not record investment quarters`);
   }
 
   // Keep the matrix visible in CI output as a balance diagnostic. The test is
@@ -218,7 +295,23 @@ test("live resolver feasibility matrix completes focused and balanced campaigns"
     adoption: result.adoption,
     risk: result.risk,
     verdict: result.verdict,
+    invested: Object.values(result.finalInitiatives).map((item) => item.quartersInvested).join(","),
   })));
+});
+
+test("live resolver exposes an actionable blocker instead of silently stalling", () => {
+  const state = createScenarioState("projectFactory");
+  const initiativeId = getScenario("projectFactory").initiatives[0].id;
+  const result = applyTurnDecision(state, {
+    selected: [initiativeId],
+    initiativeActions: { [initiativeId]: "pilot" },
+    alloc: state.alloc,
+    deploymentAmount: 3,
+  });
+
+  assert.equal(result.accepted, false);
+  assert.match(result.reason, /required discovery and experiment period/i);
+  assert.equal(result.nextState.feedback, result.reason);
 });
 
 test("live feasibility findings are deterministic for replay and balance work", () => {

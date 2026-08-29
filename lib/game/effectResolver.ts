@@ -134,7 +134,12 @@ export function calculateStandardEffects(
   const deploymentTrustEffect = deployedModeEffects.length
     ? deployedModeEffects.reduce((sum, impact) => sum + Number(impact.trustDelta || 0), 0) / deployedModeEffects.length
     : 0;
-  const riskChange = portfolioRiskPressure * 0.55 - governanceRelief * (0.5 + current.risk / 60) - inputs.synergyRiskReduction + Math.max(0, Number(inputs.gateRiskAdjustment) || 0);
+  // A constrained experiment should leave a visible risk trace, but the same
+  // readiness gap must not compound into an automatic failure every quarter.
+  // Gates already slow delivery through `gateMultiplier`; cap and soften the
+  // parallel risk charge so learners can recover by funding controls later.
+  const constrainedRisk = Math.min(8, Math.max(0, Number(inputs.gateRiskAdjustment) || 0)) * 0.5;
+  const riskChange = portfolioRiskPressure * 0.55 - governanceRelief * (0.5 + current.risk / 60) - inputs.synergyRiskReduction + constrainedRisk;
   return {
     roi: Math.min(99, current.roi + (((chosen.reduce((sum, item) => sum + item.currentRoi, 0) / 100) * factor / 2) * inputs.synergyMultiplier * portfolioEffect * fundingMultiplier * gateMultiplier)),
     revenue: Math.min(60, current.revenue + chosen.reduce((sum, item) => sum + (item.id === 'demand' ? 3 : ['quality', 'supply'].includes(item.id) ? 2 : 1), 0) * (0.9 + portfolio.breadth * 0.1) * fundingMultiplier),
@@ -173,6 +178,53 @@ export function applyScenarioEffects(
   const coordinationFactor = 1 - portfolioContext.coordinationPressure / 100;
   const portfolioEffect = portfolioContext.focusMultiplier * coordinationFactor;
   const fundingMultiplier = deliveryMultiplier(fundingIntensity);
+
+  // Scenario packs own the domain KPIs, but they still run on the same
+  // operating system as Standard mode.  Keep the generic signals (especially
+  // adoption) in that state as well: resolveQuarter merges scenario metrics
+  // after generic effects, so leaving these values untouched would silently
+  // erase every quarter's people/readiness signal in scenario play.  Reuse the
+  // canonical Standard formula rather than maintaining a second adoption and
+  // risk model here.
+  const operatingBase = {
+    ...previous.metrics,
+    roi: Number(previous.metrics.roi) || 0,
+    revenue: Number(previous.metrics.revenue) || 0,
+    efficiency: Number(previous.metrics.efficiency) || 0,
+    adoption: Number(previous.metrics.adoption) || 0,
+    risk: Number(previous.metrics.risk) || 0,
+    data: Number(previous.metrics.data) || 0,
+    satisfaction: Number(previous.metrics.satisfaction) || 0,
+    literacy: Number(previous.metrics.literacy) || 0,
+    spent: Number(previous.metrics.spent) || 0,
+    scenarioMode: true,
+    initiativeGeneration: { context: { team: 0.6 } },
+  } as unknown as GameState;
+  const operatingEffects = calculateStandardEffects(
+    operatingBase,
+    selected,
+    allocation,
+    selected
+      .map((id) => states[id])
+      .filter((item): item is InitiativeState => Boolean(item) && Number(item.benefitRealization) > 0),
+    {
+      synergyMultiplier,
+      synergyRiskReduction: synergies.reduce((sum, item) => sum + item.riskReduction, 0),
+      synergyAdoption: synergies.reduce((sum, item) => sum + item.adoptionBoost, 0),
+      synergyCostReduction: Math.min(0.15, synergies.reduce((sum, item) => sum + item.costReduction, 0)),
+      fundingIntensity,
+      portfolio,
+      gateMultiplier,
+    },
+  );
+  (['roi', 'revenue', 'efficiency', 'adoption', 'risk', 'data', 'satisfaction', 'literacy'] as const).forEach((key) => {
+    const value = Number(operatingEffects[key]);
+    // A scenario pack may omit a generic signal (risk, ROI, etc.) from its
+    // domain state. In that case leave it absent so resolveQuarter's generic
+    // result remains authoritative; writing a synthetic zero here would reset
+    // the signal on the first discovery quarter.
+    if (Object.prototype.hasOwnProperty.call(previous.metrics, key) && Number.isFinite(value)) metrics[key] = value;
+  });
 
   selected.forEach((id) => {
     const state = states[id];
