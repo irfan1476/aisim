@@ -277,6 +277,21 @@ export default function GameDoneScreen({
   const missionBlocker = exposedGuardrails[0] || missionOutcomes
     .filter((item) => item.role === "primary")
     .sort((a, b) => a.progress - b.progress)[0];
+  const lifecycleStates = Object.values(state.initiativeStates || {});
+  const evidenceBuiltCount = lifecycleStates.filter((item) =>
+    Number(item.quartersInvested || 0) > 0 ||
+    item.aiLifecycle?.stage !== "data_readiness" ||
+    Number(item.dataInvestment || 0) > 0,
+  ).length;
+  const testedCount = lifecycleStates.filter((item) =>
+    ["pilot", "evaluate", "deploy", "monitor", "adapt"].includes(item.aiLifecycle?.stage) ||
+    ["pilot", "scale", "run"].includes(item.lifecycle),
+  ).length;
+  const operatingValueCount = lifecycleStates.filter((item) =>
+    ["deploy", "monitor"].includes(item.aiLifecycle?.stage) ||
+    ["scale", "run"].includes(item.lifecycle) ||
+    Number(item.benefitRealization || 0) >= 0.35,
+  ).length;
   const nextMissionExperiment = missionBlocker
     ? missionBlocker.role === "guardrail"
       ? `Next experiment: protect ${missionBlocker.label} earlier, then repeat your strongest value move. Change one control or operating allocation and compare the guardrail result.`
@@ -299,6 +314,9 @@ export default function GameDoneScreen({
         })
         .sort((a, b) => b.score - a.score)
     : [];
+  const strongestImprovement = scenarioEvidence
+    .filter((item) => item.direction === "improved")
+    .sort((a, b) => b.score - a.score)[0];
   const scenarioDiagnosis = scenario
     ? (() => {
         const strongest = scenarioEvidence[0];
@@ -448,9 +466,49 @@ export default function GameDoneScreen({
             })}
           </div>
           <div className={`mt-5 rounded-2xl border p-4 ${missionBlocker?.status === "exposed" ? "border-[#cf222e]/25 bg-[#fff1f0]" : "border-[#0969da]/20 bg-white"}`}>
-            <p className="text-xs font-bold uppercase tracking-wide text-[#0969da]">Replay hypothesis</p>
-            <p className="mt-2 text-sm font-semibold leading-6 text-[#0d1117]">{nextMissionExperiment}</p>
-            <p className="mt-2 text-xs leading-5 text-[#656d76]">A replay is a focused experiment, not a demand to repeat the whole campaign. Keep the strongest choice visible and change one meaningful lever.</p>
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wide text-[#0969da]">Learning accumulated in stages</p>
+                <p className="mt-1 text-xs leading-5 text-[#656d76]">Early evidence counts as learning even when operating ROI is not visible yet.</p>
+              </div>
+              <span className="rounded-full bg-[#eef4ff] px-3 py-1 text-xs font-bold text-[#0969da]">Evidence → test → value</span>
+            </div>
+            <div className="mt-4 grid gap-3 sm:grid-cols-3">
+              {[
+                ["Evidence built", evidenceBuiltCount, "initiatives received a learning investment"],
+                ["Tested", testedCount, "initiatives reached pilot or later"],
+                ["Operating value path", operatingValueCount, "initiatives reached deployment or run"],
+              ].map(([label, count, detail]) => (
+                <div key={String(label)} className="rounded-xl border border-[#d0d7de] bg-[#f6f8fa] p-3">
+                  <p className="text-xs font-bold uppercase tracking-wide text-[#57606a]">{label}</p>
+                  <b className="mt-1 block text-2xl text-[#0d1117]">{count}</b>
+                  <p className="mt-1 text-xs leading-5 text-[#656d76]">{detail}</p>
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 grid gap-3 md:grid-cols-2">
+              <div className="rounded-xl border border-[#1a7f37]/20 bg-[#eef7f0] p-3">
+                <p className="text-xs font-bold uppercase tracking-wide text-[#1a7f37]">What improved most</p>
+                <p className="mt-1 text-sm font-semibold leading-6 text-[#0d1117]">
+                  {strongestImprovement
+                    ? `${strongestImprovement.item.label} moved ${Math.round(strongestImprovement.score)}% toward its target (${formatScenarioMetric(strongestImprovement.value, strongestImprovement.item.unit)}).`
+                    : "No mission outcome has moved toward target yet; your evidence and stage choices still show where to start the next run."}
+                </p>
+              </div>
+              <div className={`rounded-xl border p-3 ${missionBlocker?.status === "exposed" ? "border-[#cf222e]/25 bg-[#fff1f0]" : "border-[#d29922]/25 bg-[#fff8c5]"}`}>
+                <p className={`text-xs font-bold uppercase tracking-wide ${missionBlocker?.status === "exposed" ? "text-[#cf222e]" : "text-[#9a6700]"}`}>Most important remaining gap</p>
+                <p className="mt-1 text-sm font-semibold leading-6 text-[#0d1117]">
+                  {missionBlocker
+                    ? `${missionBlocker.label}: ${formatScenarioMetric(missionBlocker.current, missionBlocker.unit)} now versus ${formatScenarioMetric(missionBlocker.target, missionBlocker.unit)} target (${Math.round(missionBlocker.progress)}% progress).`
+                    : "All mission outcomes are protected; use the replay to improve breadth or efficiency."}
+                </p>
+              </div>
+            </div>
+            <div className="mt-4 border-t border-[#0969da]/15 pt-4">
+              <p className="text-xs font-bold uppercase tracking-wide text-[#0969da]">One next experiment</p>
+              <p className="mt-2 text-sm font-semibold leading-6 text-[#0d1117]">{nextMissionExperiment}</p>
+              <p className="mt-2 text-xs leading-5 text-[#656d76]">A replay is a focused experiment, not a demand to repeat the whole campaign. Keep the strongest choice visible and change one meaningful lever.</p>
+            </div>
           </div>
         </section>}
         <section className="mt-6 rounded-3xl border border-[#d0d7de] bg-white p-6 shadow-sm md:p-8">

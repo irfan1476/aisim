@@ -47,14 +47,23 @@ const scenarioWeights = {
  * (sometimes as values such as 100 or 500), so score refreshes must derive the
  * contract from the authoritative domain metrics and scenario definitions.
  */
-function scenarioTargetProgressFor(state: Pick<GameState, 'scenarioMode' | 'scenarioId' | 'scenarioState' | 'scenarioProgress'>): number {
+export function scenarioTargetProgressFor(state: Pick<GameState, 'scenarioMode' | 'scenarioId' | 'scenarioState' | 'scenarioProgress'>): number {
   if (!state.scenarioMode) return 0;
   const scenario = getScenario(state.scenarioId);
   const metrics = state.scenarioState?.metrics;
   // Scenario packs now distinguish mission outcomes from supporting signals
   // and guardrails. Score the weighted mission view when available; retain
   // the historical equal-average fallback for older packs/saves.
-  if (scenario && metrics) return calculateScenarioMissionProgress(metrics, scenario).missionProgress;
+  if (scenario && metrics) {
+    const mission = calculateScenarioMissionProgress(metrics, scenario);
+    // Keep the weighted mission view as the centre of gravity, while making
+    // guardrail deterioration visible in the campaign score even when the
+    // primary outcome is moving quickly. A protected guardrail is neutral;
+    // only movement away from its starting position creates this bounded
+    // penalty, so responsible recovery remains scoreable.
+    const guardrailPenalty = Math.max(0, 100 - mission.guardrailProtection) * 0.2;
+    return Math.max(0, mission.missionProgress - guardrailPenalty);
+  }
   const progress = state.scenarioProgress || {};
   const values = Object.values(progress).map(Number).filter(Number.isFinite);
   return values.length ? values.reduce((sum, value) => sum + clampScore(value), 0) / values.length : 0;
@@ -68,14 +77,20 @@ function scenarioTargetProgressFor(state: Pick<GameState, 'scenarioMode' | 'scen
  */
 export function validatedLearningScore(state: Pick<GameState, 'initiativeStates' | 'history' | 'initiativeActions'>): number {
   const intentionalIds = new Set<string>();
-  (state.history || []).forEach((snapshot) => {
-    Object.entries(snapshot.initiativeActions || {}).forEach(([id, action]) => {
-      if (action === 'discover' || action === 'pilot' || action === 'scale' || action === 'maintain') intentionalIds.add(id);
+  const actionsByInitiative = new Map<string, Set<string>>();
+  const recordActions = (actions: Record<string, string> | undefined) => {
+    Object.entries(actions || {}).forEach(([id, action]) => {
+      if (!['discover', 'pilot', 'scale', 'maintain'].includes(action)) return;
+      intentionalIds.add(id);
+      const actionsForInitiative = actionsByInitiative.get(id) || new Set<string>();
+      actionsForInitiative.add(action);
+      actionsByInitiative.set(id, actionsForInitiative);
     });
+  };
+  (state.history || []).forEach((snapshot) => {
+    recordActions(snapshot.initiativeActions);
   });
-  Object.entries(state.initiativeActions || {}).forEach(([id, action]) => {
-    if (action === 'discover' || action === 'pilot' || action === 'scale' || action === 'maintain') intentionalIds.add(id);
-  });
+  recordActions(state.initiativeActions);
   const initiatives = Object.values(state.initiativeStates || {}).filter((initiative) => intentionalIds.has(initiative.id));
   if (!initiatives.length) return 0;
   const total = initiatives.reduce((sum, initiative) => {
@@ -87,7 +102,19 @@ export function validatedLearningScore(state: Pick<GameState, 'initiativeStates'
       ? criteria.filter((criterion) => criterion.met).length / criteria.length * 100
       : 0;
     const stageCredit = ['experiment', 'pilot', 'evaluate', 'deploy', 'monitor'].includes(initiative.aiLifecycle?.stage) ? 100 : 0;
-    return sum + data * .4 + controls * .2 + change * .15 + reviewEvidence * .15 + stageCredit * .1;
+    // Distinct intentional stages make the learner's hypothesis visible; a
+    // single repeated action cannot earn the same credit as an evidence loop.
+    const actionSequence = Math.min(100, ((actionsByInitiative.get(initiative.id)?.size || 0) / 4) * 100);
+    const adaptationHistory = Array.isArray(initiative.adaptationHistory) ? initiative.adaptationHistory.length : 0;
+    const recoveryCredit = Math.min(100, adaptationHistory * 35);
+    return sum
+      + data * .3
+      + controls * .15
+      + change * .15
+      + reviewEvidence * .15
+      + stageCredit * .15
+      + actionSequence * .07
+      + recoveryCredit * .03;
   }, 0);
   return Number((total / initiatives.length).toFixed(2));
 }

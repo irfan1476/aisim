@@ -12,7 +12,7 @@ import type { InitiativeActionSet } from './businessModel';
 import type { AdaptationInput, AdaptationSet, DeploymentModeInput, DeploymentModeSet, LifecycleReviewInput, LifecycleReviewSet } from './businessModel';
 import { validatePortfolioCapacity } from './capacity';
 import { updateFinancialLedger } from './economics';
-import { composeCampaignScore, realisedFinancialValueScore, refreshCampaignScore, validatedLearningScore } from './scoring';
+import { composeCampaignScore, realisedFinancialValueScore, refreshCampaignScore, scenarioTargetProgressFor, validatedLearningScore } from './scoring';
 import { applyAdaptation, applyDeploymentMode, applyLifecycleReview, lifecycleActionError, normalizeLifecycleReviewInput } from './lifecycleResolver';
 import { allocationForInitiative, allocationTotal, derivePortfolioAllocation } from './initiativeAllocation';
 
@@ -205,8 +205,17 @@ export function applyTurnDecision(source: GameState, input: TurnDecision): TurnR
   const scenarioProgress = scenario
     ? calculateProgressPercentages(result.scenarioState?.metrics || {}, scenario)
     : state.scenarioProgress;
+  // Use the role-aware mission view for scoring. The raw arithmetic mean is
+  // still persisted for legacy charts, but it treats every domain signal as
+  // equally important and can make a strong primary outcome look like no
+  // progress when supporting metrics are intentionally staged later.
   const scenarioOverall = scenario
-    ? Object.values(scenarioProgress || {}).reduce((sum, value) => sum + Number(value || 0), 0) / Math.max(1, Object.keys(scenarioProgress || {}).length)
+    ? scenarioTargetProgressFor({
+      scenarioMode: Boolean(scenario),
+      scenarioId: state.scenarioId,
+      scenarioState: result.scenarioState,
+      scenarioProgress,
+    })
     : 0;
   const operatingHealth = (Number(adjustedMetrics.adoption ?? state.adoption) + Number(adjustedMetrics.efficiency ?? state.efficiency) + Number(adjustedMetrics.data ?? state.data) + (100 - Number(adjustedMetrics.risk ?? state.risk))) / 4;
   const executionDiscipline = Math.min(100, (capacityValidation.status === 'valid' ? 65 : 40) + Math.min(25, state.q * 2) + Math.min(10, deliveryIds.length * 3));
