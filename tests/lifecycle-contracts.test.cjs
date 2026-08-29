@@ -363,6 +363,72 @@ test('evaluation evidence respects lower-is-better criteria and derives a recomm
   assert.ok(['go', 'go_with_conditions', 'no_go'].includes(evaluated.maintenance.evaluation.recommendedDecision));
 });
 
+test('Predictive Maintenance has a feasible pilot gate and a clear bounded-rollout path', () => {
+  const states = scenarioInitiativesToStates(getScenario('projectFactory').initiatives);
+  const maintenance = states.maintenance;
+  const readinessCriterion = maintenance.evaluation.successCriteria.find((item) => item.id === 'pilot-readiness');
+  assert.equal(readinessCriterion.metric, 'operationalEvidence');
+  assert.equal(readinessCriterion.threshold, 40);
+
+  states.maintenance = {
+    ...maintenance,
+    controlMaturity: .2,
+    changeReadiness: .1,
+    aiLifecycle: { ...maintenance.aiLifecycle, stage: 'evaluate', stageStatus: 'in_progress' },
+  };
+  const evaluated = recordEvaluationEvidence(states, { downtimePressure: 65 }, { downtimePressure: 62 });
+  const completedReadiness = evaluated.maintenance.evaluation.successCriteria.find((item) => item.id === 'pilot-readiness');
+  assert.equal(completedReadiness.met, true);
+  assert.ok(['go', 'go_with_conditions'].includes(evaluated.maintenance.evaluation.recommendedDecision));
+
+  const scenario = getScenario('projectFactory');
+  let state = {
+    ...initialGameState(),
+    scenarioMode: true,
+    scenarioId: scenario.id,
+    initiativeStates: scenarioInitiativesToStates(scenario.initiatives),
+    scenarioStartingMetrics: { ...scenario.startingState.startingMetrics },
+    scenarioState: { metrics: { ...scenario.startingState.startingMetrics }, progress: {}, flags: {} },
+  };
+  const decide = (action) => {
+    const result = applyTurnDecision(state, {
+      selected: ['maintenance'],
+      initiativeActions: { maintenance: action },
+      alloc: scenario.startingState.defaultAllocation,
+      deploymentAmount: state.deploymentAmount,
+    });
+    assert.equal(result.accepted, true, result.accepted ? '' : result.reason);
+    state = result.nextState;
+  };
+  decide('discover');
+  state = advanceTurn(state);
+  decide('pilot');
+  state = advanceTurn(state);
+  decide('pilot');
+  assert.equal(state.initiativeStates.maintenance.aiLifecycle.stage, 'evaluate');
+  assert.equal(state.initiativeStates.maintenance.evaluation.recommendedDecision, 'go_with_conditions');
+  state = applyLifecycleReview(state, { initiativeId: 'maintenance', decision: 'go', rationale: '', owner: '' });
+  state = applyDeploymentMode(state, { initiativeId: 'maintenance', mode: 'augmentation', rationale: '' });
+  state = advanceTurn(state);
+  decide('scale');
+  assert.equal(state.initiativeStates.maintenance.aiLifecycle.stage, 'deploy');
+  assert.equal(state.initiativeStates.maintenance.aiLifecycle.stageStatus, 'completed');
+});
+
+test('specialised safety gates use measurable evidence and remain feasible after a standard pilot', () => {
+  const checks = [
+    ['projectFactory', 'knowledge', 'knowledge-grounding', 40],
+    ['care360', 'radiologyAssistant', 'clinician-safety', 50],
+    ['care360', 'riskScoring', 'equity-review', 50],
+  ];
+  for (const [scenarioId, initiativeId, criterionId, threshold] of checks) {
+    const states = scenarioInitiativesToStates(getScenario(scenarioId).initiatives);
+    const criterion = states[initiativeId].evaluation.successCriteria.find((item) => item.id === criterionId);
+    assert.equal(criterion.metric, 'safetyEvidence');
+    assert.equal(criterion.threshold, threshold);
+  }
+});
+
 test('evaluation separates pilot evidence from full ROI and honours mandatory safety checks', () => {
   const states = scenarioInitiativesToStates(getScenario('projectFactory').initiatives);
   const maintenance = states.maintenance;
