@@ -42,9 +42,6 @@ function Gauge({
 }) {
   const currentPosition = clampPosition(current, min, max);
   const targetPosition = clampPosition(target, min, max);
-  const rangeColours = direction === 'lower-is-better'
-    ? ['#1a7f37', '#9a6700', '#cf222e']
-    : ['#cf222e', '#9a6700', '#1a7f37'];
 
   return (
     <div
@@ -60,7 +57,7 @@ function Gauge({
         <div className="mt-2 flex justify-between text-[9px] text-[#57606a]"><span>Current ●</span><span>Target |</span></div>
       </div>
       <div className="mt-2 flex items-center justify-between gap-2 border-t border-[#d8dee4] pt-2 text-[10px] font-bold uppercase tracking-wide">
-        <span className="text-[#24292f]">Current marker</span>
+        <span className="text-[#24292f]">{direction === 'lower-is-better' ? 'Lower is better' : 'Higher is better'}</span>
         <span className="text-[#57606a]">Target · {valueLabel(target, unit)}</span>
       </div>
     </div>
@@ -138,6 +135,7 @@ export default function ScenarioPreview({ scenario, metrics, history }: Props) {
 
             <div className="mt-3 flex items-center justify-between gap-3 border-t border-[#d8dee4] pt-2">
               <span className="flex items-center gap-1 text-[10px] font-semibold text-ink/55"><TrendIcon size={12} className={improving ? 'text-[#1a7f37]' : 'text-[#cf222e]'} />{item.deltaLabel} vs start</span>
+              <span className="text-[10px] text-ink/55">Operating pressure: <b className={item.progress >= 70 ? 'text-[#1a7f37]' : 'text-[#9a6700]'}>{Math.round(100 - item.progress)}% {item.progress >= 70 ? 'Nominal' : 'Elevated'}</b></span>
               <svg viewBox="0 0 84 24" className="h-6 w-20" role="img" aria-label={`${challenge.label} historical trend`}>
                 <polyline points={trendPoints(trend)} fill="none" stroke={colors.line} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
