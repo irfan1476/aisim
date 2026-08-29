@@ -198,7 +198,11 @@ test("live resolver feasibility matrix completes focused and balanced campaigns"
   for (const result of results) {
     assert.equal(result.quartersResolved, 12, `${result.scenarioId}/${result.strategy} did not resolve all 12 quarters`);
     assert.deepEqual(result.blocked, [], `${result.scenarioId}/${result.strategy} was blocked: ${JSON.stringify(result.blocked)}`);
-    assert.ok(result.primaryProgress > 0, `${result.scenarioId}/${result.strategy} produced no primary-outcome movement`);
+    // A viable first run should show material movement on the mission signal,
+    // not merely pass through the lifecycle gates. This is deliberately below
+    // the 75% mission-ready threshold so an honest first campaign can still
+    // leave room for a stronger replay.
+    assert.ok(result.primaryProgress >= 50, `${result.scenarioId}/${result.strategy} produced less than 50% primary-outcome progress`);
   }
 
   // Keep the matrix visible in CI output as a balance diagnostic. The test is
