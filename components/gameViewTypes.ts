@@ -136,6 +136,11 @@ export interface GameViewState {
   lastQuarterDeployment: number;
   scenarioBudgetRemaining: number;
   scenarioStartingMetrics?: Record<string, number>;
+  scenarioState?: {
+    metrics?: Record<string, number>;
+    progress?: Record<string, number>;
+    flags?: Record<string, boolean>;
+  };
   scenarioProgress?: Record<string, number>;
   quarterlyCrisisCost: number;
   scenarioOverspend: number;

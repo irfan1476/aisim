@@ -34,6 +34,19 @@ test('landing page makes the final report and deliberate replay visible', () => 
   assert.match(replayVisual, /saved locally/i, 'the visual must explain campaign persistence');
 });
 
+test('the learner sees the strategic success contract before and during play', () => {
+  const setup = read('components', 'GameSetupScreen.tsx');
+  const decision = read('components', 'GameDecisionView.tsx');
+
+  assert.match(setup, /How a credible win is judged/, 'setup should state the winning contract before baseline assessment');
+  assert.match(setup, /Move the primary outcome/, 'mission progress must be explicit');
+  assert.match(setup, /Create value without weakening/, 'guardrails must be explicit');
+  assert.match(setup, /Earn the right to scale/, 'evidence-based scale must be explicit');
+  assert.match(setup, /Pace capital deliberately/, 'learning and capital pacing must be explicit');
+  assert.match(decision, /How success is judged this campaign/, 'the decision window should retain a compact success reminder');
+  assert.match(decision, /Guardrails protected/, 'the reminder should show current guardrail condition');
+});
+
 test('final report visual keeps its evidence caption within the report card', () => {
   const visual = read('components', 'CampaignEvidenceReplayVisual.tsx');
 

@@ -99,6 +99,22 @@ export default function GameSetupScreen({
           <ScenarioSelector className="setup-panel setup-scenario-panel" enabled={scenarioMode} scenarioId={scenarioId} currency={currencyMode} campaignBudget={campaignBudget} onEnabledChange={onScenarioModeChange} onScenarioChange={onScenarioChange} onCurrencyChange={onCurrencyChange} />
 
           <div className="setup-baseline-card flex flex-col gap-4 rounded-[20px] border border-ink/15 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-5 xl:col-start-2 xl:col-span-2"><div className="max-w-2xl"><p className="text-sm font-semibold text-ink">Your starting conditions are a hypothesis.</p><p className="mt-1 text-xs leading-5 text-ink/60">The baseline assessment personalises the campaign before the first decision. No account is required.</p></div><button onClick={onContinue} className="setup-primary-action flex shrink-0 items-center justify-center gap-3 rounded-xl bg-ink px-5 py-3.5 text-sm font-bold text-white transition hover:bg-ink/90 focus:outline-none focus:ring-2 focus:ring-emerald/40 focus:ring-offset-2">Start baseline assessment<ArrowRight size={16} /></button></div>
+
+          <section className="setup-panel rounded-[24px] border border-[#1a7f37]/20 bg-[#f1f8f3] p-5 shadow-sm sm:p-6 xl:col-span-3" aria-labelledby="success-contract-title">
+            <div className="max-w-3xl">
+              <p className="text-[11px] font-bold uppercase tracking-[.2em] text-[#1a7f37]">The strategic contract</p>
+              <h2 id="success-contract-title" className="mt-2 text-[1.35rem] font-semibold tracking-[-.03em] text-ink">How a credible win is judged</h2>
+              <p className="mt-2 text-sm leading-6 text-ink/60">A strong campaign is not the highest spend or the fastest scale. It creates meaningful mission progress while building a responsible operating system around it.</p>
+            </div>
+            <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+              <div className="rounded-2xl border border-[#1a7f37]/20 bg-white p-3"><p className="text-[10px] font-bold uppercase tracking-[.14em] text-[#1a7f37]">1 · Mission</p><p className="mt-2 text-xs leading-5 text-ink/65">Move the primary outcome your scenario was created to improve.</p></div>
+              <div className="rounded-2xl border border-[#1a7f37]/20 bg-white p-3"><p className="text-[10px] font-bold uppercase tracking-[.14em] text-[#1a7f37]">2 · Guardrails</p><p className="mt-2 text-xs leading-5 text-ink/65">Create value without weakening the safety, trust, or resilience conditions around it.</p></div>
+              <div className="rounded-2xl border border-[#1a7f37]/20 bg-white p-3"><p className="text-[10px] font-bold uppercase tracking-[.14em] text-[#1a7f37]">3 · Evidence</p><p className="mt-2 text-xs leading-5 text-ink/65">Earn the right to scale through data readiness, testing, and oversight.</p></div>
+              <div className="rounded-2xl border border-[#1a7f37]/20 bg-white p-3"><p className="text-[10px] font-bold uppercase tracking-[.14em] text-[#1a7f37]">4 · Operating model</p><p className="mt-2 text-xs leading-5 text-ink/65">Fund people, adoption, controls, and monitoring—not only technology.</p></div>
+              <div className="rounded-2xl border border-[#1a7f37]/20 bg-white p-3"><p className="text-[10px] font-bold uppercase tracking-[.14em] text-[#1a7f37]">5 · Learning</p><p className="mt-2 text-xs leading-5 text-ink/65">Pace capital deliberately, then replay one hypothesis to improve the next run.</p></div>
+            </div>
+            <p className="mt-4 text-xs leading-5 text-ink/55">Your chosen scenario will make its exact mission outcomes and guardrails visible in the boardroom. Supporting outcomes strengthen the result, but do not turn the game into a checklist.</p>
+          </section>
         </div>
       </section>
     </main>

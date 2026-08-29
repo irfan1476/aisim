@@ -16,6 +16,7 @@ import BoardAdvisor from "./BoardAdvisor";
 import type { GameInitiative, GameViewState, Metric } from "./gameViewTypes";
 import { formatBudget, formatCurrency } from "../lib/currency";
 import { getScenario } from "../lib/scenarios/registry";
+import { calculateScenarioMissionProgress } from "../lib/scenarios/progress";
 import ScenarioProgress from "./ScenarioProgress";
 import DecisionDashboardVisuals from "./DecisionDashboardVisuals";
 import GameCommandHUD from "./GameCommandHUD";
@@ -88,6 +89,15 @@ export default function GameDecisionView({
   onReset,
 }: Props) {
   const scenario = state.scenarioMode ? getScenario(state.scenarioId) : undefined;
+  const mission = scenario
+    ? calculateScenarioMissionProgress(state.scenarioState?.metrics || state.scenarioStartingMetrics, scenario)
+    : undefined;
+  const primaryOutcomeLabels = scenario?.progress
+    .filter((item) => item.role === 'primary')
+    .map((item) => item.label) || [];
+  const guardrailLabels = scenario?.progress
+    .filter((item) => item.role === 'guardrail')
+    .map((item) => item.label) || [];
   const [advisorOpen, setAdvisorOpen] = useState(false);
   const [coachOpen, setCoachOpen] = useState(false);
   const [simulatorOpen, setSimulatorOpen] = useState(false);
@@ -373,6 +383,21 @@ export default function GameDecisionView({
                 {state.selected.length} / 3 selected
               </span>
             </div>
+            <section className="mt-4 rounded-2xl border border-[#1a7f37]/20 bg-[#f1f8f3] p-3" aria-label="How success is judged this campaign">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[.16em] text-[#1a7f37]">How a credible win is judged</p>
+                  <p className="mt-1 text-xs leading-5 text-ink/60">Move the mission, protect the conditions around it, and earn scale with evidence.</p>
+                </div>
+                {mission && <span className={`rounded-full px-3 py-1 text-[10px] font-bold ${mission.guardrailProtection >= 100 ? 'bg-white text-[#1a7f37]' : 'bg-[#fff1f0] text-[#cf222e]'}`}>{mission.guardrailProtection >= 100 ? 'Guardrails protected' : 'Guardrail needs recovery'}</span>}
+              </div>
+              <div className="mt-3 grid gap-2 text-[11px] leading-4 sm:grid-cols-2 xl:grid-cols-4">
+                <p className="rounded-xl border border-[#1a7f37]/15 bg-white p-2.5"><b className="block text-[#24292f]">Mission</b>{mission ? `${Math.round(mission.primaryProgress)}% primary progress · ${primaryOutcomeLabels.join(' · ') || 'move the core scenario outcome'}` : 'Create sustainable value, not activity for its own sake.'}</p>
+                <p className="rounded-xl border border-[#1a7f37]/15 bg-white p-2.5"><b className="block text-[#24292f]">Guardrails</b>{guardrailLabels.length ? `Do not weaken ${guardrailLabels.join(' or ')}.` : 'Keep risk and operating health in a credible range.'}</p>
+                <p className="rounded-xl border border-[#1a7f37]/15 bg-white p-2.5"><b className="block text-[#24292f]">Evidence before scale</b>Data readiness, testing, and oversight unlock a credible rollout.</p>
+                <p className="rounded-xl border border-[#1a7f37]/15 bg-white p-2.5"><b className="block text-[#24292f]">Operating system</b>People, controls, and capital pace shape adoption and long-term value.</p>
+              </div>
+            </section>
             <div className="mt-4 grid gap-2 rounded-2xl border border-[#d0d7de] bg-[#f6f8fa] p-3 text-xs sm:grid-cols-4">
               <span><b className="block text-[#57606a]">Minimum for chosen work</b><strong className="mt-1 block text-base text-[#24292f]">{formatCurrency(capitalPlan.initiativeMinimum, state.currencyMode)}</strong></span>
               <span><b className="block text-[#57606a]">Keep-running / exit cost</b><strong className="mt-1 block text-base text-[#24292f]">{formatCurrency(capitalPlan.maintenanceSpend + Object.values(capitalPlan.byInitiative).reduce((sum, item) => sum + Number(item.retirement || 0), 0), state.currencyMode)}</strong></span>
