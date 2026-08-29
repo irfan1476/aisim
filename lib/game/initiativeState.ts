@@ -324,16 +324,20 @@ export function updateInitiativeStatesForActions(
       metrics.initiativeAllocations,
       allocation,
     );
-    // An initiative with no explicit action is paused for this quarter. This
-    // prevents an unselected initiative from silently receiving discovery
-    // progress merely because the action map omitted it.
-    const action = isInitiativeAction(actions[item.id]) ? actions[item.id] : (item.lifecycle === 'run' ? 'maintain' : 'pause');
+    const hasExplicitAction = isInitiativeAction(actions[item.id]);
+    // An unselected initiative is inactive, not deliberately paused. It
+    // receives the normal cost of inactivity below, but keeps its lifecycle
+    // stage so a later selection can resume the sensible next action. Only a
+    // learner-chosen Pause moves a capability into Adapt.
+    const action = hasExplicitAction ? actions[item.id] : 'pause';
     const funding = metrics.fundingByInitiative?.[item.id] || emptyFunding();
     const stageAcceleration = accelerationMultiplierForAction(action, funding);
     const attributableInvestment = Math.max(0, Number(funding.total) || 0);
     if (attributableInvestment > 0) item.quartersInvested = Math.max(0, Number(item.quartersInvested) || 0) + 1;
     const priorLifecycle = isInitiativeLifecycle(item.lifecycle) ? item.lifecycle : (item.quartersFunded > 0 ? 'run' : 'discovery');
-    const lifecycle = transitionInitiativeLifecycle(priorLifecycle, action);
+    const lifecycle = hasExplicitAction
+      ? transitionInitiativeLifecycle(priorLifecycle, action)
+      : priorLifecycle;
     item.lifecycle = lifecycle;
     item.lifecycleQuarter = Math.max(0, Number(item.lifecycleQuarter) || 0) + 1;
     item.runCost = roundMetric(Number(item.runCost) > 0 ? item.runCost : item.currentCost * .08);
@@ -342,7 +346,12 @@ export function updateInitiativeStatesForActions(
     item.changeReadiness = Math.max(0, Math.min(1, Number(item.changeReadiness) || 0));
     item.technicalDebt = Math.max(0, Math.min(100, Number(item.technicalDebt) || 0));
 
-    if (action === 'discover') {
+    if (!hasExplicitAction) {
+      item.quartersSinceLastFund += 1;
+      item.benefitRealization = roundMetric(item.benefitRealization * .95);
+      item.technicalDebt = roundMetric(Math.min(100, item.technicalDebt + .75));
+      item.maturityLevel = maturityFor(Number(item.maturityCredits) || item.quartersFunded, item.quartersSinceLastFund);
+    } else if (action === 'discover') {
       item.benefitRealization = roundMetric(item.benefitRealization * .95);
       item.technicalDebt = roundMetric(Math.min(100, item.technicalDebt + .5));
       // Discovery funds the evidence base. It can improve persistent data
@@ -393,7 +402,7 @@ export function updateInitiativeStatesForActions(
       if (action === 'retire') item.totalInvestment = roundMetric(item.totalInvestment + attributableInvestment);
     }
     item.dataReadiness = roundMetric(clamp(Number(item.currentData || 0) / 5 * 100, 0, 100));
-    Object.assign(item, evolveInitiativeForQuarter(item, action, item.lifecycleQuarter, initiativeAllocation));
+    Object.assign(item, evolveInitiativeForQuarter(item, hasExplicitAction ? action : 'inactive', item.lifecycleQuarter, initiativeAllocation));
     item.riskScore = roundMetric(Math.max(8, Math.min(96, aggregateAiRiskScore(item.risks))));
     item.currentRisk = riskBandFor(item.riskScore);
   });

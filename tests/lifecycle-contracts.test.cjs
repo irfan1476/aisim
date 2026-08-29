@@ -32,6 +32,7 @@ const { initialGameState } = require('../lib/game/state.ts');
 const { updateInitiativeStatesForActions } = require('../lib/game/initiativeState.ts');
 const { calculateActionCapitalPlan } = require('../lib/game/capital.ts');
 const { accelerationMultiplierForAction } = require('../lib/game/fundingDynamics.ts');
+const { useGameStore } = require('../stores/gameStore.ts');
 const { applyTurnDecision, advanceTurn } = require('../lib/game/turnResolver.ts');
 const { applyAdaptation, applyDeploymentMode, applyLifecycleReview, normalizeLifecycleReviewInput, recordEvaluationEvidence, suggestedLifecycleAction, lifecycleActionError } = require('../lib/game/lifecycleResolver.ts');
 const {
@@ -91,6 +92,44 @@ test('stage acceleration produces the right durable effect without bypassing lif
   assert.ok(accelerated.demand.controlMaturity > normal.demand.controlMaturity, 'pilot acceleration strengthens controls');
   assert.ok(accelerated.maintenance.technicalDebt < normal.maintenance.technicalDebt, 'maintenance acceleration improves reliability');
   assert.equal(accelerated.energy.quartersFunded, 0, 'extra discovery capital cannot skip the required pilot and evaluation path');
+});
+
+test('implicit inactivity is not recorded as a learner pause or moved into Adapt', () => {
+  const states = scenarioInitiativesToStates(getScenario('projectFactory').initiatives);
+  states.quality.aiLifecycle = { ...states.quality.aiLifecycle, stage: 'experiment', stageStatus: 'in_progress' };
+  const next = updateInitiativeStatesForActions(states, { maintenance: 'discover' }, allocation, {
+    adoption: 38,
+    fundingByInitiative: {
+      maintenance: { discovery: .3, delivery: 0, scaleUp: 0, run: 0, continuity: 0, retirement: 0, total: .3 },
+    },
+  });
+  assert.equal(next.quality.lifecycle, states.quality.lifecycle);
+  assert.equal(next.quality.aiLifecycle.stage, 'experiment');
+  assert.notEqual(next.quality.aiLifecycle.stageStatus, 'paused');
+
+  const explicitlyPaused = updateInitiativeStatesForActions(states, { quality: 'pause' }, allocation, { adoption: 38 });
+  assert.equal(explicitlyPaused.quality.lifecycle, 'paused');
+  assert.equal(explicitlyPaused.quality.aiLifecycle.stage, 'adapt');
+  assert.equal(explicitlyPaused.quality.aiLifecycle.stageStatus, 'paused');
+});
+
+test('reselecting a paused card asks for its recommended next action', () => {
+  const scenario = getScenario('projectFactory');
+  const state = {
+    ...initialGameState(),
+    scenarioMode: true,
+    scenarioId: scenario.id,
+    stage: 'decide',
+    selected: ['quality'],
+    initiativeActions: { quality: 'pause' },
+    initiativeStates: scenarioInitiativesToStates(scenario.initiatives),
+  };
+  useGameStore.getState().loadGame(state);
+  assert.equal(useGameStore.getState().initiativeActions.quality, 'discover');
+
+  useGameStore.getState().setInitiativeAction('quality', 'pause');
+  useGameStore.getState().selectInitiatives(['quality']);
+  assert.equal(useGameStore.getState().initiativeActions.quality, 'discover');
 });
 
 test('every scenario initiative receives a stable AI lifecycle profile', () => {

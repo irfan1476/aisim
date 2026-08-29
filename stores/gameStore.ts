@@ -61,6 +61,25 @@ type GameStore = GameState & {
   submitLifecycleAdaptation: (payload: AdaptationInput) => void;
 };
 
+/**
+ * A Pause action normally removes an initiative from the selected portfolio.
+ * If an older save contains both, it is an obsolete carried-forward pause—not
+ * a current learner decision—so restore the appropriate next action.
+ */
+function repairSelectedPauseActions(state: GameState): GameState {
+  const initiativeActions = { ...state.initiativeActions };
+  let changed = false;
+  state.selected.forEach((id) => {
+    if (initiativeActions[id] !== 'pause') return;
+    const initiative = state.initiativeStates[id];
+    initiativeActions[id] = state.scenarioMode && initiative
+      ? suggestedLifecycleAction(initiative, state.q)
+      : Number(initiative?.quartersFunded || 0) > 0 ? 'maintain' : 'scale';
+    changed = true;
+  });
+  return changed ? { ...state, initiativeActions } : state;
+}
+
 const browserStorage: StateStorage = {
   getItem: (name) => {
     if (typeof window === 'undefined') return null;
@@ -231,11 +250,12 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
       ),
     );
     selected.forEach((id) => {
-      const existing = initiativeActions[id];
-      // Selection is a portfolio-scope choice, not a lifecycle decision.
-      // Preserve any action the learner already chose, including pause.
-      if (existing) return;
       const initiative = state.initiativeStates[id];
+      const existing = initiativeActions[id];
+      // Reselecting a paused capability means the learner is opening it back
+      // up for work. Never carry an old Pause forward as though it were the
+      // new choice; preserve only a positive action chosen this quarter.
+      if (existing && existing !== 'pause') return;
       initiativeActions[id] = state.scenarioMode && initiative
         ? suggestedLifecycleAction(initiative, state.q)
         : 'scale';
@@ -439,7 +459,7 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
     userReflections: { ...state.userReflections, ...reflection },
   })),
 
-  loadGame: (state) => set(normalizeGameState(state)),
+  loadGame: (state) => set(repairSelectedPauseActions(normalizeGameState(state))),
 
   submitLifecycleEvaluation: (payload) => set((state) => {
     const current = normalizeGameState(state);
