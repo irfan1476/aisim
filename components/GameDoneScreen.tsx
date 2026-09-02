@@ -72,7 +72,7 @@ function buildMissionView(scenario: any, metrics: Record<string, number> | undef
     const delta = current - definition.start;
     const worsened = definition.direction === "higher-is-better" ? delta < 0 : delta > 0;
     const status = role === "guardrail"
-      ? worsened ? "exposed" : progress >= 60 ? "achieved" : "on-track"
+      ? worsened ? "exposed" : progress >= 80 ? "achieved" : progress >= 35 ? "on-track" : "watch"
       : progress >= 80 ? "achieved" : progress >= 35 ? "on-track" : "watch";
     return { ...definition, role, current, progress, delta, status } as MissionOutcomeView;
   });
@@ -105,7 +105,7 @@ function verdict(
       "text-[#1a7f37]",
     ];
   }
-  if (score >= 66) {
+  if (score >= 62) {
     if (!scenarioMode || missionReady) return [
       "A",
       "Strategic Driver",
@@ -113,7 +113,7 @@ function verdict(
       "text-[#0969da]",
     ];
   }
-  if (score >= 52)
+  if (score >= 50)
     return [
       "B+",
       "Capable Strategist",
@@ -193,8 +193,10 @@ export default function GameDoneScreen({
     campaignInference.archetype,
   );
   const [runnerUpArchetype] = archetypeReveal(campaignInference.runnerUp);
-  const adoptionGap = Math.max(0, 60 - state.adoption);
-  const riskGap = Math.max(0, state.risk - 25);
+  const adoptionFloor = Math.max(70, Math.round(state.adoption));
+  const riskTarget = state.risk > 45 ? 45 : 35;
+  const adoptionGap = Math.max(0, 70 - state.adoption);
+  const riskGap = Math.max(0, state.risk - 45);
   const counts = history
     .flatMap((x) => (x.selectedIds?.length ? x.selectedIds : x.chosen || []))
     .reduce<Record<string, number>>((a, id) => {
@@ -725,13 +727,17 @@ export default function GameDoneScreen({
               {[
                 [
                   "01",
-                  `Raise adoption from ${n(state.adoption, 0)}% toward 70%`,
-                  "People investment and enablement should precede aggressive scale.",
+                  state.adoption >= 70
+                    ? `Protect adoption at ${adoptionFloor}% or higher`
+                    : `Raise adoption from ${n(state.adoption, 0)}% toward 70%`,
+                  state.adoption >= 70
+                    ? "Keep enablement funded while you change one other lever."
+                    : "People investment and enablement should precede aggressive scale.",
                 ],
                 [
                   "02",
-                  `Bring risk from ${n(state.risk, 0)}% below 25%`,
-                  "Use compliance as a growth enabler, not a late-stage repair.",
+                  `Bring risk from ${n(state.risk, 0)}% toward ${riskTarget}%`,
+                  "Use compliance and oversight as growth enablers, not late-stage repair.",
                 ],
                 [
                   "03",

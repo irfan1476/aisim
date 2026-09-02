@@ -75,8 +75,8 @@ test('final verdict rewards meaningful progress instead of collapsing every resu
   const report = read('components', 'GameDoneScreen.tsx');
 
   assert.match(report, /if \(score >= 82\)/, 'A+ should be attainable from the full campaign score');
-  assert.match(report, /if \(score >= 66\)/, 'strong strategic campaigns should reach A');
-  assert.match(report, /if \(score >= 52\)/, 'meaningful investment and delivery should reach B+');
+  assert.match(report, /if \(score >= 62\)/, 'strong strategic campaigns should reach A');
+  assert.match(report, /if \(score >= 50\)/, 'meaningful investment and delivery should reach B+');
   assert.match(report, /Foundation Builder/, 'mid-range results should be framed as constructive progress');
   assert.match(report, /Early Explorer/, 'low outcomes should remain distinct from a generic B');
   assert.doesNotMatch(report, /Developing Practitioner/, 'the old discouraging default verdict should be retired');

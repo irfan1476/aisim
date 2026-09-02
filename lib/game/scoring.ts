@@ -33,8 +33,12 @@ export type CampaignScoreBreakdown = {
 const clampScore = (value: unknown) => Math.max(0, Math.min(100, Number.isFinite(Number(value)) ? Number(value) : 0));
 const scoreKeys = ['scenarioTargetProgress', 'realisedFinancialValue', 'operatingHealth', 'executionDiscipline', 'responsibleAI', 'validatedLearning'] as const;
 const scenarioWeights = {
-  scenarioTargetProgress: 35,
-  realisedFinancialValue: 20,
+  // Scenario campaigns are learning journeys: mission movement and evidence
+  // must be able to carry a credible early win before cash payback arrives.
+  // Realised value still matters, but it should not flatten a well-run pilot
+  // into a low grade while the operating value curve is still maturing.
+  scenarioTargetProgress: 40,
+  realisedFinancialValue: 15,
   operatingHealth: 20,
   executionDiscipline: 10,
   responsibleAI: 5,
@@ -146,7 +150,7 @@ export function composeCampaignScore(input: ScoreInputs): CampaignScoreBreakdown
     responsibleAI: clampScore(input.responsibleAI),
     validatedLearning: clampScore(input.validatedLearning),
   };
-  const activeWeight = scenarioMode ? 100 : 65;
+  const activeWeight = scenarioMode ? 100 : 100 - scenarioWeights.scenarioTargetProgress;
   const weights = Object.fromEntries(scoreKeys.map((key) => [
     key,
     scenarioMode || key !== 'scenarioTargetProgress' ? Number((scenarioWeights[key] / activeWeight * 100).toFixed(6)) : 0,

@@ -63,13 +63,13 @@ test('lifecycle benefit realisation is bounded and requires adoption and readine
 test('campaign score applies agreed scenario weights and normalises Standard mode', () => {
   const inputs = { scenarioTargetProgress: 80, realisedFinancialValue: 60, operatingHealth: 70, executionDiscipline: 90, responsibleAI: 100, validatedLearning: 50 };
   const scenario = composeCampaignScore({ ...inputs, scenarioMode: true });
-  assert.equal(scenario.score, 73);
-  assert.deepEqual(scenario.weights, { scenarioTargetProgress: 35, realisedFinancialValue: 20, operatingHealth: 20, executionDiscipline: 10, responsibleAI: 5, validatedLearning: 10 });
+  assert.equal(scenario.score, 74);
+  assert.deepEqual(scenario.weights, { scenarioTargetProgress: 40, realisedFinancialValue: 15, operatingHealth: 20, executionDiscipline: 10, responsibleAI: 5, validatedLearning: 10 });
 
   const standard = composeCampaignScore({ ...inputs, scenarioMode: false });
   assert.equal(standard.weights.scenarioTargetProgress, 0);
-  assert.equal(standard.weights.realisedFinancialValue, 30.769231);
-  assert.equal(standard.score, 69.23);
+  assert.equal(standard.weights.realisedFinancialValue, 25);
+  assert.equal(standard.score, 70);
   assert.equal(realisedFinancialValueScore({ cumulativeInvestment: 20, cumulativeNetBenefit: 10 }), 50);
 });
 
@@ -107,6 +107,6 @@ test('scenario score refresh uses mission-weighted target progress, not raw doma
   // Guardrails are tracked separately from mission progress, so this gives
   // 15%: primary 0 × .60 + supporting 0 × .25 + guardrail 100 × .15.
   assert.equal(refreshed.scoreBreakdown.values.scenarioTargetProgress, 15);
-  assert.equal(refreshed.scoreBreakdown.contributions.scenarioTargetProgress, 5.25);
+  assert.equal(refreshed.scoreBreakdown.contributions.scenarioTargetProgress, 6);
   assert.equal(explainScore(state).values.scenarioTargetProgress, 15);
 });
