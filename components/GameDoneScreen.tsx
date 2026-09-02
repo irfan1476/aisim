@@ -23,6 +23,7 @@ import { getScenario } from "../lib/scenarios/registry";
 import type { ScenarioProgressDefinition } from "../lib/scenarios/types";
 import { calculateScenarioMissionProgress } from "../lib/scenarios/progress";
 import { explainScore } from "../lib/game/scoring";
+import { deriveCampaignVerdict } from "../lib/game/verdict";
 import { buildReplayRun, deleteReplayRun, readReplayRuns, saveReplayRun, type ReplayRun } from "../lib/replay";
 import RunComparison from "./RunComparison";
 import { deriveOperatingModelAdvisory } from "../lib/game/operatingModelAdvisory";
@@ -45,6 +46,8 @@ type Snapshot = {
   portfolioPosture?: string;
   deployedAmount?: number;
   fixedInitiativeSpend?: number;
+  deliveryIds?: string[];
+  discoveryIds?: string[];
 };
 const n = (value: unknown, digits = 1) => Number(value || 0).toFixed(digits);
 
@@ -84,57 +87,6 @@ function averageMissionProgress(outcomes: MissionOutcomeView[], role: MissionRol
   return values.length ? values.reduce((sum, item) => sum + item.progress, 0) / values.length : 0;
 }
 
-function verdict(
-  score: number,
-  adoption: number,
-  risk: number,
-  people: number,
-  missionReady = true,
-  masteryReady = false,
-  scenarioMode = false,
-) {
-  // The rating is a motivational summary of the full campaign score. The
-  // score already includes value, operating health, execution, governance,
-  // scenario progress, and validated learning; requiring every health metric
-  // again here made strategic campaigns collapse into a discouraging B.
-  if (score >= 82) {
-    if (!scenarioMode || masteryReady) return [
-      "A+",
-      "Transformation Leader",
-      "You built value and the operating system required to sustain it.",
-      "text-[#1a7f37]",
-    ];
-  }
-  if (score >= 62) {
-    if (!scenarioMode || missionReady) return [
-      "A",
-      "Strategic Driver",
-      "You combined strong value creation with a credible path to scale.",
-      "text-[#0969da]",
-    ];
-  }
-  if (score >= 50)
-    return [
-      "B+",
-      "Capable Strategist",
-      "You made meaningful investment and delivery choices. Your next run can turn this evidence into stronger realised value.",
-      "text-[#9a6700]",
-    ];
-  if (score >= 35)
-    return [
-      "B",
-      "Foundation Builder",
-      "You established a useful baseline. Keep one signal, change one decision, and use the next run to build momentum.",
-      "text-[#9a6700]",
-    ];
-  return [
-    "C",
-    "Early Explorer",
-    "This run created a starting point. Use the evidence to choose one focused experiment for the next campaign.",
-    "text-[#cf222e]",
-  ];
-}
-
 export default function GameDoneScreen({
   state,
   onPlayAgain,
@@ -162,6 +114,7 @@ export default function GameDoneScreen({
   const missionContract = scenario
     ? calculateScenarioMissionProgress(liveScenarioMetrics || state.scenarioStartingMetrics, scenario)
     : undefined;
+  const scoreBreakdown = state.scoreBreakdown || explainScore(state as any);
   const reflection = calculateReflection(state as any);
   const averageAllocation = (key: keyof GameViewState['alloc']) => {
     const captured = history.filter((item) => item.allocation);
@@ -176,15 +129,18 @@ export default function GameDoneScreen({
   const averageData = averageAllocation("data");
   const averageGovernance = averageAllocation("compliance");
   const realisedValueScore = Number(state.financialLedger?.cumulativeNetBenefit ?? 0) > 0 ? 1 : 0;
-  const [grade, archetype, verdictMessage, gradeTone] = verdict(
-    state.score,
-    state.adoption,
-    state.risk,
-    averagePeople,
-    missionContract?.missionReady ?? true,
-    missionContract?.masteryReady ?? false,
-    Boolean(scenario),
-  );
+  const campaignVerdict = deriveCampaignVerdict({
+    score: state.score,
+    adoption: state.adoption,
+    risk: state.risk,
+    validatedLearning: scoreBreakdown.values.validatedLearning,
+    deliveryQuarters: history.filter((item) => (item.deliveryIds || []).length > 0).length,
+    discoveryQuarters: history.filter((item) => (item.discoveryIds || []).length > 0).length,
+    scenarioMode: Boolean(scenario),
+    missionReady: missionContract?.missionReady,
+    masteryReady: missionContract?.masteryReady,
+  });
+  const { grade, archetype, message: verdictMessage, tone: gradeTone } = campaignVerdict;
   const campaignInference = inferArchetypeFromCampaignDetailed(
     state.baseline as number[],
     history,
@@ -268,7 +224,7 @@ export default function GameDoneScreen({
   const primaryMissionProgress = missionContract?.primaryProgress ?? averageMissionProgress(missionOutcomes, "primary");
   const guardrailOutcomes = missionOutcomes.filter((item) => item.role === "guardrail");
   const exposedGuardrails = guardrailOutcomes.filter((item) => item.status === "exposed");
-  const missionReady = missionContract?.missionReady ?? (primaryMissionProgress >= 75 && exposedGuardrails.length === 0);
+  const missionReady = missionContract?.missionReady ?? (primaryMissionProgress >= 60 && exposedGuardrails.length === 0);
   const missionStatus = exposedGuardrails.length
     ? "Guardrail exposed"
     : primaryMissionProgress >= 80
@@ -339,7 +295,6 @@ export default function GameDoneScreen({
   const nextExperiment = neglectedPressure
     ? `Replay from the next campaign and address ${neglectedPressure.item.label} earlier. Keep your strongest observed combination, then change only one quarter so you can test whether that pressure was the limiting factor.`
     : "Replay with one deliberate change: keep the same portfolio, but change the quarter in which you make your highest-impact investment.";
-  const scoreBreakdown = state.scoreBreakdown || explainScore(state as any);
   const exportReport = () => {
     const text = [
       `AISim Strategy Autopsy`,

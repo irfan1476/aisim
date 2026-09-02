@@ -89,8 +89,13 @@ async function startCampaign(page, profile) {
     .getByRole("button", { name: "Start your transformation" })
     .first()
     .click();
+  const operatingMode = page.getByRole("group", { name: "Operating mode" });
+  const standardMode = operatingMode.getByRole("button", { name: /Standard mode/ });
+  if ((await standardMode.getAttribute("aria-pressed")) !== "true") {
+    await standardMode.click();
+  }
   await page
-    .getByRole("button", { name: "Take the baseline assessment" })
+    .getByRole("button", { name: "Start baseline assessment" })
     .click();
   for (let index = 0; index < profile.baseline.length; index += 1) {
     await page
@@ -100,6 +105,7 @@ async function startCampaign(page, profile) {
   await page.getByRole("button", { name: "Enter the boardroom" }).click();
   await page.getByRole("button", { name: "Begin campaign" }).click();
   await expect(page.getByTestId("campaign-quarter")).toContainText("Quarter 1");
+  await dismissQuickStart(page);
 }
 
 async function setAllocation(page, allocation) {
@@ -150,12 +156,14 @@ async function startScenarioCampaign(page, scenarioId) {
     .first()
     .click();
 
-  const scenarioToggle = page.locator('button[aria-pressed]').first();
-  await expect(scenarioToggle).toHaveAttribute("aria-pressed", "false");
-  await scenarioToggle.click();
+  const operatingMode = page.getByRole("group", { name: "Operating mode" });
+  const scenarioToggle = operatingMode.getByRole("button", { name: /Scenario mode/ });
+  if ((await scenarioToggle.getAttribute("aria-pressed")) !== "true") {
+    await scenarioToggle.click();
+  }
   await expect(scenarioToggle).toHaveAttribute("aria-pressed", "true");
   await page.locator("#scenario-select").selectOption(scenarioId);
-  await page.getByRole("button", { name: "Take the baseline assessment" }).click();
+  await page.getByRole("button", { name: "Start baseline assessment" }).click();
 
   for (let index = 0; index < 5; index += 1) {
     await page.getByTestId(`baseline-${index}-3`).click();
@@ -163,11 +171,42 @@ async function startScenarioCampaign(page, scenarioId) {
   await page.getByRole("button", { name: "Enter the boardroom" }).click();
   await page.getByRole("button", { name: "Begin campaign" }).click();
   await expect(page.getByTestId("campaign-quarter")).toContainText("Quarter 1");
+  await dismissQuickStart(page);
+}
+
+async function dismissQuickStart(page) {
+  const dismiss = page.getByRole("button", { name: "Dismiss Quarter 1 guidance" });
+  if (await dismiss.isVisible().catch(() => false)) await dismiss.click();
 }
 
 async function resolveQuarter(page, profile) {
   await chooseInitiatives(page, profile.selected);
   await setAllocation(page, profile.allocation);
+  await page.waitForTimeout(150);
+  const quickFix = page.getByRole("button", {
+    name: /Apply quick fix and recalculate|Make plan executable/,
+  });
+  // The first match is the operating-system funding control, which carries
+  // the exact required amount. The later warning button rounds to one decimal
+  // and can remain fractionally below the actual minimum.
+  const fundPlan = page.getByRole("button", { name: /^Fund this plan/ }).first();
+  // Funding can reveal an oversight/capacity constraint, while the quick fix
+  // can surface an underfunded plan. Re-check both once rather than assuming
+  // a single fixed order in the evolving decision UI.
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    if (await quickFix.first().isVisible().catch(() => false)) {
+      await quickFix.first().click();
+      await page.waitForTimeout(150);
+    }
+    if (await fundPlan.isVisible().catch(() => false)) {
+      await fundPlan.click();
+      await page.waitForTimeout(150);
+    }
+    if (await page.getByRole("button", { name: "Confirm decisions" }).isEnabled()) {
+      break;
+    }
+  }
+  await expect(page.getByRole("button", { name: "Confirm decisions" })).toBeEnabled();
   await page.getByRole("button", { name: "Confirm decisions" }).click();
   await expect(page.getByTestId("quarter-results")).toBeVisible();
 
@@ -206,6 +245,11 @@ async function persistedState(page) {
     const parsed = JSON.parse(raw);
     return parsed.state || parsed;
   });
+}
+
+async function resumeCampaign(page) {
+  const resume = page.getByRole("button", { name: "Resume saved campaign" });
+  if (await resume.isVisible().catch(() => false)) await resume.click();
 }
 
 test("board advisor answers distinct suggested questions without an LLM", async ({ page }) => {
@@ -275,6 +319,7 @@ test("full campaign preserves Q1 values, survives reloads, and ends with evidenc
   const beforeFirstReload = await persistedState(page);
   expect(beforeFirstReload.q).toBe(4);
   await page.reload();
+  await resumeCampaign(page);
   await expect(page.getByTestId("campaign-quarter")).toContainText("Quarter 4");
   expect((await persistedState(page)).history).toHaveLength(3);
 
@@ -283,6 +328,7 @@ test("full campaign preserves Q1 values, survives reloads, and ends with evidenc
   const beforeSecondReload = await persistedState(page);
   expect(beforeSecondReload.q).toBe(6);
   await page.reload();
+  await resumeCampaign(page);
   await expect(page.getByTestId("campaign-quarter")).toContainText("Quarter 6");
   expect((await persistedState(page)).roi).toBeCloseTo(
     beforeSecondReload.roi,
@@ -301,7 +347,7 @@ test("scenario mode shows domain challenges, scenario initiatives, and a three-b
 }) => {
   await startScenarioCampaign(page, "bankNext");
 
-  await expect(page.getByText("Scenario progress")).toBeVisible();
+  await expect(page.getByText("Operating signal focus").first()).toBeVisible();
   await expect(page.getByText("Digital fraud incidents")).toBeVisible();
   await expect(page.getByText("Credit approval speed")).toBeVisible();
   await expect(page.getByText("Compliance readiness").first()).toBeVisible();
@@ -326,44 +372,39 @@ test("scenario mode shows domain challenges, scenario initiatives, and a three-b
   ).toHaveAttribute("data-selected", "false");
 });
 
-test("V2 decision coach and preview are independently collapsible", async ({
+test("decision tools open the current coach and strategy simulator", async ({
   page,
 }) => {
   await startCampaign(page, profiles.balanced);
-  const coach = page.getByTestId("decision-coach");
-  const preview = page.getByTestId("decision-preview");
-
-  await expect(coach).not.toHaveAttribute("open", "");
-  await expect(preview).not.toHaveAttribute("open", "");
-  await coach.locator(":scope > summary").click();
-  await expect(coach).toHaveAttribute("open", "");
+  await page.getByRole("button", { name: "Quarter coach" }).click();
+  const coach = page.getByRole("dialog", { name: "Quarter coach" });
+  await expect(coach).toBeVisible();
   await expect(coach).toContainText("Live decision impact");
-  await preview.locator(":scope > summary").click();
-  await expect(preview).toHaveAttribute("open", "");
-  await expect(preview).toContainText("Concentration risk");
-  await coach.locator(":scope > summary").click();
-  await expect(coach).not.toHaveAttribute("open", "");
-  await expect(preview).toHaveAttribute("open", "");
+  await coach.getByRole("button", { name: "Close quarter coach" }).click();
+  await page.getByRole("button", { name: "Strategy simulator" }).click();
+  await expect(page.getByRole("heading", { name: "Explore before you commit" })).toBeVisible();
+  await expect(page.getByText("Predicted operating outcome")).toBeVisible();
+  await page.getByRole("button", { name: "Close strategy simulator" }).click();
 });
 
-test("V2 scenario challenges expose live status and update after a quarter", async ({
+test("scenario challenges remain visible while a discovery quarter records evidence", async ({
   page,
 }) => {
   await startScenarioCampaign(page, "bankNext");
   const initial = await persistedState(page);
-  const challengePanel = page.locator("section").filter({ hasText: "Operating constraints" }).first();
+  const challengePanel = page.locator("section").filter({ hasText: "Operating signal focus" }).first();
   await expect(challengePanel).toContainText(/Critical|Watch|Recovering|Controlled/);
-  await expect(challengePanel).toContainText("Now");
+  await expect(challengePanel).toContainText("Current");
 
   await resolveQuarter(page, {
     ...profiles.balanced,
     selected: ["fraudDetection", "creditRiskAssessment", "complianceMonitoring"],
   });
   const after = await persistedState(page);
-  expect(Object.keys(after.scenarioState.metrics).some((key) =>
-    after.scenarioState.metrics[key] !== initial.scenarioState.metrics[key],
-  )).toBe(true);
-  await expect(page.locator("section").filter({ hasText: "Operating constraints" }).first())
+  expect(after.q).toBe(initial.q + 1);
+  expect(after.history).toHaveLength(1);
+  expect(after.history[0].initiativeActions).toBeTruthy();
+  await expect(page.locator("section").filter({ hasText: "Operating signal focus" }).first())
     .toContainText(/Critical|Watch|Recovering|Controlled/);
 });
 
@@ -414,6 +455,10 @@ test("V2 approved recommendation becomes actionable next-quarter guidance", asyn
     compliance: 10,
     innovation: 10,
   });
+  const capacityFix = page.getByRole("button", { name: "Apply quick fix and recalculate" });
+  if (await capacityFix.isVisible().catch(() => false)) await capacityFix.click();
+  await page.getByRole("button", { name: /^Fund this plan/ }).first().click();
+  await expect(page.getByRole("button", { name: "Confirm decisions" })).toBeEnabled();
   await page.getByRole("button", { name: "Confirm decisions" }).click();
   const results = page.getByTestId("quarter-results");
   const approve = results.getByRole("button", { name: "Approve recommendation" }).first();
@@ -436,11 +481,10 @@ test("V2 approved recommendation becomes actionable next-quarter guidance", asyn
 
 test("strategy simulator previews the active scenario without advancing the campaign", async ({ page }) => {
   await startCampaign(page, profiles.balanced);
-  await page.getByRole("button", { name: "Open analytics" }).click();
-  await page.getByRole("button", { name: "Open Strategy Simulator" }).click();
+  await page.getByRole("button", { name: "Strategy simulator" }).click();
   await expect(page.getByRole("heading", { name: "Explore before you commit" })).toBeVisible();
   await expect(page.getByText("Decision comparison")).toBeVisible();
-  await expect(page.getByText("What improves")).toBeVisible();
+  await expect(page.getByText("Predicted operating outcome")).toBeVisible();
   await expect(page.getByRole("button", { name: "Apply as next-quarter draft" })).toBeVisible();
   await expect(page.getByTestId("campaign-quarter")).toContainText("Quarter 1");
 });
@@ -450,7 +494,6 @@ test("Standard mode keeps scenario-only UI and initiative IDs absent", async ({
 }) => {
   await startCampaign(page, profiles.balanced);
 
-  await expect(page.getByText("Scenario progress")).toHaveCount(0);
   await expect(page.getByText("Digital fraud incidents")).toHaveCount(0);
   await expect(page.getByTestId("initiative-demand")).toBeVisible();
   await expect(page.getByTestId("initiative-fraudDetection")).toHaveCount(0);

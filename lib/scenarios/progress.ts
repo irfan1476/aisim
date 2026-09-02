@@ -188,7 +188,10 @@ export function calculateScenarioMissionProgress(
     : 100;
   const missionProgress = primaryProgress * .6 + supportingProgress * .25 + guardrailProgress * .15;
   const blockers: string[] = [];
-  if (primaryProgress < 75) blockers.push('Primary mission outcomes are not yet at 75% progress.');
+  // A twelve-quarter campaign can credibly earn its mission when its primary
+  // outcomes have made material (not necessarily complete) progress and its
+  // guardrails remain protected. Mastery remains deliberately stricter below.
+  if (primaryProgress < 60) blockers.push('Primary mission outcomes are not yet at 60% progress.');
   if (guardrailProtection < 100) blockers.push('At least one guardrail has deteriorated from its starting position.');
   return {
     values,
@@ -199,7 +202,7 @@ export function calculateScenarioMissionProgress(
     guardrailProgress,
     guardrailProtection,
     missionProgress,
-    missionReady: primaryProgress >= 75 && guardrailProtection >= 100,
+    missionReady: primaryProgress >= 60 && guardrailProtection >= 100,
     masteryReady: missionProgress >= 85 && supportingProgress >= 70 && guardrailProtection >= 100,
     blockers,
   };

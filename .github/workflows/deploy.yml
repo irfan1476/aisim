@@ -32,18 +32,23 @@ jobs:
       - uses: actions/setup-node@v4
         with: {node-version: 24, cache: npm}
       - run: npm ci
+      - name: Verify Vercel credentials and project access
+        if: ${{ env.VERCEL_TOKEN != '' && env.VERCEL_ORG_ID != '' && env.VERCEL_PROJECT_ID != '' }}
+        run: |
+          npx --yes vercel@latest whoami --token="$VERCEL_TOKEN"
+          npx --yes vercel@latest project inspect "$VERCEL_PROJECT_ID" --scope="$VERCEL_ORG_ID" --token="$VERCEL_TOKEN"
       - name: Link the branch to its Vercel project
         if: ${{ env.VERCEL_TOKEN != '' && env.VERCEL_ORG_ID != '' && env.VERCEL_PROJECT_ID != '' }}
         run: npx --yes vercel@latest link --yes --scope="$VERCEL_ORG_ID" --project="$VERCEL_PROJECT_ID" --token="$VERCEL_TOKEN"
       - name: Pull Vercel project settings
         if: ${{ env.VERCEL_TOKEN != '' && env.VERCEL_ORG_ID != '' && env.VERCEL_PROJECT_ID != '' }}
-        run: npx --yes vercel@latest pull --yes --project="$VERCEL_PROJECT_ID" --environment=production --token="$VERCEL_TOKEN"
+        run: npx --yes vercel@latest pull --yes --scope="$VERCEL_ORG_ID" --project="$VERCEL_PROJECT_ID" --environment=production --token="$VERCEL_TOKEN"
       - name: Build Vercel output
         if: ${{ env.VERCEL_TOKEN != '' && env.VERCEL_ORG_ID != '' && env.VERCEL_PROJECT_ID != '' }}
-        run: npx --yes vercel@latest build --prod --token="$VERCEL_TOKEN"
+        run: npx --yes vercel@latest build --prod --scope="$VERCEL_ORG_ID" --token="$VERCEL_TOKEN"
       - name: Deploy with Vercel
         if: ${{ env.VERCEL_TOKEN != '' && env.VERCEL_ORG_ID != '' && env.VERCEL_PROJECT_ID != '' }}
-        run: npx --yes vercel@latest deploy --prebuilt --prod --token="$VERCEL_TOKEN"
+        run: npx --yes vercel@latest deploy --prebuilt --prod --scope="$VERCEL_ORG_ID" --token="$VERCEL_TOKEN"
       - name: Explain skipped deployment
         if: ${{ env.VERCEL_TOKEN == '' || env.VERCEL_ORG_ID == '' || env.VERCEL_PROJECT_ID == '' }}
         run: |
