@@ -131,6 +131,9 @@ test('advisor prompt carries scenario and visible decision evidence without scor
       scenarioProgress: { fraudPressure: 40 },
       causalChain: [{ name: 'Compliance Monitoring' }],
       proactiveRecommendations: [{ title: 'Increase compliance budget' }],
+      seed: 987654,
+      runId: 'run-internal-only',
+      rulesVersion: '3.0',
     },
   });
 
@@ -139,6 +142,9 @@ test('advisor prompt carries scenario and visible decision evidence without scor
   assert.match(prompt, /remaining: 47\.5/);
   assert.match(prompt, /Current state:/);
   assert.match(prompt, /Do not reveal internal archetype labels or seed values/);
+  assert.doesNotMatch(prompt, /"seed":987654/);
+  assert.doesNotMatch(prompt, /run-internal-only/);
+  assert.doesNotMatch(prompt, /"rulesVersion":"3\.0"/);
   assert.match(prompt, /Recommendation:.*Why:.*Next step:/s);
   // The advisor is explanatory only: numeric outcomes remain engine-owned.
 });

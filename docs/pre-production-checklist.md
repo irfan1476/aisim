@@ -112,8 +112,8 @@ The final report should continue reading completed-quarter snapshots rather than
 - [x] Advisor context tests present
 - [x] Apply suggestion selects the relevant initiative
 - [x] Apply suggestion balances deployment spend when required
-- [ ] Advisor provider/fallback provenance visible to learner
-- [ ] Advisor payload sanitizes seed/internal metadata
+- [x] Advisor provider/fallback provenance visible to learner (deterministic evidence is labelled; an optional response is labelled AI perspective)
+- [x] Advisor payload sanitizes seed/internal metadata before an optional provider call
 - [x] Final browser smoke test on production-like environment
 - [ ] Vercel environment variables and GitHub deployment checks verified
 
@@ -161,4 +161,4 @@ The operating-system, targeted-acceleration, homepage, CI, and four-scenario bro
 
 ## Recommendation
 
-The release is live after passing automated tests, build, lint, type-check, the full browser suite, and an automated 12-quarter route through all four scenario packs. The route verifies quarter resolution, lifecycle review handling, reserve-aware late-campaign decisions, final-report completion, twelve recorded snapshots, scenario-native metrics, and zero browser errors. Checkpoint persistence now prunes older snapshots when localStorage is constrained and never blocks a turn. Treat the manual walkthrough and domain-owner review as the next quality step before formal assessment use; they are content-validation work, not unresolved deployment failures.
+The release is live after passing automated tests, build, lint, type-check, the full browser suite, and an automated 12-quarter route through all four scenario packs. The route verifies quarter resolution, lifecycle review handling, reserve-aware late-campaign decisions, final-report completion, twelve recorded snapshots, scenario-native metrics, and zero browser errors. Checkpoint persistence now prunes older snapshots when localStorage is constrained and never blocks a turn. Advisor calls now receive only learner-relevant evidence; internal seed/run metadata is removed at the prompt boundary. Treat the manual walkthrough and domain-owner review as the next quality step before formal assessment use; they are content-validation work, not unresolved deployment failures.
