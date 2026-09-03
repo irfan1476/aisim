@@ -114,7 +114,7 @@ The final report should continue reading completed-quarter snapshots rather than
 - [x] Apply suggestion balances deployment spend when required
 - [ ] Advisor provider/fallback provenance visible to learner
 - [ ] Advisor payload sanitizes seed/internal metadata
-- [ ] Final browser smoke test on production-like environment
+- [x] Final browser smoke test on production-like environment
 - [ ] Vercel environment variables and GitHub deployment checks verified
 
 ## V2 continuation checklist — current working-tree changes
@@ -133,7 +133,7 @@ The following refinements are present in the current V2 working tree and must be
 - [ ] Manually play all four scenarios through the updated decision window.
 - [ ] Verify one-, two- and three-initiative choices and partial deployment in each scenario.
 - [ ] Verify scenario-native units, challenge urgency and latest-quarter spend in each scenario.
-- [ ] Complete the four-scenario browser walkthrough for coach, preview, challenge states, Dashboard, Diagnostics, DNA and Evolution.
+- [x] Complete automated four-scenario browser coverage for coach, preview, challenge states, Dashboard, Diagnostics, DNA and Evolution; manual visual walkthrough remains open.
 - [x] Browser smoke tests are part of CI and the deploy validation job.
 - [ ] Review provisional scenario targets, crisis severity and synergy balance with domain reviewers.
 - [x] Review the final diff and complete the approved commit, push and deployment.
@@ -161,4 +161,4 @@ The operating-system, targeted-acceleration, homepage, CI, and four-scenario bro
 
 ## Recommendation
 
-The release is live after passing automated tests, build, lint, type-check, full E2E, and the new all-four-scenario first-quarter browser smoke. Treat the manual walkthrough and domain-owner review as the next quality step before formal assessment use; they are content-validation work, not unresolved deployment failures.
+The release is live after passing automated tests, build, lint, type-check, the full browser suite, and an automated 12-quarter route through all four scenario packs. The route verifies quarter resolution, lifecycle review handling, reserve-aware late-campaign decisions, final-report completion, twelve recorded snapshots, scenario-native metrics, and zero browser errors. Checkpoint persistence now prunes older snapshots when localStorage is constrained and never blocks a turn. Treat the manual walkthrough and domain-owner review as the next quality step before formal assessment use; they are content-validation work, not unresolved deployment failures.

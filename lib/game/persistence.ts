@@ -15,6 +15,7 @@ export const LEADERBOARD_STORAGE_KEY = 'ai_simulation_leaderboard';
 export const LEGACY_MIGRATION_KEY = 'ai-investment-legacy-migrated';
 export const CAMPAIGN_CHECKPOINTS_STORAGE_KEY = 'ai-investment-campaign-checkpoints';
 export const GAME_PERSISTENCE_VERSION = 9;
+const CHECKPOINT_RETENTION_LIMIT = 18;
 
 export type CampaignCheckpoint = {
   id: string;
@@ -507,10 +508,28 @@ export function saveCampaignCheckpoint(state: GameState, label = `Quarter ${stat
     && item.q === snapshot.q
     && item.label === label
   ));
-  window.localStorage.setItem(
-    CAMPAIGN_CHECKPOINTS_STORAGE_KEY,
-    JSON.stringify([checkpoint, ...existing].slice(0, 18)),
-  );
+
+  // Checkpoints are a convenience for revising capital pace, not a reason to
+  // block a live campaign. Full state snapshots grow as history and lifecycle
+  // evidence accumulate, so progressively prune older snapshots if the
+  // browser's storage quota is reached. The newest checkpoint is always tried
+  // first and all quota failures are intentionally non-fatal.
+  const candidates = [CHECKPOINT_RETENTION_LIMIT, 12, 8, 5, 3, 1]
+    .map((limit) => Math.min(limit, existing.length + 1))
+    .filter((limit, index, values) => values.indexOf(limit) === index);
+  for (const limit of candidates) {
+    try {
+      window.localStorage.setItem(
+        CAMPAIGN_CHECKPOINTS_STORAGE_KEY,
+        JSON.stringify([checkpoint, ...existing].slice(0, limit)),
+      );
+      return checkpoint;
+    } catch {
+      // Try a smaller retention window. If even one snapshot cannot be saved,
+      // return the in-memory checkpoint so gameplay and the current turn still
+      // complete normally.
+    }
+  }
   return checkpoint;
 }
 

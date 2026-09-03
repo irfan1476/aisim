@@ -144,7 +144,7 @@ async function chooseInitiatives(page, ids) {
     const selected = (await card.getAttribute("data-selected")) === "true";
     if (!selected && ids.includes(id)) await card.click();
   }
-  await expect(page.getByText("3 / 3 selected")).toBeVisible();
+  await expect(page.getByText(`${ids.length} / 3 selected`)).toBeVisible();
 }
 
 async function startScenarioCampaign(page, scenarioId) {
@@ -179,6 +179,24 @@ async function dismissQuickStart(page) {
   if (await dismiss.isVisible().catch(() => false)) await dismiss.click();
 }
 
+async function resolveLifecycleReviews(page) {
+  // A completed quarter can expose several initiative-level reviews. The
+  // default choices are deliberately deterministic for this smoke route;
+  // empty optional fields are valid and do not block progression.
+  for (const name of [
+    "Record evaluation decision",
+    "Record deployment mode",
+    "Record monitoring action",
+  ]) {
+    const submit = page.getByRole("button", { name });
+    for (let attempt = 0; attempt < 12; attempt += 1) {
+      if (!(await submit.first().isVisible().catch(() => false))) break;
+      await submit.first().click();
+      await page.waitForTimeout(100);
+    }
+  }
+}
+
 async function resolveQuarter(page, profile) {
   await chooseInitiatives(page, profile.selected);
   await setAllocation(page, profile.allocation);
@@ -189,7 +207,7 @@ async function resolveQuarter(page, profile) {
   // The first match is the operating-system funding control, which carries
   // the exact required amount. The later warning button rounds to one decimal
   // and can remain fractionally below the actual minimum.
-  const fundPlan = page.getByRole("button", { name: /^Fund this plan/ }).first();
+  const fundPlans = page.getByRole("button", { name: /^Fund this plan/ });
   // Funding can reveal an oversight/capacity constraint, while the quick fix
   // can surface an underfunded plan. Re-check both once rather than assuming
   // a single fixed order in the evolving decision UI.
@@ -198,17 +216,31 @@ async function resolveQuarter(page, profile) {
       await quickFix.first().click();
       await page.waitForTimeout(150);
     }
-    if (await fundPlan.isVisible().catch(() => false)) {
-      await fundPlan.click();
-      await page.waitForTimeout(150);
+    // The warning panel's CTA is the last matching button; it can be the
+    // actionable one when the release control only previews a new amount.
+    for (let index = (await fundPlans.count()) - 1; index >= 0; index -= 1) {
+      const fundPlan = fundPlans.nth(index);
+      if (await fundPlan.isVisible().catch(() => false)) {
+        await fundPlan.click();
+        await page.waitForTimeout(150);
+      }
     }
+    if (await page.getByRole("button", { name: "Continue without funding" }).isVisible().catch(() => false)) break;
     if (await page.getByRole("button", { name: "Confirm decisions" }).isEnabled()) {
       break;
     }
   }
-  await expect(page.getByRole("button", { name: "Confirm decisions" })).toBeEnabled();
-  await page.getByRole("button", { name: "Confirm decisions" }).click();
+  const continueWithoutFunding = page.getByRole("button", { name: "Continue without funding" });
+  if (await continueWithoutFunding.isVisible().catch(() => false)) {
+    await continueWithoutFunding.click();
+  } else {
+    await expect(page.getByRole("button", { name: "Confirm decisions" })).toBeEnabled();
+    await page.getByRole("button", { name: "Confirm decisions" }).click();
+  }
+  const accelerate = page.getByRole("button", { name: "Accelerate deliberately" });
+  if (await accelerate.isVisible().catch(() => false)) await accelerate.click();
   await expect(page.getByTestId("quarter-results")).toBeVisible();
+  await resolveLifecycleReviews(page);
 
   let advance = page.getByRole("button", {
     name: /Continue to next quarter|View final verdict/,
@@ -249,7 +281,13 @@ async function persistedState(page) {
 
 async function resumeCampaign(page) {
   const resume = page.getByRole("button", { name: "Resume saved campaign" });
-  if (await resume.isVisible().catch(() => false)) await resume.click();
+  if (await resume.isVisible().catch(() => false)) {
+    // The resume prompt can sit below the fold after a reload. Scroll it into
+    // view before clicking so the persistence regression test is not sensitive
+    // to the viewport's previous scroll position.
+    await resume.scrollIntoViewIfNeeded();
+    await resume.click({ force: true });
+  }
 }
 
 test("board advisor answers distinct suggested questions without an LLM", async ({ page }) => {
@@ -447,6 +485,67 @@ test("every scenario pack can resolve its first quarter", async ({ page }) => {
     expect(after.history, `${scenario.id} should record Q1`).toHaveLength(1);
     expect(after.history[0].q).toBe(1);
     await expect(page.getByTestId("campaign-quarter")).toContainText("Quarter 2");
+  }
+});
+
+test("every scenario pack supports a reproducible 12-quarter campaign", async ({
+  page,
+}) => {
+  const scenarios = [
+    { id: "projectFactory", challenge: "Equipment Downtime" },
+    { id: "bankNext", challenge: "Digital fraud incidents" },
+    { id: "care360", challenge: "Patient wait times" },
+    { id: "futureReady", challenge: "Student engagement" },
+  ];
+  const browserErrors = [];
+
+  page.on("pageerror", (error) => browserErrors.push(error.message));
+  page.on("console", (message) => {
+    if (message.type() === "error") browserErrors.push(message.text());
+  });
+
+  for (const scenario of scenarios) {
+    const errorsBefore = browserErrors.length;
+    await startScenarioCampaign(page, scenario.id);
+    const initiativeOptions = await page
+      .locator('[data-testid^="initiative-"]')
+      .evaluateAll((cards) =>
+        cards
+          .map((card) => ({
+            id: card.getAttribute("data-testid").replace("initiative-", ""),
+            cost: Number(card.getAttribute("data-base-cost") || Number.POSITIVE_INFINITY),
+          }))
+          .sort((a, b) => a.cost - b.cost),
+      );
+    const initiativeIds = initiativeOptions.slice(0, 3).map((item) => item.id);
+    const leastCostInitiative = initiativeOptions[0].id;
+    expect(initiativeIds).toHaveLength(3);
+
+    for (let quarter = 1; quarter <= 12; quarter += 1) {
+      await expect(page.getByTestId("campaign-quarter")).toContainText(
+        `Quarter ${quarter}`,
+      );
+      await resolveQuarter(page, {
+        ...profiles.balanced,
+        // Keep the route executable as the finite campaign purse gets low.
+        // This models a deliberate focus decision rather than allowing the
+        // harness to fail on an overcommitted late-quarter portfolio.
+        selected: quarter >= 12
+          ? []
+          : quarter >= 11
+            ? [leastCostInitiative]
+            : initiativeIds,
+      });
+    }
+
+    await expect(
+      page.getByRole("heading", { name: "Your strategy has a story." }),
+    ).toBeVisible();
+    const final = await persistedState(page);
+    expect(final.q, `${scenario.id} should finish at Q12`).toBe(12);
+    expect(final.history, `${scenario.id} should capture 12 quarters`).toHaveLength(12);
+    expect(final.history.every((entry) => entry.scenarioState?.metrics)).toBe(true);
+    expect(browserErrors.slice(errorsBefore), `${scenario.id} browser errors`).toEqual([]);
   }
 });
 
