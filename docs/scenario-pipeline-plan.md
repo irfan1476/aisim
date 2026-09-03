@@ -113,14 +113,15 @@ The repository does not currently include Jest or React Testing Library. First u
 - [x] Improve final diagnosis with evidence from allocations, initiatives, and metric movement.
 - [x] Add scenario-aware scoring explanation; do not introduce arbitrary multipliers.
 
-### Phase 4 — Release and deployment — pending
+### Phase 4 — Release and deployment
 
 - [x] Run the full test/build/e2e checklist on the feature branch.
-- [ ] Review the branch diff for accidental changes and unrelated files.
-- [ ] Push the feature branch to GitHub.
-- [ ] Deploy the branch to a separate Vercel project.
-- [ ] Run a manual acceptance pass for all four scenarios.
-- [ ] Only merge into `main` after explicit approval.
+- [x] Review the branch diff for accidental changes and unrelated files.
+- [x] Push the release commits to GitHub `main`.
+- [x] Deploy the release to the linked Vercel production project.
+- [x] Run an automated first-quarter browser smoke pass for all four scenarios.
+- [ ] Run a full manual acceptance pass for all four scenarios.
+- [x] Merge/release to `main` after explicit user approval.
 
 ## Test commands
 

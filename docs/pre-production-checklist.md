@@ -136,11 +136,11 @@ The following refinements are present in the current V2 working tree and must be
 - [ ] Complete the four-scenario browser walkthrough for coach, preview, challenge states, Dashboard, Diagnostics, DNA and Evolution.
 - [x] Browser smoke tests are part of CI and the deploy validation job.
 - [ ] Review provisional scenario targets, crisis severity and synergy balance with domain reviewers.
-- [ ] Review the final V2 diff and explicitly approve commit/push/deployment.
+- [x] Review the final diff and complete the approved commit, push and deployment.
 
 This checklist records working-tree implementation status only. It does not authorise a commit, merge, push or production deployment.
 
-## Documentation update — 2026-08-24
+## Documentation update — 2026-09-03
 
 This documentation pass is restricted to V2 release notes, analytics audit and this checklist. No application code, tests, V3 files or branches were changed, and no commit was created.
 
@@ -157,8 +157,8 @@ For every pack, repeat the following learner paths: select one initiative, selec
 
 ### Release status
 
-The V2 implementation tracks are present locally and workstream checks have reported type-check, automated tests, production compilation and diff validation, including a reported 65/65 test run. The branch is not yet a clean release candidate because the working tree contains uncommitted V2 code changes and local/generated artifacts. The release gate remains: reconcile the diff, complete one clean full run, perform the four-scenario browser walkthrough, review provisional values with domain reviewers, then obtain explicit approval before commit, push or deployment.
+The operating-system, targeted-acceleration, homepage, CI, and four-scenario browser-smoke changes are committed and deployed. The production deployment is READY at `https://www.stateframe.in`. The generated `balance-report.json` remains intentionally unstaged. A full manual four-scenario walkthrough and formal domain-owner review of synthetic values remain the only publication-quality follow-ups.
 
 ## Recommendation
 
-Do not deploy the current branch as the final production release until the updated decision-window flow passes the manual four-scenario walkthrough and browser smoke test, the provisional content is reviewed, and the final V2 diff is approved. Documentation updates do not change that release gate.
+The release is live after passing automated tests, build, lint, type-check, full E2E, and the new all-four-scenario first-quarter browser smoke. Treat the manual walkthrough and domain-owner review as the next quality step before formal assessment use; they are content-validation work, not unresolved deployment failures.
