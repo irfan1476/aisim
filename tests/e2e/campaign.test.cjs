@@ -408,6 +408,48 @@ test("scenario challenges remain visible while a discovery quarter records evide
     .toContainText(/Critical|Watch|Recovering|Controlled/);
 });
 
+test("every scenario pack can resolve its first quarter", async ({ page }) => {
+  const scenarios = [
+    { id: "projectFactory", challenge: "Equipment Downtime" },
+    { id: "bankNext", challenge: "Digital fraud incidents" },
+    { id: "care360", challenge: "Patient wait times" },
+    { id: "futureReady", challenge: "Student engagement" },
+  ];
+
+  for (const scenario of scenarios) {
+    await startScenarioCampaign(page, scenario.id);
+
+    // These are the native scenario surfaces, rather than a generic setup
+    // assertion: each pack must expose its own pressure map and initiatives.
+    const signalPanel = page
+      .locator("section")
+      .filter({ hasText: "Operating signal focus" })
+      .first();
+    await expect(signalPanel).toBeVisible();
+    await expect(signalPanel).toContainText(scenario.challenge);
+
+    const initiativeCards = page.locator('[data-testid^="initiative-"]');
+    await expect(initiativeCards).toHaveCount(6);
+    const selectedIds = await initiativeCards.evaluateAll((cards) =>
+      cards
+        .slice(0, 3)
+        .map((card) => card.getAttribute("data-testid").replace("initiative-", "")),
+    );
+    await expect(selectedIds).toHaveLength(3);
+
+    await resolveQuarter(page, {
+      ...profiles.balanced,
+      selected: selectedIds,
+    });
+
+    const after = await persistedState(page);
+    expect(after.q, `${scenario.id} should advance to Q2`).toBe(2);
+    expect(after.history, `${scenario.id} should record Q1`).toHaveLength(1);
+    expect(after.history[0].q).toBe(1);
+    await expect(page.getByTestId("campaign-quarter")).toContainText("Quarter 2");
+  }
+});
+
 test("V2 analytics uses latest completed-quarter spend and separates DNA from evolution", async ({
   page,
 }) => {
