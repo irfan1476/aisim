@@ -1,5 +1,6 @@
 import type { Allocation, GameState, Recommendation } from './state';
 import { getScenario } from '../scenarios/registry';
+import { OPERATING_LEVER_LABELS, operatingLoopReadout } from './operatingLoop';
 
 function initiativeIdsForMetric(state: GameState, metric?: string): string[] {
   const exact = Object.values(state.initiativeStates || {})
@@ -64,5 +65,24 @@ export function generateProactiveRecommendations(state: GameState): Recommendati
   if (state.risk > 35) recs.push(recommendation(state, { priority: 'high', title: 'Risk Exposure Warning', message: 'Risk exposure is high enough to trigger governance scrutiny.', action: 'Increase compliance budget', metric: 'Risk reduction potential', metricKey: 'risk' }));
   if (state.adoption < 45 && state.alloc.people >= 15) recs.push(recommendation(state, { priority: 'medium', title: 'Adoption Lag Detected', message: 'Adoption is below the expected change-management curve.', action: 'Increase training investment', metric: 'Adoption potential', metricKey: 'adoption' }));
   if (state.selected.length === 3 && state.alloc.people >= 15 && state.alloc.compliance >= 10) recs.push(recommendation(state, { priority: 'low', title: 'Balanced Portfolio', message: 'Your current portfolio funds both value and the operating system around it.', action: 'Maintain course', metric: 'Steady growth predicted', metricKey: 'adoption', preferred: state.selected }));
+  const operatingGap = state.selected
+    .map((id) => {
+      const initiative = state.initiativeStates?.[id];
+      if (!initiative) return undefined;
+      const action = state.initiativeActions?.[id] || 'pilot';
+      return { initiative, readout: operatingLoopReadout(initiative, action, state.alloc) };
+    })
+    .filter((item): item is { initiative: GameState['initiativeStates'][string]; readout: ReturnType<typeof operatingLoopReadout> } => Boolean(item))
+    .sort((left, right) => (right.readout.gaps[0]?.gap || 0) - (left.readout.gaps[0]?.gap || 0))[0];
+  if (operatingGap?.readout.gaps.length) {
+    const gap = operatingGap.readout.gaps[0];
+    recs.push({
+      priority: gap.gap >= 10 ? 'high' : 'medium',
+      title: `${operatingGap.initiative.name}: ${OPERATING_LEVER_LABELS[gap.lever]} is the bottleneck`,
+      message: `${operatingGap.readout.summary} The current shared mix is ${gap.gap.toFixed(0)} points below the stage recommendation. Change the local mix only if you accept the trade-off elsewhere.`,
+      action: `Preview a ${OPERATING_LEVER_LABELS[gap.lever]}-first mix for ${operatingGap.initiative.name}`,
+      metric: `${OPERATING_LEVER_LABELS[gap.lever]} support gap ${gap.gap.toFixed(0)} points`,
+    });
+  }
   return recs;
 }

@@ -1,4 +1,4 @@
-import { initialGameState, normalizeDeploymentAmount, quarterlyDeploymentCap, type Allocation, type GameState, type InitiativeAllocationSet, type MetricKey, type PortfolioSnapshot, type QuarterSnapshot } from './state';
+import { initialGameState, normalizeDeploymentAmount, quarterlyDeploymentCap, type Allocation, type GameState, type InitiativeAllocationSet, type MetricKey, type OperatingEvidence, type PortfolioSnapshot, type QuarterSnapshot } from './state';
 import { initializeInitiativeStates, migrateInitiativeState, type InitiativeState } from './initiativeState';
 import { createInitiativeGeneration, generateInitiatives, inferArchetypeFromDecisions, type InitiativeGeneration, type ScenarioArchetype } from './generator';
 import { getScenario } from '../scenarios/registry';
@@ -6,7 +6,7 @@ import { scenarioInitiativesToStates } from './initiativeAdapter';
 import { emptyFinancialLedger } from './economics';
 import { isInitiativeAction } from './initiativeState';
 import { allocationTotal, rebalanceOperatingAllocation } from './initiativeAllocation';
-import type { AdaptationSet, DeploymentModeSet, InitiativeActionSet, LifecycleReviewSet, AdaptationInput, DeploymentModeInput, LifecycleReviewInput } from './businessModel';
+import type { AdaptationSet, DeploymentModeSet, InitiativeAccelerationAllocation, InitiativeActionSet, LifecycleReviewSet, AdaptationInput, DeploymentModeInput, LifecycleReviewInput } from './businessModel';
 
 export const GAME_STORAGE_KEY = 'ai-investment-game';
 export const LEGACY_GAME_STORAGE_KEY = 'ai-investment-save';
@@ -28,6 +28,11 @@ export type WhatIfDraft = {
   name?: string;
   selected: string[];
   alloc: Allocation;
+  initiativeAllocationMode?: GameState['initiativeAllocationMode'];
+  initiativeAllocations?: InitiativeAllocationSet;
+  /** Optional learner-directed split of discretionary scale-up capital. */
+  accelerationAllocationMode?: GameState['accelerationAllocationMode'];
+  accelerationAllocations?: InitiativeAccelerationAllocation;
   deploymentAmount?: number;
   initiativeActions?: InitiativeActionSet;
   projection?: Record<string, unknown>;
@@ -107,6 +112,14 @@ function normalizeInitiativeAllocations(value: unknown, fallback: Allocation, in
     }));
 }
 
+function normalizeAccelerationAllocations(value: unknown, initiativeIds?: Set<string>): InitiativeAccelerationAllocation | undefined {
+  if (!isRecord(value)) return undefined;
+  const entries = Object.entries(value)
+    .filter(([id, weight]) => (!initiativeIds || initiativeIds.has(id)) && typeof weight === 'number' && Number.isFinite(weight) && weight >= 0)
+    .map(([id, weight]) => [id, Math.max(0, Number(weight))] as const);
+  return entries.length ? Object.fromEntries(entries) : undefined;
+}
+
 function normalizeInitiativeStates(value: unknown, fallback: Record<string, InitiativeState>): Record<string, InitiativeState> {
   const source = isRecord(value) ? value : {};
   return Object.fromEntries(Object.entries(fallback).map(([id, base]) => {
@@ -158,6 +171,7 @@ function normalizeSnapshot(
   if (isRecord(value.allocation)) snapshot.allocation = normalizeAllocation(value.allocation, fallbackMetrics.alloc);
   if (value.allocationMode === 'shared' || value.allocationMode === 'custom') snapshot.allocationMode = value.allocationMode;
   if (isRecord(value.initiativeAllocations)) snapshot.initiativeAllocations = normalizeInitiativeAllocations(value.initiativeAllocations, fallbackMetrics.alloc);
+  snapshot.accelerationAllocations = normalizeAccelerationAllocations(value.accelerationAllocations);
   if (value.crisis !== undefined) snapshot.crisis = value.crisis;
   if (isRecord(value.crisisResponse)) {
     const crisisResponse: Record<string, number> = {};
@@ -202,6 +216,7 @@ function normalizeSnapshot(
   if (Array.isArray(value.evaluationDecisions)) snapshot.evaluationDecisions = value.evaluationDecisions as LifecycleReviewInput[];
   if (Array.isArray(value.deploymentDecisions)) snapshot.deploymentDecisions = value.deploymentDecisions as DeploymentModeInput[];
   if (Array.isArray(value.adaptationDecisions)) snapshot.adaptationDecisions = value.adaptationDecisions as AdaptationInput[];
+  if (Array.isArray(value.operatingEvidence)) snapshot.operatingEvidence = value.operatingEvidence as OperatingEvidence[];
   if (isRecord(value.initiativeFunding)) snapshot.initiativeFunding = value.initiativeFunding as QuarterSnapshot['initiativeFunding'];
   if (isRecord(value.financialLedger)) snapshot.financialLedger = value.financialLedger as QuarterSnapshot['financialLedger'];
   if (isRecord(value.capacity)) snapshot.capacity = value.capacity as QuarterSnapshot['capacity'];
@@ -277,6 +292,8 @@ export function normalizeGameState(value: unknown): GameState {
   });
   next.initiativeAllocationMode = source.initiativeAllocationMode === 'custom' ? 'custom' : 'shared';
   next.initiativeAllocations = normalizeInitiativeAllocations(source.initiativeAllocations, next.alloc, new Set(Object.keys(next.initiativeStates)));
+  next.accelerationAllocationMode = source.accelerationAllocationMode === 'focused' ? 'focused' : 'proportional';
+  next.accelerationAllocations = normalizeAccelerationAllocations(source.accelerationAllocations, new Set(Object.keys(next.initiativeStates)));
   next.initiativeActions = isRecord(source.initiativeActions)
     ? Object.fromEntries(Object.entries(source.initiativeActions).filter(([, action]) => isInitiativeAction(action))) as InitiativeActionSet
     : Object.fromEntries(next.selected.map((id) => [id, 'scale']));
@@ -385,6 +402,12 @@ export function normalizeWhatIfDraft(value: unknown): WhatIfDraft | null {
     name: typeof value.name === 'string' ? value.name : undefined,
     selected,
     alloc: normalizeAllocation(value.alloc, defaults.alloc),
+    initiativeAllocationMode: value.initiativeAllocationMode === 'custom' ? 'custom' : value.initiativeAllocationMode === 'shared' ? 'shared' : undefined,
+    initiativeAllocations: isRecord(value.initiativeAllocations)
+      ? normalizeInitiativeAllocations(value.initiativeAllocations, defaults.alloc)
+      : undefined,
+    accelerationAllocationMode: value.accelerationAllocationMode === 'focused' ? 'focused' : value.accelerationAllocationMode === 'proportional' ? 'proportional' : undefined,
+    accelerationAllocations: normalizeAccelerationAllocations(value.accelerationAllocations),
     deploymentAmount: typeof value.deploymentAmount === 'number' && Number.isFinite(value.deploymentAmount) ? Math.max(0, value.deploymentAmount) : undefined,
     initiativeActions: isRecord(value.initiativeActions)
       ? Object.fromEntries(Object.entries(value.initiativeActions).filter(([, action]) => isInitiativeAction(action))) as InitiativeActionSet
@@ -401,7 +424,16 @@ export function readLegacyGameState(): GameState | null {
     if (!raw) return null;
     const state = normalizeGameState(JSON.parse(raw));
     const draft = readWhatIfDraft();
-    return draft ? { ...state, selected: draft.selected, alloc: draft.alloc, ...(draft.initiativeActions ? { initiativeActions: draft.initiativeActions } : {}) } : state;
+    return draft ? {
+      ...state,
+      selected: draft.selected,
+      alloc: draft.alloc,
+      ...(draft.initiativeAllocationMode ? { initiativeAllocationMode: draft.initiativeAllocationMode } : {}),
+      ...(draft.initiativeAllocations ? { initiativeAllocations: draft.initiativeAllocations } : {}),
+      ...(draft.accelerationAllocationMode ? { accelerationAllocationMode: draft.accelerationAllocationMode } : {}),
+      ...(draft.accelerationAllocations ? { accelerationAllocations: draft.accelerationAllocations } : {}),
+      ...(draft.initiativeActions ? { initiativeActions: draft.initiativeActions } : {}),
+    } : state;
   } catch {
     return null;
   }

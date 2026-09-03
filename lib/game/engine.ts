@@ -9,8 +9,9 @@ import { normalizeGameState } from "./persistence";
 import { evaluateSynergies } from "./generator";
 import { getScenario } from "../scenarios/registry";
 import { applyScenarioEffects, calculatePortfolioDynamics, calculateStandardEffects, fundingIntensityFor } from "./effectResolver";
-import type { AdaptationInput, AdaptationSet, DeploymentModeInput, DeploymentModeSet, InitiativeActionSet, InitiativeFunding, LifecycleReviewInput, LifecycleReviewSet } from './businessModel';
+import type { AdaptationInput, AdaptationSet, DeploymentModeInput, DeploymentModeSet, InitiativeAccelerationAllocation, InitiativeActionSet, InitiativeFunding, LifecycleReviewInput, LifecycleReviewSet } from './businessModel';
 import { applyDataFlywheel, recordEvaluationEvidence } from './lifecycleResolver';
+import { buildOperatingEvidenceForPortfolio } from './operatingEvidence';
 
 export type QuarterDecision = {
   selected?: string[];
@@ -26,6 +27,8 @@ export type QuarterDecision = {
   initiativeAllocations?: InitiativeAllocationSet;
   deploymentAmount?: number;
   fundingByInitiative?: Record<string, InitiativeFunding>;
+  /** Optional learner-directed split of discretionary scale-up capital. */
+  accelerationAllocations?: InitiativeAccelerationAllocation;
   gateResults?: Record<string, { deliveryMultiplier: number; riskAdjustment: number }>;
   /** Compatibility input for previews and older callers. */
   continuityAllocations?: Record<string, number>;
@@ -205,7 +208,18 @@ export function resolveQuarter(
     scenarioState: JSON.parse(JSON.stringify(scenarioState)),
     synergiesDiscovered: synergies.map((effect) => effect.key),
     fundingIntensity,
+    accelerationAllocations: decision.accelerationAllocations,
   };
+  snapshot.operatingEvidence = buildOperatingEvidenceForPortfolio(
+    evolved,
+    initiativeActions,
+    decision.alloc,
+    decision.initiativeAllocationMode === 'custom' ? 'custom' : 'shared',
+    decision.initiativeAllocations,
+    decision.alloc,
+    scenario ? (current.scenarioState?.metrics || {}) : {},
+    scenario ? (scenarioState.metrics || {}) : {},
+  );
   return { metrics: resolvedMetrics, initiativeStates: evolved, scenarioState, snapshot };
 }
 

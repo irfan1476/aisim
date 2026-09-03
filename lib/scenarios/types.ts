@@ -1,7 +1,7 @@
 import type { Initiative } from '../game/initiatives';
 import type { Allocation } from '../game/state';
 import type { MaturityLevel } from '../game/initiativeState';
-import type { CapacityState, InitiativeRequirements } from '../game/businessModel';
+import type { CapacityState, InitiativeAction, InitiativeRequirements } from '../game/businessModel';
 
 export type CurrencyMode = '$' | '₹';
 export type ScenarioDirection = 'higher-is-better' | 'lower-is-better';
@@ -53,6 +53,49 @@ export type ScenarioNeglectConfig = {
  * historical operating lifecycle or existing scenario packs invalid.
  */
 export type ScenarioLifecycleStage = 'data_readiness' | 'experiment' | 'pilot' | 'evaluate' | 'deploy' | 'monitor' | 'adapt';
+
+/**
+ * The six operating capabilities a learner can deliberately fund.  These
+ * names match Allocation so the profile can be carried through the engine,
+ * preview and replay without a translation layer.
+ */
+export type OperatingLever = 'infra' | 'data' | 'people' | 'mlops' | 'compliance' | 'innovation';
+
+/**
+ * Operating profiles are authored against the learner-facing lifecycle
+ * actions.  The AI lifecycle stages remain useful to consumers that need a
+ * finer-grained view; the resolver supplies both vocabularies consistently.
+ */
+export type ScenarioOperatingStage = InitiativeAction | ScenarioLifecycleStage;
+export type OperatingWeightSet = Partial<Record<OperatingLever, number>>;
+
+export type ScenarioOperatingCapacitySensitivity = {
+  integration: number;
+  delivery: number;
+  change: number;
+  data: number;
+  governance: number;
+};
+
+/**
+ * Stable, serialisable operating model contract.  `revision` is intentionally
+ * explicit so future profile changes can be migrated without changing the
+ * meaning of historical campaign snapshots.
+ */
+export type ScenarioOperatingProfile = {
+  revision: 1;
+  bottleneckOrder: OperatingLever[];
+  stageWeights: Record<ScenarioOperatingStage, OperatingWeightSet>;
+  capacitySensitivity: ScenarioOperatingCapacitySensitivity;
+};
+
+/** Partial authoring is the public scenario-pack surface. */
+export type ScenarioOperatingProfileOverride = {
+  revision?: 1;
+  bottleneckOrder?: OperatingLever[];
+  stageWeights?: Partial<Record<ScenarioOperatingStage, OperatingWeightSet>>;
+  capacitySensitivity?: Partial<ScenarioOperatingCapacitySensitivity>;
+};
 
 export type ScenarioEvaluationCriterion = {
   id: string;
@@ -160,6 +203,8 @@ export type ScenarioInitiative = Initiative & {
   provisional?: boolean;
   /** Optional, initiative-specific lifecycle facts; filled by the adapter when omitted. */
   lifecycleProfile?: Partial<ScenarioLifecycleProfile>;
+  /** Optional operating-model facts; resolved to a complete profile by the adapter. */
+  operatingProfile?: ScenarioOperatingProfileOverride;
 };
 
 export type ScenarioCrisisOption = {

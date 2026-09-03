@@ -86,8 +86,9 @@ test('recommendation application is allocation-safe and preserves the recommenda
   assert.equal(applied.alloc.compliance, 18);
   assert.equal(Object.values(applied.alloc).reduce((sum, value) => sum + value, 0), priorTotal);
   assert.deepEqual(applied.selected, priorSelected);
-  // Production blocker: the approved recommendation is not yet mapped to an
-  // initiative selection or deployment amount. See docs/pre-production-checklist.md.
+  // Legacy guidance without an initiative payload remains allocation-only for
+  // backwards compatibility; current recommendations carry actionable IDs,
+  // operating targets and deployment amounts.
 });
 
 test('strategy drafts carry their chosen quarterly deployment without exceeding authority', () => {

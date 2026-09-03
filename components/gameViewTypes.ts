@@ -5,6 +5,7 @@ import type { CurrencyMode } from '../lib/scenarios/types';
 import type { FinancialLedger, InitiativeActionSet } from '../lib/game/businessModel';
 import type { Allocation, InitiativeAllocationMode, InitiativeAllocationSet } from '../lib/game/state';
 import type { CampaignScoreBreakdown } from '../lib/game/scoring';
+import type { AccelerationAllocationMode, AccelerationAllocationSet } from '../lib/game/accelerationAllocation';
 
 export type MetricColor = 'gold' | 'emerald' | 'blue' | 'purple' | 'red' | 'cyan';
 
@@ -96,6 +97,8 @@ export interface GameViewState {
   alloc: Allocation;
   initiativeAllocationMode: InitiativeAllocationMode;
   initiativeAllocations: InitiativeAllocationSet;
+  accelerationAllocationMode?: AccelerationAllocationMode;
+  accelerationAllocations?: AccelerationAllocationSet;
   roi: number;
   revenue: number;
   efficiency: number;

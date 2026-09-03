@@ -7,6 +7,7 @@ import type {
   InitiativeRequirements,
 } from './businessModel';
 import type { ScenarioDefinition, ScenarioCapacityConfig } from '../scenarios/types';
+import type { ScenarioOperatingProfile } from '../scenarios/types';
 import {
   defaultInitiativeRequirements,
   evaluateInitiativeGate,
@@ -42,6 +43,8 @@ type InitiativeLike = {
   baseRiskScore?: number;
   riskScore?: number;
   requirements?: Partial<InitiativeRequirements>;
+  operatingProfile?: ScenarioOperatingProfile;
+  scenarioMetadata?: { operatingProfile?: ScenarioOperatingProfile };
 };
 
 type ScenarioCapacitySource = Pick<ScenarioDefinition, 'capacity'> | ScenarioCapacityConfig | Partial<CapacityState> | undefined;
@@ -66,10 +69,13 @@ export function deriveCapacityState(allocation: Allocation, scenario?: ScenarioC
   const overrides = capacityOverrides(scenario);
   return {
     // Teams are discrete in the UI but remain fractional here for planning.
-    deliveryTeams: nonNegative(overrides.deliveryTeams, Math.max(0.5, 1 + allocationValue(allocation, 'people') / 10)),
-    changeCapacity: nonNegative(overrides.changeCapacity, allocationValue(allocation, 'people') / 10),
-    dataEngineeringCapacity: nonNegative(overrides.dataEngineeringCapacity, allocationValue(allocation, 'data') / 10),
-    governanceReviewCapacity: nonNegative(overrides.governanceReviewCapacity, allocationValue(allocation, 'compliance') / 8),
+    // Infrastructure and MLOps provide rollout bandwidth; people and
+    // innovation provide change capacity; innovation also supports exploratory
+    // data work. This keeps all six controls connected to execution capacity.
+    deliveryTeams: nonNegative(overrides.deliveryTeams, Math.max(0.5, 1 + allocationValue(allocation, 'people') / 10 + allocationValue(allocation, 'infra') / 35 + allocationValue(allocation, 'mlops') / 70)),
+    changeCapacity: nonNegative(overrides.changeCapacity, allocationValue(allocation, 'people') / 10 + allocationValue(allocation, 'innovation') / 35),
+    dataEngineeringCapacity: nonNegative(overrides.dataEngineeringCapacity, allocationValue(allocation, 'data') / 10 + allocationValue(allocation, 'innovation') / 50),
+    governanceReviewCapacity: nonNegative(overrides.governanceReviewCapacity, allocationValue(allocation, 'compliance') / 8 + allocationValue(allocation, 'people') / 50),
   };
 }
 
@@ -107,10 +113,16 @@ export function calculateCapacityDemand(
       ? { ...defaultInitiativeRequirements(initiative), ...initiative.requirements }
       : defaultInitiativeRequirements(initiative);
     const multiplier = actionMultiplier[action];
-    demand.deliveryTeams += requirements.deliveryLoad * multiplier;
-    demand.changeCapacity += requirements.changeLoad * multiplier;
-    demand.dataEngineeringCapacity += requirements.dataLoad * multiplier;
-    demand.governanceReviewCapacity += requirements.governanceLoad * multiplier;
+    const profile = initiative.operatingProfile || initiative.scenarioMetadata?.operatingProfile;
+    const sensitivity = profile?.capacitySensitivity;
+    // A profile describes how demanding this initiative is for each shared
+    // pool. Values are bounded by the profile resolver, and the gentle 0.8–1.2
+    // envelope preserves feasibility while making domain differences visible.
+    const loadFactor = (value: number | undefined) => .8 + Math.max(.25, Math.min(1, finite(value, .5))) * .4;
+    demand.deliveryTeams += requirements.deliveryLoad * multiplier * loadFactor(sensitivity?.delivery);
+    demand.changeCapacity += requirements.changeLoad * multiplier * loadFactor(sensitivity?.change);
+    demand.dataEngineeringCapacity += requirements.dataLoad * multiplier * loadFactor(sensitivity?.data);
+    demand.governanceReviewCapacity += requirements.governanceLoad * multiplier * loadFactor(sensitivity?.governance);
   });
   return {
     ...Object.fromEntries(Object.entries(demand).map(([key, value]) => [key, Number(value.toFixed(4))])),

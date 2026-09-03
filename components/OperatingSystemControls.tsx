@@ -7,6 +7,8 @@ import type { GameViewState } from "./gameViewTypes";
 import type { InitiativeActionSet } from "../lib/game/businessModel";
 import type { Allocation } from "../lib/game/state";
 import type { CapacityIssue } from "../lib/game/capacity";
+import { formatOperatingMix, operatingLoopReadout } from "../lib/game/operatingLoop";
+import { accelerationAllocationFor, normalizeAccelerationAllocations, type AccelerationAllocationMode, type AccelerationAllocationSet } from "../lib/game/accelerationAllocation";
 
 type Props = {
   state: GameViewState;
@@ -15,6 +17,7 @@ type Props = {
   effectiveAllocation?: Allocation;
   capacityIssue?: CapacityIssue;
   onCapacityFix?: () => void;
+  onAccelerationAllocationChange?: (mode: AccelerationAllocationMode, allocations: AccelerationAllocationSet) => void;
   compact?: boolean;
 };
 
@@ -31,6 +34,7 @@ export default function OperatingSystemControls({
   effectiveAllocation,
   capacityIssue,
   onCapacityFix,
+  onAccelerationAllocationChange,
   compact = false,
 }: Props) {
   const tailored = state.initiativeAllocationMode === 'custom';
@@ -52,14 +56,41 @@ export default function OperatingSystemControls({
   const initiativeActions: InitiativeActionSet = Object.keys(state.initiativeActions || {}).length
     ? state.initiativeActions
     : Object.fromEntries(state.selected.map((id) => [id, "scale" as const]));
-  const plan = calculateActionCapitalPlan(state, initiativeActions, deployment);
+  const plan = calculateActionCapitalPlan(state, initiativeActions, deployment, state.quarterlyCrisisCost, state.accelerationAllocationMode === 'focused' ? state.accelerationAllocations : undefined);
+  const accelerationIds = state.selected.filter((id) => Number(plan.byInitiative?.[id]?.scaleUp || 0) > 0 || ['pilot', 'scale'].includes(initiativeActions[id]));
+  const accelerationWeights = Object.fromEntries(accelerationIds.map((id) => [id, Number(plan.byInitiative?.[id]?.delivery || plan.byInitiative?.[id]?.run || 1)]));
+  const accelerationMode = ((state as GameViewState & { accelerationAllocationMode?: AccelerationAllocationMode }).accelerationAllocationMode || 'proportional');
+  const accelerationAllocations = (state as GameViewState & { accelerationAllocations?: AccelerationAllocationSet }).accelerationAllocations;
+  // Focused mode deliberately preserves the learner's raw numbers so an
+  // incomplete split stays visible and can be corrected; only proportional
+  // mode derives a normalized preview.
+  const accelerationSplit = accelerationMode === 'focused' && accelerationAllocations
+    ? Object.fromEntries(accelerationIds.map((id) => [id, Math.max(0, Math.min(100, Number(accelerationAllocations[id]) || 0))]))
+    : normalizeAccelerationAllocations(accelerationIds, undefined, accelerationWeights);
+  const accelerationSplitTotal = Number(accelerationIds.reduce((sum, id) => sum + Number(accelerationSplit[id] || 0), 0).toFixed(2));
+  const updateAcceleration = (id: string, value: number) => {
+    if (!onAccelerationAllocationChange) return;
+    const next = { ...accelerationSplit, [id]: Math.max(0, Math.min(100, Math.round(value))) };
+    onAccelerationAllocationChange('focused', next);
+  };
   const runway = calculateCapitalRunway(state, deployment);
   const deliveryIntensity = fundingIntensityFor(plan.deliveryCapital, plan.initiativeMinimum);
   const additionalMaturityCredit = plan.initiativeMinimum > 0
     ? Math.min(1, Math.max(0, plan.deliveryCapital / plan.initiativeMinimum - 1))
     : 0;
   const releasePlan = (amount: number) =>
-    onDeploymentChange(Number(Math.min(capacity.maximumDeployment, Math.max(0, amount)).toFixed(1)));
+    // Keep cents/paise precision when applying a suggested plan. Rounding to
+    // one decimal can leave the deployment fractionally below the displayed
+    // commitment and incorrectly keep Confirm disabled.
+    onDeploymentChange(Number(Math.min(capacity.maximumDeployment, Math.max(0, amount)).toFixed(2)));
+  const focus = state.selected.map((id) => state.initiativeStates?.[id]).find(Boolean);
+  const focusAction = focus ? (state.initiativeActions?.[focus.id] || 'pilot') : undefined;
+  const focusAllocation = focus
+    ? state.initiativeAllocationMode === 'custom'
+      ? state.initiativeAllocations?.[focus.id] || state.alloc
+      : state.alloc
+    : state.alloc;
+  const focusReadout = focus && focusAction ? operatingLoopReadout(focus, focusAction, focusAllocation) : undefined;
 
   return (
     <section className={`rounded-2xl border border-[#d0d7de] bg-[#f6f8fa] ${compact ? "p-3" : "p-4"}`} aria-label="Balance the operating system">
@@ -73,6 +104,15 @@ export default function OperatingSystemControls({
         </div>
         <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${total === 100 ? "bg-[#e8f4eb] text-[#176b36]" : "bg-[#edf0ee] text-[#303832]"}`}>{total}% allocated</span>
       </div>
+
+      {focusReadout && <div className="mt-3 rounded-xl border border-[#0969da]/20 bg-[#ddf4ff]/45 p-3" data-testid="operating-focus-readout">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-[10px] font-bold uppercase tracking-[.14em] text-[#0969da]">Operating focus · {focus?.name}</p>
+          <span className="rounded-full bg-white px-2 py-1 text-[10px] font-bold text-[#0969da]">{focusReadout.stage.replaceAll('_', ' ')}</span>
+        </div>
+        <p className="mt-1 text-[11px] leading-5 text-[#57606a]"><b className="text-[#24292f]">Bottleneck:</b> {focusReadout.summary}</p>
+        <p className="mt-1 text-[10px] leading-4 text-[#57606a]"><b className="text-[#24292f]">Recommended support:</b> {formatOperatingMix(focusReadout)}. The sliders below let you make and preview the trade-off.</p>
+      </div>}
 
       <details className="mt-4 rounded-xl border border-[#d0d7de] bg-white/70 p-3" open={!openingQuarter}>
         <summary className="cursor-pointer text-[11px] font-bold text-[#24292f]">Advanced controls: change the team support mix</summary>
@@ -161,9 +201,26 @@ export default function OperatingSystemControls({
         </div>
         {plan.accelerationSpend > 0 && plan.initiativeMinimum > 0 && state.selected.length > 0 && (
           <div className="mt-3 rounded-lg border border-[#9bc9a7] bg-white px-3 py-2 text-[10px] leading-4 text-[#57606a]">
-            <b className="text-[#176b36]">Acceleration is active.</b> {formatBudget(plan.accelerationSpend, state.currencyMode)} above the floor is allocated across the selected lifecycle work. Discovery gains evidence and data readiness; pilots gain evidence, controls, and workflow readiness; scale gains rollout maturity; and maintain gains monitoring and reliability. {plan.deliveryCapital > 0 ? <>Pilot/scale work reaches up to <b className="text-[#24292f]">{deliveryIntensity.toFixed(2)}×</b> delivery intensity and can earn up to <b className="text-[#24292f]">{additionalMaturityCredit.toFixed(1)} extra maturity credit</b>.</> : <>No immediate operating value is claimed until a pilot or scale decision is made.</>}
+            <b className="text-[#176b36]">Acceleration is active.</b> {formatBudget(plan.accelerationSpend, state.currencyMode)} above the floor is routed {accelerationMode === 'focused' ? 'by your initiative split' : 'proportionally by the default'} across selected lifecycle work. Discovery gains evidence and data readiness; pilots gain evidence, controls, and workflow readiness; scale gains rollout maturity; and maintain gains monitoring and reliability. {plan.deliveryCapital > 0 ? <>Pilot/scale work reaches up to <b className="text-[#24292f]">{deliveryIntensity.toFixed(2)}×</b> delivery intensity and can earn up to <b className="text-[#24292f]">{additionalMaturityCredit.toFixed(1)} extra maturity credit</b>.</> : <>No immediate operating value is claimed until a pilot or scale decision is made.</>}
           </div>
         )}
+        {plan.accelerationSpend > 0 && accelerationIds.length > 0 && onAccelerationAllocationChange && <div className="mt-3 rounded-xl border border-[#0969da]/25 bg-[#eef7ff] p-3" data-testid="acceleration-allocation-controls">
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <div><p className="text-[11px] font-bold uppercase tracking-[.12em] text-[#0969da]">Route extra capital</p><p className="mt-1 text-[10px] leading-4 text-[#57606a]">The {formatBudget(plan.accelerationSpend, state.currencyMode)} above the action floor is acceleration capital. Choose which selected initiatives doing eligible lifecycle work receive it; this does not change their operating mix.</p></div>
+            <div className="flex rounded-lg border border-[#0969da]/25 bg-white p-1 text-[10px] font-bold"><button type="button" onClick={() => onAccelerationAllocationChange('proportional', accelerationSplit)} className={`rounded-md px-2 py-1.5 ${accelerationMode === 'proportional' ? 'bg-[#0969da] text-white' : 'text-[#57606a]'}`}>Proportional</button><button type="button" onClick={() => onAccelerationAllocationChange('focused', accelerationSplit)} className={`rounded-md px-2 py-1.5 ${accelerationMode === 'focused' ? 'bg-[#0969da] text-white' : 'text-[#57606a]'}`}>Focus by initiative</button></div>
+          </div>
+          <div className="mt-3 space-y-2">{accelerationIds.map((id) => {
+            const name = state.initiativeStates?.[id]?.name || id;
+            const share = accelerationMode === 'focused'
+              ? Number(accelerationSplit[id] || 0)
+              : accelerationAllocationFor(id, accelerationIds, accelerationMode, accelerationSplit, accelerationWeights);
+            const amount = plan.accelerationSpend * share / 100;
+            const base = Number(plan.byInitiative?.[id]?.delivery || plan.byInitiative?.[id]?.run || 0);
+            const multiplier = base > 0 ? Math.min(3, (base + amount) / base) : 1;
+            return <label key={id} className="block rounded-lg border border-[#d0d7de] bg-white px-2.5 py-2"><span className="flex justify-between gap-2 text-[10px] font-bold text-[#24292f]"><span>{name} <span className="font-normal text-[#57606a]">· {initiativeActions[id] || 'work'}</span></span><span>{share.toFixed(1)}% · {formatBudget(amount, state.currencyMode)}</span></span><input aria-label={`Acceleration share for ${name}`} type="range" min="0" max="100" step="1" disabled={accelerationMode !== 'focused'} value={share} onChange={(event) => updateAcceleration(id, Number(event.target.value))} className="mt-2 w-full accent-[#0969da] disabled:cursor-not-allowed disabled:opacity-50"/><span className="mt-1 block text-[10px] text-[#57606a]">Estimated delivery intensity: <b className="text-[#24292f]">{multiplier.toFixed(2)}×</b></span></label>;
+          })}</div>
+          <p className={`mt-2 text-[10px] font-bold ${accelerationSplitTotal === 100 ? 'text-[#176b36]' : 'text-[#9a6700]'}`}>{accelerationSplitTotal.toFixed(1)}% of eligible extra capital routed · {accelerationMode === 'focused' ? 'edit the sliders, then confirm when the total is 100%' : 'proportional routing is active'}</p>
+        </div>}
         <p className={`mt-2 text-[10px] leading-4 ${runway.depletionQuarter ? "text-[#9a6700]" : "text-[#1a7f37]"}`}>{runway.message}</p>
       </div>
       {total !== 100 && <p className="mt-3 rounded-lg bg-[#fff8c5] px-3 py-2 text-[11px] font-bold text-[#6b4f00]">This mix is {total}%. Adjust the controls to exactly 100% before confirming this quarter.</p>}

@@ -1,6 +1,6 @@
 import { initiatives, type Initiative } from './initiatives';
 import type { DynamicInitiative } from './generator';
-import type { FrameworkContribution } from '../scenarios/types';
+import type { FrameworkContribution, ScenarioLifecycleProfile, ScenarioOperatingProfile } from '../scenarios/types';
 import type {
   AiAdaptationAction,
   AiAutonomyLevel,
@@ -18,6 +18,7 @@ import type { Allocation, InitiativeAllocationMode, InitiativeAllocationSet } fr
 import { allocationForInitiative } from './initiativeAllocation';
 import { aggregateAiRiskScore, evolveInitiativeForQuarter } from './lifecycleResolver';
 import { accelerationMultiplierForAction } from './fundingDynamics';
+import { deriveOperatingSignal, profileForState } from './operatingEffects';
 
 export type MaturityLevel = 'nascent' | 'developing' | 'mature' | 'optimized';
 export interface InitiativeState extends Initiative {
@@ -30,8 +31,10 @@ export interface InitiativeState extends Initiative {
   maturityLevel: MaturityLevel; dataInvestment: number; governanceInvestment: number; trainingInvestment: number;
   /** Explicit operating lifecycle. Legacy saves are migrated from quartersFunded. */ lifecycle: InitiativeLifecycle;
   lifecycleQuarter: number; benefitRealization: number; controlMaturity: number; changeReadiness: number; technicalDebt: number; runCost: number;
+  /** Learner-facing operating capabilities built by the local initiative mix. */
+  integrationReadiness: number; evidenceQuality: number; hypothesisBreadth: number;
   baseRoi?: number; baseCost?: number; baseData?: number; baseHuman?: number; baseRiskScore?: number; riskScore?: number; synergies?: string[];
-  scenarioMetadata?: { primaryMetric: string; baseEffect: number; effectUnit: string; neglect: { decayRate: number; penaltyThreshold: number; penaltyAmount: number }; frameworkContribution?: FrameworkContribution };
+  scenarioMetadata?: { primaryMetric: string; baseEffect: number; effectUnit: string; neglect: { decayRate: number; penaltyThreshold: number; penaltyAmount: number }; frameworkContribution?: FrameworkContribution; lifecycleProfile?: ScenarioLifecycleProfile; operatingProfile?: ScenarioOperatingProfile };
   /** AI lifecycle overlay; operating lifecycle remains the source of truth for legacy UI. */
   aiLifecycle: AiLifecycleState;
   evaluation: AiEvaluationState;
@@ -53,6 +56,8 @@ export interface InitiativeState extends Initiative {
   dataReadiness?: number;
   /** Scenario-authored lifecycle profile, kept opaque to the generic engine. */
   lifecycleProfile?: unknown;
+  /** Scenario-authored operating profile resolved at scenario hydration time. */
+  operatingProfile?: ScenarioOperatingProfile;
 }
 const roundMetric = (value: number) => Number(value.toFixed(2));
 const riskScoreFor = (item: InitiativeState) => item.riskScore ?? (item.currentRisk === 'LOW' ? 24 : item.currentRisk === 'MED' ? 48 : 72);
@@ -152,6 +157,9 @@ export function initializeInitiativeStates(generated: DynamicInitiative[] = init
       controlMaturity: 0,
       changeReadiness: 0,
       technicalDebt: 0,
+      integrationReadiness: 0,
+      evidenceQuality: 0,
+      hypothesisBreadth: 0,
       runCost: roundMetric(init.cost * .08),
       dataInvestment: 0,
       governanceInvestment: 0,
@@ -215,6 +223,9 @@ export function migrateInitiativeState(saved: Partial<InitiativeState> | undefin
     controlMaturity: bounded(source.controlMaturity, base.controlMaturity),
     changeReadiness: bounded(source.changeReadiness, bounded(currentHuman / 5, base.changeReadiness)),
     technicalDebt: bounded(source.technicalDebt, base.technicalDebt, 0, 100),
+    integrationReadiness: bounded(source.integrationReadiness, base.integrationReadiness, 0, 100),
+    evidenceQuality: bounded(source.evidenceQuality, base.evidenceQuality, 0, 100),
+    hypothesisBreadth: bounded(source.hypothesisBreadth, base.hypothesisBreadth, 0, 100),
     runCost: Math.max(0, Number.isFinite(Number(source.runCost)) ? Number(source.runCost) : (base.runCost || currentCost * .08)),
     aiLifecycle: migratedAiLifecycle({ ...base, ...source, lifecycle, lifecycleQuarter: Math.max(0, Number.isFinite(Number(source.lifecycleQuarter)) ? Number(source.lifecycleQuarter) : (quartersFunded > 0 ? quartersFunded : base.lifecycleQuarter)) } as InitiativeState, source),
     evaluation: source.evaluation && typeof source.evaluation === 'object'
@@ -281,6 +292,7 @@ export function migrateInitiativeState(saved: Partial<InitiativeState> | undefin
       : base.deploymentImpact,
     dataReadiness: Number.isFinite(Number(source.dataReadiness)) ? clamp(Number(source.dataReadiness), 0, 100) : roundMetric((Number(source.currentData) || base.currentData) / 5 * 100),
     lifecycleProfile: source.lifecycleProfile ?? base.lifecycleProfile,
+    operatingProfile: source.operatingProfile ?? base.operatingProfile,
   };
   return migrated;
 }
@@ -305,6 +317,54 @@ export type LifecycleUpdateMetrics = {
 };
 
 const emptyFunding = (): InitiativeFunding => ({ discovery: 0, delivery: 0, scaleUp: 0, run: 0, continuity: 0, retirement: 0, total: 0 });
+
+/**
+ * Apply the initiative-local operating model. These are capability signals,
+ * not direct ROI: data and innovation build evidence, people builds change
+ * readiness, infrastructure builds integration, MLOps protects reliability,
+ * and compliance builds controls. Stage support keeps the same allocation
+ * meaningful at discovery, pilot, deployment, and maintenance.
+ */
+function applyOperatingCapabilities(
+  item: InitiativeState,
+  action: string,
+  allocation: Allocation,
+  effort: number,
+): void {
+  if (effort <= 0) return;
+  const signal = deriveOperatingSignal(profileForState(item), action, allocation, item.aiLifecycle?.stage);
+  const support = signal.support;
+  const bounded = (value: number, min = 0, max = 100) => Math.max(min, Math.min(max, value));
+  const scale = Math.max(.25, Math.min(1.5, effort));
+  const evidenceAction = action === 'discover' || action === 'pilot';
+  const deliveryAction = action === 'pilot' || action === 'scale' || action === 'maintain';
+  if (evidenceAction) {
+    item.evidenceQuality = roundMetric(bounded(
+      Number(item.evidenceQuality || 0) + (Number(allocation.data || 0) * .1 * support.data + Number(allocation.innovation || 0) * .08 * support.innovation + Number(allocation.people || 0) * .02 * support.people) * scale,
+    ));
+    item.hypothesisBreadth = roundMetric(bounded(
+      Number(item.hypothesisBreadth || 0) + (Number(allocation.innovation || 0) * .22 * support.innovation + Number(allocation.data || 0) * .05 * support.data) * scale,
+    ));
+  }
+  if (deliveryAction) {
+    item.integrationReadiness = roundMetric(bounded(
+      Number(item.integrationReadiness || 0) + (Number(allocation.infra || 0) * .075 * support.infra + Number(allocation.mlops || 0) * .045 * support.mlops) * scale,
+    ));
+  }
+  // People and compliance remain useful across every operating stage, but
+  // their effect is deliberately bounded and continuous instead of a cliff.
+  item.changeReadiness = roundMetric(Math.min(1,
+    Number(item.changeReadiness || 0) + Number(allocation.people || 0) / 900 * support.people * scale,
+  ));
+  item.controlMaturity = roundMetric(Math.min(1,
+    Number(item.controlMaturity || 0) + Number(allocation.compliance || 0) / 1200 * support.compliance * scale,
+  ));
+  if (deliveryAction) {
+    item.technicalDebt = roundMetric(Math.max(0,
+      Number(item.technicalDebt || 0) - (Number(allocation.mlops || 0) / 35 * support.mlops + Number(allocation.infra || 0) / 80 * support.infra) * scale,
+    ));
+  }
+}
 
 /**
  * Evolves initiatives from explicit lifecycle actions. This is additive to
@@ -379,7 +439,10 @@ export function updateInitiativeStatesForActions(
       item.maturityLevel = maturityFor(item.maturityCredits, 0);
     } else if (action === 'maintain') {
       item.quartersSinceLastFund = 0;
-      item.totalInvestment = roundMetric(item.totalInvestment + Math.max(0, Number(funding.run) || Number(funding.continuity) || 0));
+      // Scale-up capital is real spend even while maintaining a deployed
+      // capability; keep it in cumulative investment without counting it as a
+      // second delivery quarter.
+      item.totalInvestment = roundMetric(item.totalInvestment + Math.max(0, Number(funding.run) || Number(funding.continuity) || 0) + Math.max(0, Number(funding.scaleUp) || 0));
       item.continuityInvestment = roundMetric(item.continuityInvestment + Math.max(0, Number(funding.continuity) || Number(funding.run) || 0));
       // Extra run funding cannot leap maturity, but it can improve operating
       // reliability: monitoring, controls, change support, and debt reduction.
@@ -402,6 +465,7 @@ export function updateInitiativeStatesForActions(
       if (action === 'retire') item.totalInvestment = roundMetric(item.totalInvestment + attributableInvestment);
     }
     item.dataReadiness = roundMetric(clamp(Number(item.currentData || 0) / 5 * 100, 0, 100));
+    applyOperatingCapabilities(item, hasExplicitAction ? action : 'inactive', initiativeAllocation, attributableInvestment > 0 ? stageAcceleration : 0);
     Object.assign(item, evolveInitiativeForQuarter(item, hasExplicitAction ? action : 'inactive', item.lifecycleQuarter, initiativeAllocation));
     item.riskScore = roundMetric(Math.max(8, Math.min(96, aggregateAiRiskScore(item.risks))));
     item.currentRisk = riskBandFor(item.riskScore);
@@ -448,6 +512,7 @@ export function updateInitiativeStates(states: Record<string, InitiativeState>, 
     item.dataInvestment = roundMetric(item.dataInvestment + Number(allocation.data || 0) / 10 * fundingIntensity); item.governanceInvestment = roundMetric(item.governanceInvestment + Number(allocation.compliance || 0) / 10 * fundingIntensity); item.trainingInvestment = roundMetric(item.trainingInvestment + Number(allocation.people || 0) / 10 * fundingIntensity);
     item.currentData = roundMetric(Math.min(5, item.currentData + (Number(allocation.data || 0) / 50 + .12) * fundingIntensity));
     item.currentHuman = roundMetric(Math.min(5, item.currentHuman + (Number(allocation.people || 0) / 75 + metrics.adoption / 1000) * fundingIntensity));
+    applyOperatingCapabilities(item, 'scale', allocation, fundingIntensity);
     // Maturity credits affect the next and subsequent quarters' economics,
     // so accelerated delivery compounds instead of disappearing after one turn.
     const evolutionBonus = Math.min(.15, item.maturityCredits * .02);

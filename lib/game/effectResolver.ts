@@ -6,6 +6,7 @@ import type { Allocation } from './state';
 import { allocationToReadiness } from './allocation';
 import { maturityReadiness } from './maturity';
 import type { SynergyEffect } from './generator';
+import { deriveOperatingSignal, profileForState } from './operatingEffects';
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
@@ -123,7 +124,13 @@ export function calculateStandardEffects(
   const adoptionHeadroom = Math.max(0.18, 1 - current.adoption / 115);
   const teamReadiness = 0.8 + Number(current.initiativeGeneration?.context.team || 0.6) * 0.3;
   const adoptionGain = (0.8 + allocation.people / 10 + (chosen.some((item) => item.id === 'knowledge') ? 2.5 : 0) + inputs.synergyAdoption) * adoptionHeadroom * teamReadiness;
-  const technicalLeverage = 0.7 + (allocation.infra + allocation.mlops) / 100;
+  // Infrastructure accelerates throughput while MLOps protects the quality
+  // of that throughput. Keep them separate in the formula so moving points
+  // between the two changes execution in a predictable, bounded way.
+  const infrastructureLeverage = 0.72 + allocation.infra / 180;
+  const mlopsLeverage = 0.88 + allocation.mlops / 260;
+  const technicalLeverage = infrastructureLeverage * mlopsLeverage;
+  const innovationLearning = allocation.innovation / 55;
   const efficiencyGain = chosen.reduce((sum, item) => sum + (item.id === 'energy' ? 7 : item.id === 'maintenance' ? 6 : 3), 0) * 0.3 * technicalLeverage;
   const deployedModeEffects = chosen
     .filter((item) => ['scale', 'run'].includes(item.lifecycle) && item.deploymentImpact)
@@ -134,6 +141,14 @@ export function calculateStandardEffects(
   const deploymentTrustEffect = deployedModeEffects.length
     ? deployedModeEffects.reduce((sum, impact) => sum + Number(impact.trustDelta || 0), 0) / deployedModeEffects.length
     : 0;
+  const operatingFit = chosen.length
+    ? chosen.reduce((sum, item) => sum + deriveOperatingSignal(
+      profileForState(item),
+      item.lifecycle === 'run' ? 'maintain' : item.lifecycle === 'scale' ? 'scale' : 'pilot',
+      allocation,
+      item.aiLifecycle?.stage,
+    ).fit, 0) / chosen.length
+    : 1;
   // A constrained experiment should leave a visible risk trace, but the same
   // readiness gap must not compound into an automatic failure every quarter.
   // Gates already slow delivery through `gateMultiplier`; cap and soften the
@@ -141,14 +156,15 @@ export function calculateStandardEffects(
   const constrainedRisk = Math.min(8, Math.max(0, Number(inputs.gateRiskAdjustment) || 0)) * 0.5;
   const riskChange = portfolioRiskPressure * 0.55 - governanceRelief * (0.5 + current.risk / 60) - inputs.synergyRiskReduction + constrainedRisk;
   return {
-    roi: Math.min(99, current.roi + (((chosen.reduce((sum, item) => sum + item.currentRoi, 0) / 100) * factor / 2) * inputs.synergyMultiplier * portfolioEffect * fundingMultiplier * gateMultiplier)),
+    roi: Math.min(99, current.roi + (((chosen.reduce((sum, item) => sum + item.currentRoi, 0) / 100) * factor / 2) * inputs.synergyMultiplier * portfolioEffect * fundingMultiplier * gateMultiplier * operatingFit * (1 + innovationLearning * .04))),
     revenue: Math.min(60, current.revenue + chosen.reduce((sum, item) => sum + (item.id === 'demand' ? 3 : ['quality', 'supply'].includes(item.id) ? 2 : 1), 0) * (0.9 + portfolio.breadth * 0.1) * fundingMultiplier),
-    efficiency: Math.min(95, current.efficiency + efficiencyGain * portfolioEffect * fundingMultiplier * gateMultiplier * deploymentEfficiencyMultiplier),
-    adoption: Math.min(98, current.adoption + adoptionGain * (0.9 + portfolio.breadth * 0.1) * fundingMultiplier * gateMultiplier + deploymentTrustEffect * .12),
+    efficiency: Math.min(95, current.efficiency + efficiencyGain * portfolioEffect * fundingMultiplier * gateMultiplier * operatingFit * deploymentEfficiencyMultiplier),
+    adoption: Math.min(98, current.adoption + adoptionGain * (0.9 + portfolio.breadth * 0.1) * fundingMultiplier * gateMultiplier * operatingFit + deploymentTrustEffect * .12),
     risk: Math.max(5, Math.min(95, current.risk + riskChange + portfolioRisk)),
-    data: Math.min(98, current.data + (allocation.data / 10 + (chosen.some((item) => item.id === 'demand') ? 3 : 0)) * fundingMultiplier * gateMultiplier),
+    data: Math.min(98, current.data + (allocation.data / 10 + allocation.innovation / 40 + (chosen.some((item) => item.id === 'demand') ? 3 : 0)) * fundingMultiplier * gateMultiplier),
     satisfaction: Math.min(98, current.satisfaction + (allocation.people / 5 + (chosen.some((item) => item.id === 'knowledge') ? 5 : 0)) * fundingMultiplier * gateMultiplier + deploymentTrustEffect * .16),
-    literacy: Math.min(98, current.literacy + allocation.people / 4 * fundingMultiplier * gateMultiplier),
+    literacy: Math.min(98, current.literacy + (allocation.people / 4 + allocation.innovation / 16) * fundingMultiplier * gateMultiplier),
+    innovation: Math.min(98, current.innovation + allocation.innovation / 7 * fundingMultiplier * gateMultiplier),
     // The learner's budget commitment is the initiative's fixed campaign
     // cost. Evolution may change the operating cost displayed on the card,
     // but it must not silently rewrite the financial rules of the campaign.
@@ -232,8 +248,19 @@ export function applyScenarioEffects(
     if (!metadata) return;
     const definition = definitions.get(metadata.primaryMetric);
     if (!definition) return;
-    const initiativeReadiness = allocationToReadiness(allocationForInitiative(id, initiativeAllocationMode, initiativeAllocations, allocation));
-    const readinessFactor = 0.55 + initiativeReadiness.data * 0.2 + initiativeReadiness.people * 0.15 + initiativeReadiness.governance * 0.1;
+    const localAllocation = allocationForInitiative(id, initiativeAllocationMode, initiativeAllocations, allocation);
+    const initiativeReadiness = allocationToReadiness(localAllocation);
+    const operatingSignal = deriveOperatingSignal(
+      profileForState(state),
+      state.lifecycle === 'run' ? 'maintain' : state.lifecycle === 'scale' ? 'scale' : 'pilot',
+      localAllocation,
+      state.aiLifecycle?.stage,
+    );
+    // The profile is stage-aware: the same six percentages can be a good
+    // discovery mix and a poor deployment mix. Keep the existing readiness
+    // contribution, then apply a modest bounded fit multiplier so operating
+    // choices matter without making a single allocation a hidden gate.
+    const readinessFactor = (0.55 + initiativeReadiness.data * 0.2 + initiativeReadiness.people * 0.15 + initiativeReadiness.governance * 0.1) * operatingSignal.fit;
     const diminishingReturns = 1 / (1 + Math.max(0, state.quartersFunded - 1) * 0.08);
     // Older direct-engine callers predate lifecycle tracking; retain their
     // established effect while action-aware turns only include capabilities

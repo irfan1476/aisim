@@ -238,12 +238,19 @@ When a decision-screen action conflicts with the lifecycle, a decision-path pane
 
 The decision screen also presents a funding and operating plan directly below the initiative cards. It answers two distinct questions before the quarter is resolved:
 
-1. **Where does the released capital go?** Each selected initiative shows its action commitment, its attributed quarter spend, and any scale-up capital. Extra delivery capital is distributed proportionally to the committed delivery cost of the selected pilot/scale initiatives; this keeps a shared campaign release reconciled to the financial ledger.
+1. **Where does the released capital go?** Each selected initiative shows its action commitment, its attributed quarter spend, and any scale-up capital. Extra delivery capital is distributed proportionally to the committed delivery cost of eligible lifecycle work by default. The learner can switch to **Focus by initiative** and assign the extra pool explicitly; the card shows the resulting amount and estimated delivery intensity before confirmation.
 2. **What will the operating mix change this quarter?** The plan displays the amount of each initiative's attributed spend directed to infrastructure, data, people, operations and maintenance, compliance, and innovation. It names the direct initiative effects: data asset/readiness, change readiness, control maturity, technical debt, monitoring, and oversight.
 
 The default is a **shared mix**: one operating allocation applies consistently to every selected initiative. The learner may switch to **tailor by initiative**. In tailored mode, each initiative owns an independent six-lever mix; moving one lever does not redistribute the others. The current total is shown per initiative, and the quarter cannot be confirmed until every funded initiative totals exactly 100%. Once balanced, each mix is applied to that initiative's state evolution and scenario effect. The spend-weighted aggregate of the charged mixes becomes the portfolio capacity mix, so local choices still truthfully constrain delivery teams, data engineering, governance review, and human oversight.
 
 The shared mix remains a convenient default and a reset path. In tailored mode the right-hand operating-system panel becomes a read-only, derived capacity envelope so the learner cannot mistake an organisation-level capacity result for an unrecorded global setting.
+
+Acceleration routing is a separate decision from the operating mix. The operating
+mix determines what capability is built; the acceleration split determines which
+eligible initiative receives additional pace. A focused split must total exactly
+100%, while pause and retire actions cannot receive acceleration because they do
+not advance delivery. Both choices are retained in the quarter snapshot and
+counterfactual replay.
 
 Selection and lifecycle action are separate controls. Selecting or deselecting a tile changes the quarter's portfolio scope without rewriting the initiative's existing action; the learner can then change the action explicitly when it is part of the selected plan.
 

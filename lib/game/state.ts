@@ -1,6 +1,8 @@
 export type Allocation = { infra: number; data: number; people: number; mlops: number; compliance: number; innovation: number };
 export type InitiativeAllocationMode = 'shared' | 'custom';
 export type InitiativeAllocationSet = Record<string, Allocation>;
+export type AccelerationAllocationMode = 'proportional' | 'focused';
+export type AccelerationAllocationSet = Record<string, number>;
 export type Effect = { metric: string; delta: number; color: string; unit?: string; explanation?: string };
 export type CausalItem = { name: string; effects: Effect[]; explanation?: string };
 export type Recommendation = {
@@ -44,10 +46,26 @@ import type { InitiativeState } from './initiativeState';
 import { initializeInitiativeStates } from './initiativeState';
 import { createInitiativeGeneration, generateInitiatives, type InitiativeGeneration } from './generator';
 import type { CurrencyMode } from '../scenarios/types';
-import type { AdaptationInput, AdaptationSet, CapacityState, DeploymentModeInput, DeploymentModeSet, FinancialLedger, InitiativeActionSet, InitiativeFunding, LifecycleReviewInput, LifecycleReviewSet } from './businessModel';
+import type { AdaptationInput, AdaptationSet, CapacityState, DeploymentModeInput, DeploymentModeSet, FinancialLedger, InitiativeAccelerationAllocation, InitiativeActionSet, InitiativeFunding, LifecycleReviewInput, LifecycleReviewSet } from './businessModel';
 import type { CampaignScoreBreakdown } from './scoring';
 export type MetricKey = 'roi' | 'revenue' | 'efficiency' | 'adoption' | 'risk' | 'data' | 'satisfaction' | 'literacy' | 'turnover' | 'compliance' | 'innovation' | 'spent' | 'score';
 export type MetricsSnapshot = Partial<Record<MetricKey, number>>;
+export type OperatingEvidenceSignal = {
+  allocation: number;
+  target: number;
+  delta: number;
+  explanation: string;
+};
+export type OperatingEvidence = {
+  initiativeId: string;
+  action: string;
+  localAllocation: Allocation;
+  effectivePortfolioAllocation: Allocation;
+  bottleneck: string;
+  signals: Record<string, OperatingEvidenceSignal>;
+  outcomeEffects: Effect[];
+  tradeOffs: string[];
+};
 export type QuarterSnapshot = {
   q: number;
   chosen: string[];
@@ -67,7 +85,11 @@ export type QuarterSnapshot = {
   allocation?: Allocation;
   allocationMode?: InitiativeAllocationMode;
   initiativeAllocations?: InitiativeAllocationSet;
+  /** Learner-directed split of discretionary scale-up capital by initiative. */
+  accelerationAllocations?: InitiativeAccelerationAllocation;
   metrics: MetricsSnapshot;
+  /** Deterministic explanation of how this quarter's operating mix shaped each initiative. */
+  operatingEvidence?: OperatingEvidence[];
   initiativeStates?: Record<string, InitiativeState>;
   scenarioState?: ScenarioState;
   synergiesDiscovered?: string[];
@@ -97,7 +119,7 @@ export type QuarterSnapshot = {
   budgetProvenance?: 'campaign-purse-with-two-quarter-cap' | 'campaign-purse-with-carry-forward-cap' | 'campaign-purse-with-guided-acceleration';
 };
 export type GameState = {
-  q: number; stage: 'decide' | 'results' | 'done'; selected: string[]; initiativeActions: InitiativeActionSet; alloc: Allocation; initiativeAllocationMode: InitiativeAllocationMode; initiativeAllocations: InitiativeAllocationSet;
+  q: number; stage: 'decide' | 'results' | 'done'; selected: string[]; initiativeActions: InitiativeActionSet; alloc: Allocation; initiativeAllocationMode: InitiativeAllocationMode; initiativeAllocations: InitiativeAllocationSet; accelerationAllocationMode?: AccelerationAllocationMode; accelerationAllocations?: AccelerationAllocationSet;
   roi: number; revenue: number; efficiency: number; adoption: number; risk: number; data: number;
   satisfaction: number; literacy: number; turnover: number; compliance: number; innovation: number;
   spent: number; score: number; scoreBreakdown?: CampaignScoreBreakdown; financialLedger: FinancialLedger; history: QuarterSnapshot[]; initiativeStates: Record<string, InitiativeState>; achievements: string[]; crisis: any; feedback: string;

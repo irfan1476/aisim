@@ -8,13 +8,14 @@ import { generateProactiveRecommendations } from './recommendations';
 import { calculateProgressPercentages, calculateScenarioProgress } from '../scenarios/progress';
 import { getScenario } from '../scenarios/registry';
 import { quarterlyDeploymentCap, type Allocation, type GameState, type InitiativeAllocationMode, type InitiativeAllocationSet } from './state';
-import type { InitiativeActionSet } from './businessModel';
+import type { InitiativeAccelerationAllocation, InitiativeActionSet } from './businessModel';
 import type { AdaptationInput, AdaptationSet, DeploymentModeInput, DeploymentModeSet, LifecycleReviewInput, LifecycleReviewSet } from './businessModel';
 import { validatePortfolioCapacity } from './capacity';
 import { updateFinancialLedger } from './economics';
 import { composeCampaignScore, realisedFinancialValueScore, refreshCampaignScore, scenarioTargetProgressFor, validatedLearningScore } from './scoring';
 import { applyAdaptation, applyDeploymentMode, applyLifecycleReview, lifecycleActionError, normalizeLifecycleReviewInput } from './lifecycleResolver';
 import { allocationForInitiative, allocationTotal, derivePortfolioAllocation } from './initiativeAllocation';
+import { isAccelerableAction } from './fundingDynamics';
 
 export type TurnDecision = {
   selected: string[];
@@ -29,6 +30,8 @@ export type TurnDecision = {
   alloc: Allocation;
   initiativeAllocationMode?: InitiativeAllocationMode;
   initiativeAllocations?: InitiativeAllocationSet;
+  /** Optional percentage split for the discretionary acceleration pool. */
+  accelerationAllocations?: InitiativeAccelerationAllocation;
   deploymentAmount: number;
 };
 
@@ -125,7 +128,22 @@ export function applyTurnDecision(source: GameState, input: TurnDecision): TurnR
   const campaignRemaining = Number(state.campaignBudgetRemaining ?? state.campaignBudget ?? state.quarterlyBudget * 12);
   const deploymentCap = quarterlyDeploymentCap(state.campaignBudget, campaignRemaining, state.quarterlyBudget, state.q, state.spent);
   const deploymentAmount = Math.min(deploymentCap, Math.max(0, Number(input.deploymentAmount) || 0));
-  const capitalPlan = calculateActionCapitalPlan(state, initiativeActions, deploymentAmount);
+  const capitalPlan = calculateActionCapitalPlan(state, initiativeActions, deploymentAmount, state.quarterlyCrisisCost, input.accelerationAllocations);
+
+  // Explicit acceleration is a learner-authored percentage split. Reject an
+  // incomplete split rather than silently moving the missing capital to an
+  // unintended initiative; an omitted split retains the legacy proportional
+  // default for backward compatibility.
+  if (input.accelerationAllocations && Object.keys(input.accelerationAllocations).length > 0) {
+    const eligibleIds = Object.entries(initiativeActions)
+      .filter(([id, action]) => isAccelerableAction(action) && Number(capitalPlan.byInitiative[id]?.total || 0) > 0)
+      .map(([id]) => id);
+    const explicitTotal = eligibleIds.reduce((sum, id) => sum + Math.max(0, Number(input.accelerationAllocations?.[id]) || 0), 0);
+    if (explicitTotal > 0 && Math.abs(explicitTotal - 100) > 0.01) {
+      const reason = `Acceleration allocation totals ${explicitTotal.toFixed(0)}%. Set the eligible initiatives to exactly 100% before confirming this quarter.`;
+      return { accepted: false, nextState: { ...state, feedback: reason }, reason };
+    }
+  }
 
   if (capitalPlan.requiredCapital > deploymentAmount + 1e-9) {
     const reason = `This lifecycle plan needs ${capitalPlan.requiredCapital.toFixed(2)} this quarter, including delivery, run, and exit commitments. You have released ${deploymentAmount.toFixed(2)}. Increase deployment or change the initiative actions.`;
@@ -174,6 +192,7 @@ export function applyTurnDecision(source: GameState, input: TurnDecision): TurnR
     alloc: effectiveAllocation,
     initiativeAllocationMode,
     initiativeAllocations,
+    accelerationAllocations: input.accelerationAllocations,
     deploymentAmount: deliveryCapital,
     fundingByInitiative: capitalPlan.byInitiative,
     gateResults: capacityValidation.gates,
@@ -192,7 +211,7 @@ export function applyTurnDecision(source: GameState, input: TurnDecision): TurnR
     grossBenefit,
     quarter: state.q,
   });
-  const resolvedState = { ...state, ...adjustedMetrics, selected: portfolioIds, initiativeActions, initiativeAllocationMode, initiativeAllocations, financialLedger, initiativeStates: result.initiativeStates, scenarioState: result.scenarioState };
+  const resolvedState = { ...state, ...adjustedMetrics, selected: portfolioIds, initiativeActions, initiativeAllocationMode, initiativeAllocations, accelerationAllocations: capitalPlan.accelerationAllocations, financialLedger, initiativeStates: result.initiativeStates, scenarioState: result.scenarioState };
   const discoveredSynergies = Array.from(new Set([
     ...state.discoveredSynergies,
     ...(discovery?.effects.map((effect) => effect.key) || []),
@@ -233,7 +252,15 @@ export function applyTurnDecision(source: GameState, input: TurnDecision): TurnR
     : state.q % 3 === 0 && crisisRoll(state.initiativeGeneration.seed, state.q) < crisisProbability
       ? generateCrisis(state.initiativeGeneration.seed + state.q)
       : null;
-  const nextCausalChain = causalChain(state, deliveryIds, result.initiativeStates, deliveryCapital, result.snapshot.portfolio);
+  const nextCausalChain = causalChain(
+    state,
+    deliveryIds,
+    result.initiativeStates,
+    deliveryCapital,
+    result.snapshot.portfolio,
+    initiativeAllocationMode,
+    initiativeAllocations,
+  );
   const nextRecommendations = generateProactiveRecommendations(resolvedState);
   const nextState: GameState = {
     ...resolvedState,
@@ -303,6 +330,7 @@ export function applyTurnDecision(source: GameState, input: TurnDecision): TurnR
       alloc: { ...input.alloc },
       initiativeAllocationMode,
       initiativeAllocations: JSON.parse(JSON.stringify(initiativeAllocations || {})),
+      accelerationAllocations: capitalPlan.accelerationAllocations,
       deploymentAmount,
     },
   };

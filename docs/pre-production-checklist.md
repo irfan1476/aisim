@@ -42,28 +42,20 @@ npm run build
 npm run test:e2e
 ```
 
-## Concrete production blocker
+## Recommendation application
 
-### Recommendation application is incomplete
+### Apply suggestion is actionable
 
 Current flow:
 
 1. The learner approves a recommendation in `components/GameResultsModal.tsx`.
 2. `stores/gameStore.ts` stores the recommendation as `nextQuarterGuidance`.
 3. `components/NextQuarterGuidance.tsx` offers **Apply suggestion**.
-4. `stores/gameStore.ts` `applyRecommendation()` changes one allocation bucket, shifting points from `infra` (or the fallback source) to the mapped bucket.
+4. `stores/gameStore.ts` `applyRecommendation()` applies the mapped initiative selection, operating targets and a bounded deployment amount while keeping the learner in the editable decision window.
 
-What it does **not** currently do:
+The action is now covered by unit and browser tests. It does not silently confirm a quarter: the learner can inspect and edit the applied selection, spend and operating mix before confirming.
 
-- select the initiative implied by the recommendation;
-- adjust the deployment amount to cover that initiative;
-- identify which initiative the recommendation refers to;
-- show the learner exactly what selection and spend were applied;
-- preserve an explicit “applied recommendation” event in the quarter ledger before confirmation.
-
-This does not make the game numerically unsafe, but it contradicts the intended learner experience: clicking Apply suggestion should prepare the next quarter decision, including initiative selection and operating-system spend. It must be fixed in production code before release.
-
-Recommended acceptance test for the future core-code change:
+Acceptance contract:
 
 ```text
 Given a recommendation that identifies initiative X and allocation bucket Y,
@@ -118,8 +110,8 @@ The final report should continue reading completed-quarter snapshots rather than
 - [x] Final report and run comparison present
 - [x] Deterministic engine tests present
 - [x] Advisor context tests present
-- [ ] Apply suggestion selects the relevant initiative
-- [ ] Apply suggestion balances deployment spend when required
+- [x] Apply suggestion selects the relevant initiative
+- [x] Apply suggestion balances deployment spend when required
 - [ ] Advisor provider/fallback provenance visible to learner
 - [ ] Advisor payload sanitizes seed/internal metadata
 - [ ] Final browser smoke test on production-like environment
@@ -141,7 +133,8 @@ The following refinements are present in the current V2 working tree and must be
 - [ ] Manually play all four scenarios through the updated decision window.
 - [ ] Verify one-, two- and three-initiative choices and partial deployment in each scenario.
 - [ ] Verify scenario-native units, challenge urgency and latest-quarter spend in each scenario.
-- [ ] Run browser assertions for coach, preview, challenge states, Dashboard, Diagnostics, DNA and Evolution.
+- [ ] Complete the four-scenario browser walkthrough for coach, preview, challenge states, Dashboard, Diagnostics, DNA and Evolution.
+- [x] Browser smoke tests are part of CI and the deploy validation job.
 - [ ] Review provisional scenario targets, crisis severity and synergy balance with domain reviewers.
 - [ ] Review the final V2 diff and explicitly approve commit/push/deployment.
 

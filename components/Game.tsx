@@ -18,6 +18,7 @@ import { firstQuarterPlan, hasCompletedBaseline, type CapitalPace } from "../lib
 import { initialGameState } from "../lib/game/state";
 import { getScenario } from "../lib/scenarios/registry";
 import type { CurrencyMode } from "../lib/scenarios/types";
+import type { AccelerationAllocationMode, AccelerationAllocationSet } from "../lib/game/accelerationAllocation";
 import {
   hasCampaignProgress,
   readPersistedGameState,
@@ -132,6 +133,8 @@ export default function Game({ resume = false }: { resume?: boolean }) {
       value,
     );
   const updateDeployment = (amount: number) => store.setDeploymentAmount(amount);
+  const updateAccelerationAllocation = (mode: AccelerationAllocationMode, allocations: AccelerationAllocationSet) =>
+    store.setAccelerationAllocation(mode, allocations);
   const updateInitiativeAllocation = (initiativeId: string, key: string, value: number) =>
     store.updateInitiativeAllocation(
       initiativeId,
@@ -352,6 +355,7 @@ export default function Game({ resume = false }: { resume?: boolean }) {
         onInitiativeAllocationModeChange={store.setInitiativeAllocationMode}
         onInitiativeAllocationChange={updateInitiativeAllocation}
         onDeploymentChange={updateDeployment}
+        onAccelerationAllocationChange={updateAccelerationAllocation}
         onConfirm={confirm}
         onReset={reset}
       />

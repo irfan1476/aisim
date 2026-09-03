@@ -1,5 +1,5 @@
-import { resolveLifecycleProfile } from '../scenarios/scenarioHelpers';
-import type { ScenarioInitiative, ScenarioLifecycleProfile } from '../scenarios/types';
+import { resolveLifecycleProfile, resolveOperatingProfile } from '../scenarios/scenarioHelpers';
+import type { ScenarioInitiative, ScenarioLifecycleProfile, ScenarioOperatingProfile } from '../scenarios/types';
 import { initializeInitiativeStates, type InitiativeState } from './initiativeState';
 import type { DynamicInitiative } from './generator';
 
@@ -21,6 +21,7 @@ export function scenarioInitiativesToStates(initiatives: ScenarioInitiative[]): 
     const definition = initiatives.find((item) => item.id === state.id);
     if (!definition) return;
     const lifecycleProfile = resolveLifecycleProfile(definition);
+    const operatingProfile = resolveOperatingProfile(definition);
     state.maturityLevel = definition.initialMaturity || 'nascent';
     state.scenarioMetadata = {
       primaryMetric: definition.primaryMetric,
@@ -29,7 +30,8 @@ export function scenarioInitiativesToStates(initiatives: ScenarioInitiative[]): 
       neglect: definition.neglect || { decayRate: 0.15, penaltyThreshold: 4, penaltyAmount: Math.abs(definition.baseEffect) * 0.35 },
       frameworkContribution: definition.frameworkContribution,
       lifecycleProfile,
-    } as typeof state.scenarioMetadata & { lifecycleProfile: ScenarioLifecycleProfile };
+      operatingProfile,
+    } as typeof state.scenarioMetadata & { lifecycleProfile: ScenarioLifecycleProfile; operatingProfile: ScenarioOperatingProfile };
     // Keep authored lifecycle facts on the state as well as in metadata. This
     // lets the resolver/UI consume them without coupling scenario packs to a
     // particular engine implementation, while old saves still hydrate safely.
@@ -70,6 +72,7 @@ export function scenarioInitiativesToStates(initiatives: ScenarioInitiative[]): 
     lifecycleState.dataFlywheelActive = lifecycleProfile.flywheel?.active ?? false;
     lifecycleState.dataFlywheelQuality = lifecycleProfile.flywheel?.quality ?? 0;
     lifecycleState.lifecycleProfile = lifecycleProfile;
+    lifecycleState.operatingProfile = operatingProfile;
   });
   return states;
 }

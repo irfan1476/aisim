@@ -1,7 +1,7 @@
 import { normalizeGameState } from './game/persistence';
 import type { Allocation, GameState, InitiativeAllocationMode, InitiativeAllocationSet } from './game/state';
 import { advanceTurn, applyCrisisResponse, applyTurnDecision, type CrisisResponse, type TurnDecision } from './game/turnResolver';
-import type { InitiativeActionSet } from './game/businessModel';
+import type { InitiativeAccelerationAllocation, InitiativeActionSet } from './game/businessModel';
 
 /** V1/V2 remain readable; V3 records tailored initiative operating mixes. */
 export const COUNTERFACTUAL_TRACE_VERSION = 3;
@@ -72,6 +72,8 @@ export type CounterfactualEdit = {
   initiativeActions?: InitiativeActionSet;
   initiativeAllocationMode?: InitiativeAllocationMode;
   initiativeAllocations?: InitiativeAllocationSet;
+  /** Omitted fields inherit the recorded quarter's acceleration split. */
+  accelerationAllocations?: InitiativeAccelerationAllocation;
   evaluationDecisions?: EvaluationDecision[];
   deploymentDecisions?: DeploymentModeDecision[];
   adaptationDecisions?: AdaptationDecision[];
@@ -127,6 +129,11 @@ function isInitiativeAllocationSet(value: unknown): value is InitiativeAllocatio
     && Object.values(value as Record<string, unknown>).every(isAllocation);
 }
 
+function isAccelerationAllocationSet(value: unknown): value is InitiativeAccelerationAllocation {
+  return Boolean(value) && typeof value === 'object'
+    && Object.entries(value as Record<string, unknown>).every(([, weight]) => isFiniteNumber(weight) && weight >= 0);
+}
+
 function isRecordedAction(value: unknown): value is CounterfactualAction {
   if (!value || typeof value !== 'object') return false;
   const action = value as Partial<CounterfactualAction>;
@@ -141,6 +148,7 @@ function isRecordedAction(value: unknown): value is CounterfactualAction {
       && (action.initiativeActions === undefined || isInitiativeActionSet(action.initiativeActions))
       && (action.initiativeAllocationMode === undefined || action.initiativeAllocationMode === 'shared' || action.initiativeAllocationMode === 'custom')
       && (action.initiativeAllocations === undefined || isInitiativeAllocationSet(action.initiativeAllocations))
+      && (action.accelerationAllocations === undefined || isAccelerationAllocationSet(action.accelerationAllocations))
       && isLifecycleDecisionPayload(action);
   }
   if (action.type === 'crisis-response') {
@@ -184,6 +192,7 @@ export function recordDecision(trace: CounterfactualTrace, decision: RecordedDec
     ...(decision.initiativeActions ? { initiativeActions: { ...decision.initiativeActions } } : {}),
     ...(decision.initiativeAllocationMode ? { initiativeAllocationMode: decision.initiativeAllocationMode } : {}),
     ...(decision.initiativeAllocations ? { initiativeAllocations: JSON.parse(JSON.stringify(decision.initiativeAllocations)) } : {}),
+    ...(decision.accelerationAllocations ? { accelerationAllocations: { ...decision.accelerationAllocations } } : {}),
     ...(decision.evaluationDecisions ? { evaluationDecisions: decision.evaluationDecisions.map((item) => ({ ...item })) } : {}),
     ...(decision.deploymentDecisions ? { deploymentDecisions: decision.deploymentDecisions.map((item) => ({ ...item })) } : {}),
     ...(decision.adaptationDecisions ? { adaptationDecisions: decision.adaptationDecisions.map((item) => ({ ...item })) } : {}),
@@ -258,6 +267,7 @@ export function readActiveCounterfactualTrace(): CounterfactualTrace | null {
         ...(action.initiativeActions ? { initiativeActions: { ...action.initiativeActions } } : {}),
         ...(action.initiativeAllocationMode ? { initiativeAllocationMode: action.initiativeAllocationMode } : {}),
         ...(action.initiativeAllocations ? { initiativeAllocations: JSON.parse(JSON.stringify(action.initiativeAllocations)) } : {}),
+        ...(action.accelerationAllocations ? { accelerationAllocations: { ...action.accelerationAllocations } } : {}),
         ...(action.evaluationDecisions ? { evaluationDecisions: action.evaluationDecisions.map((item) => ({ ...item })) } : {}),
         ...(action.deploymentDecisions ? { deploymentDecisions: action.deploymentDecisions.map((item) => ({ ...item })) } : {}),
         ...(action.adaptationDecisions ? { adaptationDecisions: action.adaptationDecisions.map((item) => ({ ...item })) } : {}),
@@ -325,6 +335,7 @@ export function replayCounterfactual(trace: CounterfactualTrace, edit: Counterfa
       initiativeActions: recorded.q === edit.q ? { ...(edit.initiativeActions || recorded.initiativeActions || {}) } : recorded.initiativeActions,
       initiativeAllocationMode: recorded.q === edit.q ? edit.initiativeAllocationMode ?? recorded.initiativeAllocationMode : recorded.initiativeAllocationMode,
       initiativeAllocations: recorded.q === edit.q ? edit.initiativeAllocations ?? recorded.initiativeAllocations : recorded.initiativeAllocations,
+      accelerationAllocations: recorded.q === edit.q ? edit.accelerationAllocations ?? recorded.accelerationAllocations : recorded.accelerationAllocations,
       evaluationDecisions: recorded.q === edit.q ? edit.evaluationDecisions ?? recorded.evaluationDecisions : recorded.evaluationDecisions,
       deploymentDecisions: recorded.q === edit.q ? edit.deploymentDecisions ?? recorded.deploymentDecisions : recorded.deploymentDecisions,
       adaptationDecisions: recorded.q === edit.q ? edit.adaptationDecisions ?? recorded.adaptationDecisions : recorded.adaptationDecisions,

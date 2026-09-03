@@ -77,7 +77,13 @@ export default function DecisionPreview({ state, initiatives }: Props) {
     if (initiativeActions[id] || selectedIds.includes(id)) return;
     if (Number(initiative.quartersFunded || 0) > 0) initiativeActions[id] = 'maintain';
   });
-  const actionPlan = calculateActionCapitalPlan(state, initiativeActions, plannedDeployment);
+  const actionPlan = calculateActionCapitalPlan(
+    state,
+    initiativeActions,
+    plannedDeployment,
+    state.quarterlyCrisisCost,
+    state.accelerationAllocationMode === 'focused' ? state.accelerationAllocations : undefined,
+  );
   const expectedSpend = actionPlan.requiredCapital;
   const budgetAfter = Math.max(0, campaignRemaining - actionPlan.totalReleased);
   const unfunded = initiatives.filter((initiative) => !selectedIds.includes(initiative.id));

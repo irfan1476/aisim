@@ -47,6 +47,17 @@ test('the learner sees the strategic success contract before and during play', (
   assert.match(decision, /Guardrails protected/, 'the reminder should show current guardrail condition');
 });
 
+test('the homepage explains learner-controlled operating levers and reversible lifecycle choices', () => {
+  const landing = read('app', 'page.tsx');
+
+  assert.match(landing, /Your decision surface/);
+  assert.match(landing, /operating system around every bet/);
+  for (const lever of ['Infrastructure', 'Data', 'People', 'MLOps', 'Compliance', 'Innovation']) {
+    assert.match(landing, new RegExp(lever));
+  }
+  assert.match(landing, /discover, pilot, scale, run, maintain, pause, revisit, or retire/);
+});
+
 test('final report visual keeps its evidence caption within the report card', () => {
   const visual = read('components', 'CampaignEvidenceReplayVisual.tsx');
 

@@ -30,6 +30,7 @@ const { previewStrategy } = require('../lib/game/strategyPreview.ts');
 const { applyTurnDecision } = require('../lib/game/turnResolver.ts');
 const { getScenario } = require('../lib/scenarios/registry.ts');
 const { scenarioInitiativesToStates } = require('../lib/game/initiativeAdapter.ts');
+const { normalizeWhatIfDraft } = require('../lib/game/persistence.ts');
 
 const allocation = { infra: 35, data: 25, people: 15, mlops: 10, compliance: 10, innovation: 5 };
 
@@ -119,6 +120,31 @@ test('additional deployment accelerates a selected portfolio with bounded return
   assert.ok(accelerated.alternative.initiativeStates.maintenance.totalInvestment > baseline.alternative.initiativeStates.maintenance.totalInvestment);
 });
 
+test('focused acceleration preview matches live funding and persisted allocation', () => {
+  const state = initialGameState();
+  const selected = ['demand', 'energy'];
+  const initiativeActions = { demand: 'pilot', energy: 'scale' };
+  const floor = require('../lib/game/capital.ts').calculateActionCapitalPlan(state, initiativeActions, 100).requiredCapital;
+  const decision = {
+    selected,
+    initiativeActions,
+    alloc: allocation,
+    deploymentAmount: floor + 6,
+    accelerationAllocations: { demand: 100, energy: 0 },
+  };
+  const preview = previewStrategy(state, decision);
+  const live = applyTurnDecision(state, decision);
+
+  assert.equal(preview.valid, true, preview.warning || 'focused acceleration preview should be valid');
+  assert.equal(live.accepted, true, live.reason || 'focused acceleration decision should be accepted');
+  assert.equal(preview.alternative.spend.acceleratedInvestment, 6);
+  assert.deepEqual(preview.alternative.decision.accelerationAllocations, decision.accelerationAllocations);
+  assert.deepEqual(live.decision.accelerationAllocations, { demand: 100 });
+  assert.equal(preview.alternative.initiativeStates.demand.totalInvestment, live.nextState.initiativeStates.demand.totalInvestment);
+  assert.equal(preview.alternative.initiativeStates.energy.totalInvestment, live.nextState.initiativeStates.energy.totalInvestment);
+  assert.deepEqual(live.nextState.history[0].accelerationAllocations, decision.accelerationAllocations);
+});
+
 test('preview includes continuity commitments and rejects an underfunded plan', () => {
   const state = initialGameState(undefined, { campaignBudget: 24, quarterlyBudget: 2 });
   state.initiativeStates.energy = { ...state.initiativeStates.energy, quartersFunded: 2, currentCost: 2 };
@@ -156,4 +182,53 @@ test('action-aware preview matches the live resolver for the same lifecycle deci
   assert.deepEqual(preview.alternative.scenarioMetrics, live.nextState.scenarioState.metrics);
   assert.equal(preview.alternative.initiativeStates[initiative.id].lifecycle, live.nextState.initiativeStates[initiative.id].lifecycle);
   assert.deepEqual(preview.alternative.decision.initiativeActions, initiativeActions);
+});
+
+test('custom operating allocations flow through preview and What-If drafts', () => {
+  const scenario = getScenario('projectFactory');
+  const state = initialGameState(undefined, {
+    scenarioMode: true,
+    scenarioId: scenario.id,
+    quarterlyBudget: scenario.startingState.budget,
+    campaignBudget: scenario.startingState.budget * 12,
+    defaultAllocation: scenario.startingState.defaultAllocation,
+    scenarioStartingMetrics: scenario.startingState.startingMetrics,
+    startingMetrics: scenario.startingState.startingMetrics,
+  });
+  state.initiativeStates = scenarioInitiativesToStates(scenario.initiatives);
+  const initiative = scenario.initiatives[0];
+  state.initiativeStates[initiative.id] = {
+    ...state.initiativeStates[initiative.id],
+    aiLifecycle: { ...state.initiativeStates[initiative.id].aiLifecycle, stage: 'experiment', stageStartedAt: 0, stageStatus: 'in_progress' },
+  };
+  const initiativeActions = { [initiative.id]: 'pilot' };
+  const localAllocation = { infra: 30, data: 25, people: 18, mlops: 10, compliance: 12, innovation: 5 };
+  const decision = {
+    selected: [initiative.id],
+    initiativeActions,
+    alloc: state.alloc,
+    initiativeAllocationMode: 'custom',
+    initiativeAllocations: { [initiative.id]: localAllocation },
+    deploymentAmount: state.initiativeStates[initiative.id].currentCost * .8,
+  };
+  const preview = previewStrategy(state, decision);
+  const live = applyTurnDecision(state, decision);
+  assert.equal(live.accepted, true);
+  assert.deepEqual(preview.alternative.scenarioMetrics, live.nextState.scenarioState.metrics);
+  assert.deepEqual(preview.alternative.initiativeStates, live.nextState.initiativeStates);
+  assert.equal(preview.alternative.decision.initiativeAllocationMode, 'custom');
+  assert.deepEqual(preview.alternative.decision.initiativeAllocations, { [initiative.id]: localAllocation });
+
+  const draft = normalizeWhatIfDraft({
+    selected: [initiative.id],
+    alloc: state.alloc,
+    initiativeAllocationMode: 'custom',
+    initiativeAllocations: { [initiative.id]: localAllocation },
+    accelerationAllocationMode: 'focused',
+    accelerationAllocations: { [initiative.id]: 100 },
+  });
+  assert.equal(draft.initiativeAllocationMode, 'custom');
+  assert.deepEqual(draft.initiativeAllocations[initiative.id], localAllocation);
+  assert.equal(draft.accelerationAllocationMode, 'focused');
+  assert.deepEqual(draft.accelerationAllocations, { [initiative.id]: 100 });
 });

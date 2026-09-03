@@ -7,6 +7,7 @@ import { getScenario } from '../lib/scenarios/registry';
 import { scenarioInitiativesToStates } from '../lib/game/initiativeAdapter';
 import { advanceTurn, applyCrisisResponse, applyTurnDecision } from '../lib/game/turnResolver';
 import type { InitiativeAction } from '../lib/game/businessModel';
+import type { AccelerationAllocationMode, AccelerationAllocationSet } from '../lib/game/accelerationAllocation';
 import type { AdaptationInput, DeploymentModeInput, LifecycleReviewInput } from '../lib/game/businessModel';
 import { applyAdaptation, applyDeploymentMode, applyLifecycleReview, normalizeLifecycleReviewInput, suggestedLifecycleAction } from '../lib/game/lifecycleResolver';
 import { allocationForInitiative, seedInitiativeAllocations } from '../lib/game/initiativeAllocation';
@@ -38,6 +39,7 @@ type GameStore = GameState & {
   setInitiativeAllocationMode: (mode: GameState['initiativeAllocationMode']) => void;
   updateInitiativeAllocation: (initiativeId: string, key: keyof GameState['alloc'], value: number) => void;
   setDeploymentAmount: (amount: number) => void;
+  setAccelerationAllocation: (mode: AccelerationAllocationMode, allocations: AccelerationAllocationSet) => void;
   confirmDecisions: () => void;
   respondToCrisis: (impact: Record<string, number>, cost?: number) => void;
   advanceQuarter: () => void;
@@ -78,6 +80,16 @@ function repairSelectedPauseActions(state: GameState): GameState {
     changed = true;
   });
   return changed ? { ...state, initiativeActions } : state;
+}
+
+function remapAccelerationRouting(state: Pick<GameState, 'selected' | 'initiativeActions' | 'accelerationAllocationMode' | 'accelerationAllocations'>): Pick<GameState, 'accelerationAllocationMode' | 'accelerationAllocations'> {
+  const eligible = state.selected.filter((id) => state.initiativeActions[id] === 'pilot' || state.initiativeActions[id] === 'scale');
+  const existing = Object.keys(state.accelerationAllocations || {}).filter((id) => eligible.includes(id));
+  const sameScope = existing.length === eligible.length && existing.every((id) => eligible.includes(id));
+  if (state.accelerationAllocationMode === 'focused' && sameScope) {
+    return { accelerationAllocationMode: 'focused', accelerationAllocations: Object.fromEntries(existing.map((id) => [id, state.accelerationAllocations?.[id] || 0])) };
+  }
+  return { accelerationAllocationMode: 'proportional', accelerationAllocations: {} };
 }
 
 const browserStorage: StateStorage = {
@@ -260,7 +272,7 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
         ? suggestedLifecycleAction(initiative, state.q)
         : 'scale';
     });
-    return { selected, initiativeActions };
+    return { selected, initiativeActions, ...remapAccelerationRouting({ ...state, selected, initiativeActions }) };
   }),
 
   setInitiativeAction: (id, action) => set((state) => {
@@ -272,7 +284,7 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
     const selected = ['discover', 'pilot', 'scale'].includes(action)
       ? Array.from(new Set([...state.selected.filter((item) => item !== id), id])).slice(0, 3)
       : state.selected.filter((item) => item !== id);
-    return { initiativeActions, selected };
+    return { initiativeActions, selected, ...remapAccelerationRouting({ ...state, selected, initiativeActions }) };
   }),
 
   updateAllocation: (key, value) => set((state) => ({
@@ -305,6 +317,11 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
     deploymentAmount: normalizeDeploymentAmount(amount, state.campaignBudget, state.campaignBudgetRemaining, state.quarterlyBudget, state.q, state.spent),
   })),
 
+  setAccelerationAllocation: (mode, allocations) => set(() => ({
+    accelerationAllocationMode: mode,
+    accelerationAllocations: allocations,
+  })),
+
   confirmDecisions: () => {
     const before = normalizeGameState(get());
     const resolution = applyTurnDecision(before, {
@@ -313,6 +330,7 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
       alloc: before.alloc,
       initiativeAllocationMode: before.initiativeAllocationMode,
       initiativeAllocations: before.initiativeAllocations,
+      accelerationAllocations: before.accelerationAllocationMode === 'focused' ? before.accelerationAllocations : undefined,
       deploymentAmount: before.deploymentAmount,
     });
     if (resolution.accepted) {
@@ -404,6 +422,10 @@ export const useGameStore = create<GameStore>()(persist((set, get) => ({
     set((state) => ({
       selected: normalized.selected,
       alloc: normalized.alloc,
+      ...(normalized.initiativeAllocationMode ? { initiativeAllocationMode: normalized.initiativeAllocationMode } : {}),
+      ...(normalized.initiativeAllocations ? { initiativeAllocations: normalized.initiativeAllocations } : {}),
+      ...(normalized.accelerationAllocationMode ? { accelerationAllocationMode: normalized.accelerationAllocationMode } : {}),
+      ...(normalized.accelerationAllocations ? { accelerationAllocations: normalized.accelerationAllocations } : {}),
       initiativeActions: normalized.initiativeActions || state.initiativeActions,
       deploymentAmount: normalized.deploymentAmount === undefined
         ? state.deploymentAmount

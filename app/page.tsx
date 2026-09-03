@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import Game from "../components/Game";
 import HomepageVisualPanels from "../components/HomepageVisualPanels";
 import CampaignEvidenceReplayVisual from "../components/CampaignEvidenceReplayVisual";
+import TransparencyFlow from "../components/TransparencyFlow";
 import { hasCampaignProgress, readPersistedGameState } from "../lib/game/persistence";
 import { scenarioList } from "../lib/scenarios/registry";
 
@@ -19,6 +20,28 @@ const heroProof = [
   ["Real capital", "Delivery, run, exit & payback"],
   ["Living portfolio", "Maturity, readiness & risk"],
   ["Learning loop", "Experiment, reflect & replay"],
+] as const;
+
+const audienceValue = [
+  ["For leaders", "Practice capital, operating-model, adoption, and governance trade-offs before they become expensive decisions."],
+  ["For teams", "Create a shared language for evidence, lifecycle progress, delivery pressure, and the conditions for scale."],
+  ["For facilitators", "Use a repeatable, explainable campaign to turn discussion into decisions, reflection, and comparison."],
+] as const;
+
+const successContract = [
+  ["Move the mission", "Improve the primary scenario outcomes over the full 12-quarter campaign."],
+  ["Protect the guardrails", "Create value without allowing adoption, trust, safety, or risk conditions to deteriorate."],
+  ["Earn the right to scale", "Build readiness and evidence before asking the organisation to absorb wider change."],
+  ["Learn and pace capital", "Use finite capital deliberately, read the consequence, and improve one meaningful choice on replay."],
+] as const;
+
+const decisionSurface = [
+  ["Infrastructure", "Integration capacity"],
+  ["Data", "Readiness and evidence"],
+  ["People", "Adoption and change"],
+  ["MLOps", "Reliability at scale"],
+  ["Compliance", "Trust and control"],
+  ["Innovation", "Learning options"],
 ] as const;
 
 function Eyebrow({ children, dark = false }: { children: React.ReactNode; dark?: boolean }) {
@@ -70,6 +93,7 @@ export default function Home() {
           {resumeAvailable && <button type="button" onClick={resumeSimulation} className="mt-3 block text-left text-sm font-semibold text-[#1f2328] underline decoration-[#08872b]/40 underline-offset-4 transition hover:text-[#08872b]">Resume saved campaign</button>}
           <a href="#simulation" className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-[#1f2328] underline decoration-[#08872b]/40 underline-offset-4">See how the learning loop works <ArrowRight size={15}/></a>
           <p className="mt-4 text-xs font-semibold uppercase tracking-widest text-[#656d76]">No account required · 12 quarters · 20–30 minutes</p>
+          <div className="mt-6 rounded-xl border border-[#08872b]/20 bg-[#e8f5ee] p-4"><p className="text-xs font-bold uppercase tracking-[.18em] text-[#176b36]">Who this is for</p><p className="mt-2 text-sm leading-6 text-[#3d5a47]">A practice field for executives, transformation teams, and educators who need to make AI strategy tangible before committing real-world capital.</p></div>
         </div>
         <div className="relative reveal">
           <div className="absolute -inset-10 rounded-full bg-[#08872b]/10 blur-3xl" />
@@ -81,8 +105,16 @@ export default function Home() {
               <div className="rounded-lg border border-white/10 bg-[#161b22] p-4"><div className="flex items-center justify-between"><div><p className="text-[10px] font-bold uppercase tracking-[.16em] text-white/55">Campaign trajectory</p><p className="mt-1 text-xs text-white/65">Outcomes become evidence each quarter.</p></div><BarChart3 size={18} className="text-[#7ee787]"/></div><svg className="mt-3 h-24 w-full" viewBox="0 0 240 100" role="img" aria-label="Illustrative trajectory rising from quarter one to quarter four"><path d="M8 82H232 M8 56H232 M8 30H232" stroke="rgba(255,255,255,.1)" strokeWidth="1"/><path d="M8 64 C42 62, 63 57, 87 55 S134 47, 158 42 S202 34, 232 24" fill="none" stroke="#3fb950" strokeWidth="3" strokeLinecap="round"/><path d="M8 48 C42 48, 67 47, 91 46 S137 44, 164 42 S205 41, 232 40" fill="none" stroke="rgba(126,231,135,.4)" strokeWidth="1.5" strokeDasharray="4 4"/>{["8,64", "87,55", "158,42", "232,24"].map((point) => { const [cx, cy] = point.split(","); return <circle key={point} cx={cx} cy={cy} r="4" fill="#0d1117" stroke="#7ee787" strokeWidth="2"/>; })}</svg><div className="flex justify-between text-[10px] text-white/45"><span>Q1</span><span>Q4</span></div></div>
             </div>
             <div className="mt-4 flex items-center justify-between gap-3 rounded-lg border border-[#3fb950]/30 bg-[#3fb950]/10 p-3"><div className="flex min-w-0 items-center gap-3"><FileText className="shrink-0 text-[#7ee787]" size={18}/><div className="min-w-0"><p className="text-[9px] font-bold uppercase tracking-[.16em] text-[#7ee787]">Next decision</p><p className="mt-1 truncate text-sm font-semibold">Choose your next bets</p></div></div><span className="flex shrink-0 items-center gap-1 text-xs font-bold text-[#7ee787]">Review evidence <ArrowRight size={14}/></span></div>
-            <p className="mt-3 text-[10px] text-white/45">Example campaign state · compare the record, then replay with intent.</p>
+            <p className="mt-3 text-[10px] text-white/45">Illustrative cockpit · example campaign state · compare the record, then replay with intent.</p>
           </div>
+        </div>
+      </section>
+
+      <section className="border-y border-[#c8d4ce] bg-white/72" aria-labelledby="audience-value-title">
+        <div className="mx-auto max-w-7xl px-6 py-14 md:py-16">
+          <Eyebrow>Why practice here</Eyebrow>
+          <h2 id="audience-value-title" className="mt-3 max-w-3xl text-3xl font-bold tracking-[-.05em] text-[#101820] md:text-5xl">Make an AI strategy discussable before it becomes a delivery problem.</h2>
+          <div className="mt-7 grid gap-3 md:grid-cols-3">{audienceValue.map(([title, copy]) => <article key={title} className="rounded-xl border border-[#d0d7de] bg-[#f6f8fa] p-5"><h3 className="font-bold text-[#1f2328]">{title}</h3><p className="mt-2 text-sm leading-6 text-[#65736b]">{copy}</p></article>)}</div>
         </div>
       </section>
 
@@ -93,7 +125,7 @@ export default function Home() {
             <Eyebrow>Choose your practice world</Eyebrow>
             <h2 className="mt-4 max-w-xl text-4xl font-bold tracking-[-.05em] text-[#101820] md:text-6xl">One decision engine. Different pressure systems.</h2>
             <p className="mt-6 max-w-xl text-base leading-7 text-[#526159]">Open practice lets you test your own thesis. Scenario mode changes the operating context, evidence, crises, and success conditions—without taking away agency.</p>
-            <div className="mt-7 grid gap-2 sm:grid-cols-2">{scenarioList.map((scenario) => <article key={scenario.id} className="rounded-xl border border-[#d0d7de] bg-[#f6f8fa] p-4"><div className="flex items-start justify-between gap-3"><span className="text-xl" aria-hidden="true">{scenario.icon}</span><span className="text-[9px] font-bold uppercase tracking-[.14em] text-[#08872b]">{scenario.industry}</span></div><h3 className="mt-4 font-bold text-[#1f2328]">{scenario.name}</h3><p className="mt-1 text-xs leading-5 text-[#65736b]">A distinct operating challenge, measured in its own terms.</p></article>)}</div>
+            <div className="mt-7 grid gap-2 sm:grid-cols-2">{scenarioList.map((scenario) => <article key={scenario.id} className="rounded-xl border border-[#d0d7de] bg-[#f6f8fa] p-4"><div className="flex items-start justify-between gap-3"><span className="text-xl" aria-hidden="true">{scenario.icon}</span><div className="flex items-center gap-2"><span className="text-[9px] font-bold uppercase tracking-[.14em] text-[#08872b]">{scenario.industry}</span><span className="rounded-full bg-[#e8f5ee] px-2 py-1 text-[9px] font-bold uppercase tracking-[.1em] text-[#176b36]">{scenario.difficulty}</span></div></div><h3 className="mt-4 font-bold text-[#1f2328]">{scenario.name}</h3><p className="mt-1 text-xs leading-5 text-[#65736b]">{scenario.description}</p><p className="mt-3 text-[10px] font-bold uppercase tracking-[.12em] text-[#08872b]">Practice pressures</p><p className="mt-1 text-xs leading-5 text-[#65736b]">{scenario.challenges.slice(0, 2).map((challenge) => challenge.label).join(" · ")}</p></article>)}</div>
           </div>
         </div>
       </section>
@@ -108,6 +140,32 @@ export default function Home() {
               {[["01", "Decide", "Action + capital", "Scale customer service"], ["02", "Observe", "Outcome + risk", "Adoption 67% · risk 24%"], ["03", "Reflect", "Learning score", "Trust gates slowed uptake"], ["04", "Replay", "One changed thesis", "Pilot one quarter longer"]].map(([number, title, label, detail], index) => <div key={title} className="contents"><article className={`rounded-xl border p-3 ${index === 2 ? "border-[#3fb950]/60 bg-[#3fb950]/10" : "border-white/10 bg-white/5"}`}><p className="text-[9px] font-bold tracking-[.16em] text-[#7ee787]">{number} · {label}</p><h3 className="mt-2 text-sm font-bold">{title}</h3><p className="mt-1 text-[11px] leading-4 text-white/55">{detail}</p></article>{index < 3 && <div className="hidden self-center text-center text-lg font-bold text-[#7ee787] md:block">→</div>}</div>)}
             </div>
             <div className="mt-3 flex items-center justify-between gap-3 border-t border-white/10 pt-3 text-[10px] text-white/45"><span>Every turn leaves evidence for the next one.</span><span className="font-bold text-[#7ee787]">Value · readiness · risk · learning</span></div>
+          </div>
+        </div>
+      </section>
+
+      <section className="border-b border-[#c8d4ce] bg-[#f1f7f4]" aria-label="Campaign success contract">
+        <div className="mx-auto max-w-7xl px-6 py-14 md:py-16">
+          <Eyebrow>What a credible win means</Eyebrow>
+          <h2 className="mt-3 max-w-3xl text-3xl font-bold tracking-[-.05em] text-[#101820] md:text-5xl">There is no single right answer—there is a better next decision.</h2>
+          <p className="mt-4 max-w-2xl text-sm leading-6 text-[#526159]">A strong campaign connects mission progress, operating health, evidence-based scale, and deliberate capital pacing across all 12 quarters.</p>
+          <div className="mt-7 grid gap-3 md:grid-cols-2 xl:grid-cols-4">{successContract.map(([title, copy], index) => <article key={title} className="rounded-xl border border-[#8fb99c] bg-white/75 p-4"><p className="text-[10px] font-bold uppercase tracking-[.12em] text-[#08872b]">0{index + 1}</p><h3 className="mt-2 font-bold text-[#1f2328]">{title}</h3><p className="mt-1 text-xs leading-5 text-[#65736b]">{copy}</p></article>)}</div>
+          <p className="mt-5 text-[11px] font-semibold text-[#176b36]">Same campaign seed + same recorded decisions = same replayable result.</p>
+        </div>
+      </section>
+
+      <section className="border-b border-[#c8d4ce] bg-white/72" aria-labelledby="decision-surface-title">
+        <div className="mx-auto max-w-7xl px-6 py-14 md:py-16">
+          <Eyebrow>Your decision surface</Eyebrow>
+          <div className="mt-3 grid gap-8 lg:grid-cols-[.8fr_1.2fr] lg:items-end">
+            <div>
+              <h2 id="decision-surface-title" className="max-w-xl text-3xl font-bold tracking-[-.05em] text-[#101820] md:text-5xl">You control the operating system around every bet.</h2>
+              <p className="mt-4 max-w-xl text-sm leading-6 text-[#526159]">Choose the initiative, lifecycle action, release pace, and support mix. Change one lever, accept the trade-off, and watch the next quarter record what happened.</p>
+            </div>
+            <div>
+              <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">{decisionSurface.map(([title, copy]) => <div key={title} className="rounded-xl border border-[#d0d7de] bg-[#f6f8fa] p-4"><p className="text-sm font-bold text-[#1f2328]">{title}</p><p className="mt-1 text-xs leading-5 text-[#65736b]">{copy}</p></div>)}</div>
+              <p className="mt-3 text-[11px] font-semibold text-[#176b36]">Lifecycle choices stay reversible: discover, pilot, scale, run, maintain, pause, revisit, or retire.</p>
+            </div>
           </div>
         </div>
       </section>
@@ -152,6 +210,12 @@ export default function Home() {
             <div className="mt-7 grid gap-3 sm:grid-cols-2">{[[Target, "Before", "Test a thesis."], [BarChart3, "During", "Watch the system respond."], [FileText, "After", "Read the evidence."], [RefreshCw, "Replay", "Change one move."]].map(([Icon, title, copy]) => { const ToolIcon = Icon as typeof Target; return <div key={title as string} className="rounded-xl border border-[#d0d7de] bg-[#f6f8fa] p-4"><ToolIcon className="text-[#08872b]" size={19}/><h3 className="mt-3 font-bold">{title as string}</h3><p className="mt-1 text-xs leading-5 text-[#65736b]">{copy as string}</p></div>; })}</div>
           </div>
           <CampaignEvidenceReplayVisual />
+        </div>
+      </section>
+
+      <section className="border-b border-[#c8d4ce] bg-white/72" aria-label="Transparent campaign mechanics">
+        <div className="mx-auto max-w-7xl px-6 pb-8">
+          <TransparencyFlow />
         </div>
       </section>
 

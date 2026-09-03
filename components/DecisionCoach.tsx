@@ -44,6 +44,8 @@ export default function DecisionCoach({ state, initiatives }: Props) {
     state,
     state.initiativeActions || {},
     Number(state.deploymentAmount || 0),
+    state.quarterlyCrisisCost,
+    state.accelerationAllocationMode === 'focused' ? state.accelerationAllocations : undefined,
   );
   const selectedSpend = selectedInitiatives.reduce((sum, initiative) =>
     sum + Number(actionPlan.byInitiative[initiative.id]?.total || 0), 0);

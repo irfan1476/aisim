@@ -434,12 +434,15 @@ test("V2 analytics uses latest completed-quarter spend and separates DNA from ev
   await expect(analytics).toContainText("Next actions");
   await expect(analytics).not.toContainText("No recommendation has been generated for the current state.");
 
-  await analytics.getByRole("button", { name: "DNA" }).click();
-  await expect(analytics).toContainText("Strategy DNA");
-  await expect(analytics).not.toContainText("Initiative evolution & spend");
-  await analytics.getByRole("button", { name: "Evolution" }).click();
-  await expect(analytics).toContainText("Initiative evolution & spend");
-  await expect(analytics).toContainText("Strategy DNA is the separate interpretation");
+  // The analytics surface now separates measured trends from the historical
+  // decision ledger. Keep this smoke assertion aligned with the live tab
+  // contract rather than the retired DNA/Evolution sub-navigation.
+  await analytics.getByRole("button", { name: "Trends" }).click();
+  await expect(analytics).toContainText("Decision pattern");
+  await expect(analytics).toContainText("Portfolio ROI trend");
+  await analytics.getByRole("button", { name: "History" }).click();
+  await expect(analytics).toContainText("Quarter roadmap");
+  await expect(analytics).toContainText("Quarter-by-quarter comparison");
 });
 
 test("V2 approved recommendation becomes actionable next-quarter guidance", async ({

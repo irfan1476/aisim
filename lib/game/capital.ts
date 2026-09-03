@@ -1,5 +1,5 @@
 import { deploymentCapacity, type GameState } from './state';
-import type { InitiativeAction, InitiativeActionSet, InitiativeFunding } from './businessModel';
+import type { InitiativeAccelerationAllocation, InitiativeAction, InitiativeActionSet, InitiativeFunding } from './businessModel';
 import { isAccelerableAction } from './fundingDynamics';
 
 /**
@@ -23,6 +23,8 @@ export type CapitalPlan = {
   maintenanceSpend: number;
   continuityAllocations: Record<string, number>;
   accelerationSpend: number;
+  /** Exact learner-directed percentages used for discretionary acceleration. */
+  accelerationAllocations?: InitiativeAccelerationAllocation;
   deliveryCapital: number;
   crisisResponseSpend: number;
   requiredCapital: number;
@@ -50,6 +52,7 @@ export function calculateActionCapitalPlan(
   actions: InitiativeActionSet,
   requestedDeployment: number,
   crisisResponseSpend = state.quarterlyCrisisCost,
+  accelerationAllocations?: InitiativeAccelerationAllocation,
 ): CapitalPlan {
   const remaining = finite(state.campaignBudgetRemaining);
   const hasInitiativeAction = Object.values(actions || {}).some((action) => action === 'discover' || action === 'pilot' || action === 'scale' || action === 'maintain' || action === 'retire');
@@ -98,11 +101,26 @@ export function calculateActionCapitalPlan(
     const funding = byInitiative[id];
     return sum + funding.discovery + funding.delivery + funding.run;
   }, 0);
-  if (scaleUp > 0 && accelerationBase > 0) {
+  const explicitWeights = accelerableIds
+    .map((id) => [id, Math.max(0, Number(accelerationAllocations?.[id]) || 0)] as const)
+    .filter(([, weight]) => weight > 0);
+  const explicitWeightTotal = explicitWeights.reduce((sum, [, weight]) => sum + weight, 0);
+  // An explicit split is only applied to eligible initiatives. If it is
+  // missing or contains no eligible positive weight, retain the transparent
+  // legacy proportional allocation. Normalising here also tolerates callers
+  // using amounts instead of percentages while preserving the same split.
+  const weights = explicitWeightTotal > 0
+    ? new Map(explicitWeights)
+    : new Map(accelerableIds.map((id) => {
+      const funding = byInitiative[id];
+      return [id, funding.discovery + funding.delivery + funding.run] as const;
+    }));
+  const weightTotal = Array.from(weights.values()).reduce((sum, weight) => sum + weight, 0);
+  if (scaleUp > 0 && accelerationBase > 0 && weightTotal > 0) {
     accelerableIds.forEach((id) => {
       const funding = byInitiative[id];
-      const commitment = funding.discovery + funding.delivery + funding.run;
-      funding.scaleUp = round(scaleUp * (commitment / accelerationBase));
+      const weight = weights.get(id) || 0;
+      funding.scaleUp = round(scaleUp * (weight / weightTotal));
       funding.total = round(funding.total + funding.scaleUp);
     });
   }
@@ -126,6 +144,9 @@ export function calculateActionCapitalPlan(
     maintenanceSpend,
     continuityAllocations: Object.fromEntries(Object.entries(byInitiative).filter(([, funding]) => funding.continuity > 0).map(([id, funding]) => [id, funding.continuity])),
     accelerationSpend,
+    accelerationAllocations: explicitWeightTotal > 0
+      ? Object.fromEntries(explicitWeights.map(([id, weight]) => [id, round(weight / explicitWeightTotal * 100)]))
+      : undefined,
     // Only pilot/scale capital changes immediate operating outcomes.
     // Discovery and maintenance still get durable, stage-specific benefits,
     // but cannot manufacture same-quarter operating ROI.

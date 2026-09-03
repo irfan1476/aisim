@@ -2,6 +2,8 @@ import type { GameState, PortfolioSnapshot } from "./state";
 import { evaluateSynergies } from "./generator";
 import { getScenario } from "../scenarios/registry";
 import { allocationToReadiness } from "./allocation";
+import { allocationForInitiative } from "./initiativeAllocation";
+import { deriveOperatingSignal, profileForState } from "./operatingEffects";
 import { maturityReadiness } from "./maturity";
 import { calculatePortfolioDynamics, fundingIntensityFor } from "./effectResolver";
 
@@ -105,14 +107,14 @@ export function causalChain(
   resolvedInitiativeStates: GameState["initiativeStates"] = state.initiativeStates,
   deploymentAmount?: number,
   portfolioContext?: PortfolioSnapshot,
+  initiativeAllocationMode: GameState['initiativeAllocationMode'] = 'shared',
+  initiativeAllocations: GameState['initiativeAllocations'] = state.initiativeAllocations,
 ) {
   const scenario = state.scenarioMode ? getScenario(state.scenarioId) : undefined;
   if (scenario) {
     const definitions = new Map(scenario.progress.map((item) => [item.key, item]));
     const synergies = evaluateSynergies(selected, resolvedInitiativeStates, scenario.synergies);
     const synergyMultiplier = 1 + synergies.reduce((sum, item) => sum + item.roiBoost, 0);
-    const readiness = allocationToReadiness(state.alloc);
-    const readinessFactor = 0.55 + readiness.data * 0.2 + readiness.people * 0.15 + readiness.governance * 0.1;
     const adoptionFactor = 0.7 + Math.max(0, Math.min(1, state.adoption / 100)) * 0.3;
     const portfolio = portfolioContext || calculatePortfolioDynamics(
       selected.length,
@@ -141,6 +143,15 @@ export function causalChain(
         const metadata = initiative.scenarioMetadata;
         const definition = metadata ? definitions.get(metadata.primaryMetric) : undefined;
         if (!metadata || !definition) return null;
+        const localAllocation = allocationForInitiative(initiative.id, initiativeAllocationMode, initiativeAllocations, state.alloc);
+        const readiness = allocationToReadiness(localAllocation);
+        const operatingSignal = deriveOperatingSignal(
+          profileForState(initiative),
+          initiative.lifecycle === 'run' ? 'maintain' : initiative.lifecycle === 'scale' ? 'scale' : 'pilot',
+          localAllocation,
+          initiative.aiLifecycle?.stage,
+        );
+        const readinessFactor = (0.55 + readiness.data * 0.2 + readiness.people * 0.15 + readiness.governance * 0.1) * operatingSignal.fit;
         const diminishingReturns = 1 / (1 + Math.max(0, initiative.quartersFunded - 1) * 0.08);
         const rawEffect = metadata.baseEffect * maturityReadiness(initiative.maturityLevel) * readinessFactor * adoptionFactor * diminishingReturns * synergyMultiplier * portfolioEffect * fundingMultiplier;
         const before = Number(projectedMetrics[metadata.primaryMetric] ?? definition.start);

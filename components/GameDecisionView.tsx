@@ -33,8 +33,10 @@ import { validatePortfolioCapacity } from "../lib/game/capacity";
 import type { InitiativeAction, InitiativeActionSet } from "../lib/game/businessModel";
 import { lifecycleActionError, suggestedLifecycleAction } from "../lib/game/lifecycleResolver";
 import { investmentQuarterCount } from "../lib/game/initiativeState";
-import { allocationForInitiative, allocationTotal, derivePortfolioAllocation, OPERATING_ALLOCATION_KEYS } from "../lib/game/initiativeAllocation";
+import { allocationForInitiative, allocationTotal, derivePortfolioAllocation, OPERATING_ALLOCATION_KEYS, rebalanceOperatingAllocation } from "../lib/game/initiativeAllocation";
 import { accelerationEffectLabel, accelerationMultiplierForAction } from "../lib/game/fundingDynamics";
+import type { AccelerationAllocationMode, AccelerationAllocationSet } from "../lib/game/accelerationAllocation";
+import { formatOperatingMix, operatingLoopReadout, recommendedOperatingAllocation } from "../lib/game/operatingLoop";
 import { downloadExport } from "../lib/exportGameplay";
 import { useGameStore } from "../stores/gameStore";
 import QuarterRoadmap from "./QuarterRoadmap";
@@ -64,6 +66,7 @@ interface Props {
   onInitiativeAllocationModeChange: (mode: InitiativeAllocationMode) => void;
   onInitiativeAllocationChange: (initiativeId: string, key: string, value: number) => void;
   onDeploymentChange: (amount: number) => void;
+  onAccelerationAllocationChange?: (mode: AccelerationAllocationMode, allocations: AccelerationAllocationSet) => void;
   onConfirm: () => void;
   onReset: () => void;
 }
@@ -85,6 +88,7 @@ export default function GameDecisionView({
   onInitiativeAllocationModeChange,
   onInitiativeAllocationChange,
   onDeploymentChange,
+  onAccelerationAllocationChange,
   onConfirm,
   onReset,
 }: Props) {
@@ -188,7 +192,7 @@ export default function GameDecisionView({
     };
     return [{ id: initiative.id, name: initiative.name, action, stage, issue, effect: effectByAction[action] }];
   });
-  const capitalPlan = calculateActionCapitalPlan(state, initiativeActions, deployment);
+  const capitalPlan = calculateActionCapitalPlan(state, initiativeActions, deployment, state.quarterlyCrisisCost, state.accelerationAllocationMode === 'focused' ? state.accelerationAllocations : undefined);
   const effectiveAllocation = derivePortfolioAllocation(state.alloc, state.initiativeAllocationMode, state.initiativeAllocations, capitalPlan.byInitiative);
   const unbalancedInitiatives = state.initiativeAllocationMode === 'custom'
     ? selectedInitiatives.filter((initiative) => allocationTotal(allocationForInitiative(initiative.id, 'custom', state.initiativeAllocations, state.alloc)) !== 100)
@@ -246,12 +250,27 @@ export default function GameDecisionView({
       OPERATING_ALLOCATION_KEYS.forEach((key) => { if (next[key] !== state.alloc[key]) onAllocationChange(key, next[key]); });
     }
   };
+  const applyOperatingPreset = (initiativeId: string, preset: 'recommended' | 'evidence' | 'adoption') => {
+    const brief = initiativeFundingBriefs.find((item) => item.initiative.id === initiativeId);
+    if (!brief) return;
+    let next = recommendedOperatingAllocation(brief.operating);
+    if (preset === 'evidence') next = rebalanceOperatingAllocation(next, 'data', Math.min(50, next.data + 8));
+    if (preset === 'adoption') {
+      next = rebalanceOperatingAllocation(next, 'people', Math.min(50, next.people + 5));
+      next = rebalanceOperatingAllocation(next, 'compliance', Math.min(50, next.compliance + 5));
+    }
+    onInitiativeAllocationModeChange('custom');
+    OPERATING_ALLOCATION_KEYS.forEach((key) => {
+      if (next[key] !== brief.allocation[key]) onInitiativeAllocationChange(initiativeId, key, next[key]);
+    });
+  };
   const allocationLabel: Record<keyof Allocation, string> = { infra: 'Infrastructure', data: 'Data', people: 'People', mlops: 'Ops & maintenance', compliance: 'Compliance', innovation: 'Innovation' };
   const initiativeFundingBriefs = selectedInitiatives.map((initiative) => {
     const live = state.initiativeStates?.[initiative.id];
     const action = actionFor(initiative.id, Number(live?.quartersFunded || 0));
     const funding = capitalPlan.byInitiative?.[initiative.id] || { discovery: 0, delivery: 0, scaleUp: 0, run: 0, retirement: 0, total: 0 };
     const allocation = allocationForInitiative(initiative.id, state.initiativeAllocationMode, state.initiativeAllocations, state.alloc);
+    const operating = operatingLoopReadout(live || initiative, action, allocation);
     const stageAcceleration = accelerationMultiplierForAction(action, funding);
     const completedInvestment = completedInvestmentQuarters(state, initiative.id);
     const hasNewInvestment = Number(funding.total) > 0;
@@ -272,7 +291,7 @@ export default function GameDecisionView({
           : action === 'pause'
             ? ['No positive delivery effect this quarter. Pausing preserves the option to adapt, while readiness and benefit can decay.']
             : ['No further operating investment. Retirement closes the capability and stops ongoing delivery work.'];
-    return { initiative, action, funding, allocation, directEffects, stageAcceleration, accelerationEffect: accelerationEffectLabel(action), completedInvestment, hasNewInvestment, investmentStatus };
+    return { initiative, action, funding, allocation, operating, directEffects, stageAcceleration, accelerationEffect: accelerationEffectLabel(action), completedInvestment, hasNewInvestment, investmentStatus };
   });
   const runway = calculateCapitalRunway(state, deployment);
   const requiresMoreDeployment = capitalPlan.requiredCapital > deployment + 1e-9;
@@ -597,7 +616,7 @@ export default function GameDecisionView({
                   </div>
                   <button type="button" onClick={() => setAdvancedAllocationOpen((open) => !open)} className="rounded-lg border border-[#0969da]/25 bg-white px-3 py-2 text-[10px] font-bold text-[#0969da] transition hover:bg-[#f6f8fa]" aria-expanded={advancedAllocationOpen || state.initiativeAllocationMode === 'custom'}>Advanced: tailor each initiative</button>
                 </div>
-                <p className="mt-2 text-xs leading-5 text-[#57606a]">The recommended shared mix is active by default. It gives every selected initiative the same balanced operating support.{capitalPlan.accelerationSpend > 0 ? ` ${formatBudget(capitalPlan.accelerationSpend, state.currencyMode)} of extra investment is attributed to each selected initiative and accelerates its current lifecycle work.` : ''}</p>
+                <p className="mt-2 text-xs leading-5 text-[#57606a]">The recommended shared mix is active by default. It gives every selected initiative the same balanced operating support.{capitalPlan.accelerationSpend > 0 ? ` ${formatBudget(capitalPlan.accelerationSpend, state.currencyMode)} of extra investment is acceleration capital: it is routed proportionally across eligible lifecycle work by default, or assigned by initiative in the Route extra capital control.` : ''}</p>
                 {(advancedAllocationOpen || state.initiativeAllocationMode === 'custom') && <div className="mt-3 rounded-xl border border-[#0969da]/20 bg-white/75 p-3">
                   <div className="flex flex-wrap items-center justify-between gap-2"><div><p className="text-xs font-bold text-[#24292f]">Tailor the operating mix</p><p className="mt-1 text-[10px] leading-4 text-[#57606a]">Use this only when different initiatives need genuinely different support.</p></div><div className="flex rounded-lg border border-[#0969da]/25 bg-white p-1 text-[10px] font-bold"><button type="button" onClick={() => onInitiativeAllocationModeChange('shared')} className={`rounded-md px-2.5 py-1.5 transition ${state.initiativeAllocationMode === 'shared' ? 'bg-[#0969da] text-white' : 'text-[#57606a] hover:bg-[#f6f8fa]'}`}>Use shared mix</button><button type="button" onClick={() => onInitiativeAllocationModeChange('custom')} className={`rounded-md px-2.5 py-1.5 transition ${state.initiativeAllocationMode === 'custom' ? 'bg-[#0969da] text-white' : 'text-[#57606a] hover:bg-[#f6f8fa]'}`}>Customize</button></div></div>
                   {state.initiativeAllocationMode === 'custom' && <p className={`mt-3 rounded-lg border px-3 py-2 text-[11px] leading-5 ${unbalancedInitiatives.length ? 'border-[#bf8700]/35 bg-[#fff8c5] text-[#6b4f00]' : 'border-[#0969da]/20 bg-white/75 text-[#57606a]'}`}>{unbalancedInitiatives.length ? `Your custom mixes: ${unbalancedInitiatives.length} initiative${unbalancedInitiatives.length === 1 ? '' : 's'} still need${unbalancedInitiatives.length === 1 ? 's' : ''} to total 100%.` : 'Your custom mixes are balanced. Local choices also change the combined capacity mix.'}</p>}
@@ -609,6 +628,16 @@ export default function GameDecisionView({
                       {brief.funding.scaleUp > 0 && <span className="rounded-full bg-[#dafbe1] px-2 py-1 text-[10px] font-bold text-[#176b36]">+{formatBudget(brief.funding.scaleUp, state.currencyMode)} · {brief.stageAcceleration.toFixed(2)}×</span>}
                     </div>
                     <p className="mt-2 text-[11px] leading-5 text-[#57606a]">Action commitment: {formatBudget(brief.funding.discovery + brief.funding.delivery + brief.funding.run + brief.funding.retirement, state.currencyMode)}{brief.funding.scaleUp > 0 ? ` · ${formatBudget(brief.funding.scaleUp, state.currencyMode)} accelerates ${brief.accelerationEffect} at ${brief.stageAcceleration.toFixed(2)}×` : ''}{brief.hasNewInvestment ? ' · +1 investment quarter pending confirmation.' : ' · no new investment is recorded this quarter.'}</p>
+                    <div className="mt-3 rounded-lg border border-[#0969da]/15 bg-[#ddf4ff]/45 p-2.5 text-[11px] leading-5 text-[#57606a]">
+                      <p><span className="font-bold text-[#0969da]">Operating readout:</span> {brief.operating.summary}</p>
+                      <p className="mt-1"><span className="font-bold text-[#24292f]">Suggested {brief.operating.stage.replaceAll('_', ' ')} mix:</span> {formatOperatingMix(brief.operating)}</p>
+                      <p className="mt-1 text-[10px]">{brief.operating.tradeoff}</p>
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        <button type="button" onClick={() => applyOperatingPreset(brief.initiative.id, 'recommended')} className="rounded-md border border-[#0969da]/30 bg-white px-2 py-1 text-[10px] font-bold text-[#0969da] hover:bg-[#ddf4ff]">Use recommended mix</button>
+                        <button type="button" onClick={() => applyOperatingPreset(brief.initiative.id, 'evidence')} className="rounded-md border border-[#1a7f37]/30 bg-white px-2 py-1 text-[10px] font-bold text-[#176b36] hover:bg-[#dafbe1]">Prioritise evidence</button>
+                        <button type="button" onClick={() => applyOperatingPreset(brief.initiative.id, 'adoption')} className="rounded-md border border-[#9a6700]/30 bg-white px-2 py-1 text-[10px] font-bold text-[#8a5a00] hover:bg-[#fff8c5]">Protect adoption &amp; controls</button>
+                      </div>
+                    </div>
                     <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
                       {OPERATING_ALLOCATION_KEYS.map((key) => <label key={key} className="rounded-lg border border-[#d0d7de] bg-white p-2 text-[10px] text-[#57606a]">
                         <span className="flex justify-between gap-1"><span className="font-bold text-[#24292f]">{allocationLabel[key]}</span><span>{brief.allocation[key]}%</span></span>
@@ -617,13 +646,13 @@ export default function GameDecisionView({
                       </label>)}
                     </div>
                     {state.initiativeAllocationMode === 'custom' && <p className={`mt-2 text-[10px] font-bold ${allocationTotal(brief.allocation) === 100 ? 'text-[#1a7f37]' : 'text-[#9a6700]'}`}>{allocationTotal(brief.allocation)}% allocated for this initiative {allocationTotal(brief.allocation) === 100 ? '· ready to confirm' : '· must equal 100% to confirm'}</p>}
-                    <div className="mt-3 rounded-lg bg-[#f6f8fa] p-2.5 text-[11px] leading-5 text-[#57606a]"><p className="font-bold uppercase tracking-wide text-[#0969da]">Direct effect this quarter</p>{brief.directEffects.map((effect) => <p key={effect} className="mt-1">{effect}</p>)}</div>
+                    <div className="mt-3 rounded-lg bg-[#f6f8fa] p-2.5 text-[11px] leading-5 text-[#57606a]"><p className="font-bold uppercase tracking-wide text-[#0969da]">Direct effect this quarter</p>{brief.directEffects.map((effect) => <p key={effect} className="mt-1">{effect}</p>)}<p className="mt-1 text-[10px] font-semibold text-[#0969da]">The operating mix is a learner choice: edit the sliders after choosing a preset, then confirm when each initiative totals 100%.</p></div>
                   </article>)}
                 </div>
               </section>}
               </div>
               <aside className="order-last xl:sticky xl:top-24 xl:order-none" aria-label="Quarter decision configuration">
-                <OperatingSystemControls state={state} effectiveAllocation={effectiveAllocation} onAllocationChange={onAllocationChange} onDeploymentChange={onDeploymentChange} capacityIssue={capacityIssue} onCapacityFix={makePlanExecutable} compact />
+                <OperatingSystemControls state={state} effectiveAllocation={effectiveAllocation} onAllocationChange={onAllocationChange} onDeploymentChange={onDeploymentChange} onAccelerationAllocationChange={onAccelerationAllocationChange} capacityIssue={capacityIssue} onCapacityFix={makePlanExecutable} compact />
               </aside>
             </div>
             <p className="mt-4 flex items-center gap-2 text-[11px] text-ink/45">
@@ -639,7 +668,7 @@ export default function GameDecisionView({
               <div className="w-full rounded-2xl border border-[#bf8700]/35 bg-[#fff8c5] p-3 text-left sm:max-w-2xl">
                 <p className="text-sm font-bold text-[#24292f]">Your selected plan needs {formatBudget(capitalPlan.requiredCapital, state.currencyMode)} this quarter.</p>
                 <p className="mt-1 text-xs leading-5 text-[#57606a]">This includes {formatBudget(capitalPlan.initiativeMinimum, state.currencyMode)} for the selected initiatives and {formatBudget(capitalPlan.maintenanceSpend, state.currencyMode)} to continue earlier work. You have released {formatBudget(deployment, state.currencyMode)}. {portfolioFitsThisQuarter ? 'Increase the release to fund this plan, or edit the portfolio.' : `The plan exceeds the remaining campaign reserve of ${formatBudget(capacity.maximumDeployment, state.currencyMode)}; choose fewer initiatives or restore a checkpoint.`}</p>
-                {portfolioFitsThisQuarter && <button type="button" onClick={() => onDeploymentChange(Number(capitalPlan.requiredCapital.toFixed(1)))} className="mt-3 rounded-lg bg-[#24292f] px-3 py-2 text-xs font-bold text-white transition hover:bg-[#0969da]">Fund this plan</button>}
+                {portfolioFitsThisQuarter && <button type="button" onClick={() => onDeploymentChange(Number(capitalPlan.requiredCapital.toFixed(2)))} className="mt-3 rounded-lg bg-[#24292f] px-3 py-2 text-xs font-bold text-white transition hover:bg-[#0969da]">Fund this plan</button>}
               </div>
             )}
             {importantFeedback && <p role="status" className="w-full rounded-xl bg-[#ffebe9] px-3 py-2 text-right text-xs font-bold text-[#cf222e]">{state.feedback}</p>}

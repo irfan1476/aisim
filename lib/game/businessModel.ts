@@ -104,6 +104,13 @@ export type InitiativeFunding = {
   total: number;
 };
 
+/**
+ * Learner-controlled split of the quarter's discretionary acceleration pool.
+ * Values are percentages by initiative (the engine excludes paused/retired
+ * actions and reconciles the resulting currency allocation exactly).
+ */
+export type InitiativeAccelerationAllocation = Record<string, number>;
+
 export type FinancialLedger = {
   investment: number;
   runCost: number;

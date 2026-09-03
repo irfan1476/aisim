@@ -67,6 +67,35 @@ test('extra capital is attributed to every accelerable lifecycle stage, not only
   assert.ok(accelerationMultiplierForAction('maintain', plan.byInitiative.maintenance) > 1);
 });
 
+test('targeted acceleration sends the discretionary pool to the learner-selected initiative', () => {
+  const state = initialGameState();
+  const actions = { demand: 'pilot', energy: 'pilot' };
+  const floor = calculateActionCapitalPlan(state, actions, 100).requiredCapital;
+  const plan = calculateActionCapitalPlan(state, actions, floor + 10, 0, { demand: 100, energy: 0 });
+
+  assert.equal(plan.accelerationAllocations.demand, 100);
+  assert.equal(plan.accelerationAllocations.energy, undefined);
+  assert.ok(plan.byInitiative.demand.scaleUp >= 10, 'the targeted initiative receives the discretionary pool');
+  assert.equal(plan.byInitiative.energy.scaleUp, 0, 'an unselected initiative receives no discretionary acceleration');
+  assert.equal(
+    Number(Object.values(plan.byInitiative).reduce((sum, funding) => sum + funding.total, 0).toFixed(2)),
+    Number((floor + 10).toFixed(2)),
+    'per-initiative attribution reconciles exactly to the released capital',
+  );
+});
+
+test('targeted acceleration is carried into the resolved decision and quarter snapshot', () => {
+  const state = initialGameState();
+  const actions = { demand: 'pilot', energy: 'pilot' };
+  const floor = calculateActionCapitalPlan(state, actions, 100).requiredCapital;
+  const decision = { selected: ['demand', 'energy'], initiativeActions: actions, alloc: allocation, deploymentAmount: floor + 10, accelerationAllocations: { demand: 100, energy: 0 } };
+  const result = applyTurnDecision(state, decision);
+  assert.equal(result.accepted, true);
+  assert.deepEqual(result.decision.accelerationAllocations, { demand: 100 });
+  assert.deepEqual(result.nextState.history[0].accelerationAllocations, { demand: 100, energy: 0 });
+  assert.ok(result.nextState.history[0].initiativeFunding.demand.scaleUp > result.nextState.history[0].initiativeFunding.energy.scaleUp);
+});
+
 test('stage acceleration produces the right durable effect without bypassing lifecycle evidence', () => {
   const state = initialGameState();
   const actions = { demand: 'pilot', energy: 'discover', maintenance: 'maintain' };
@@ -311,6 +340,7 @@ test('counterfactual traces preserve lifecycle actions and learner decisions', (
     initiativeActions: { demand: 'pilot', energy: 'pause' },
     alloc: allocation,
     deploymentAmount: state.deploymentAmount,
+    accelerationAllocations: { demand: 100, energy: 0 },
   };
   const resolution = applyTurnDecision(state, decision);
   assert.equal(resolution.accepted, true);
@@ -356,6 +386,7 @@ test('tailored initiative operating mixes change individual effects and replay e
     initiativeActions: { demand: 'scale', energy: 'scale' },
     alloc: allocation,
     deploymentAmount: state.deploymentAmount,
+    accelerationAllocations: { demand: 100, energy: 0 },
   };
   const shared = applyTurnDecision(state, decision);
   assert.equal(shared.accepted, true, shared.accepted ? '' : shared.reason);
@@ -369,11 +400,13 @@ test('tailored initiative operating mixes change individual effects and replay e
   assert.ok(tailored.nextState.initiativeStates.demand.changeReadiness > shared.nextState.initiativeStates.demand.changeReadiness);
   assert.equal(tailored.nextState.history[0].allocationMode, 'custom');
   assert.deepEqual(tailored.nextState.history[0].initiativeAllocations, initiativeAllocations);
+  assert.deepEqual(tailored.nextState.history[0].accelerationAllocations, { demand: 100, energy: 0 });
 
   const trace = recordDecision(createCounterfactualTrace(state), { type: 'decision', q: 1, ...tailored.decision });
   const replay = replayCounterfactual(trace, { q: 1, ...decision });
   assert.equal(replay.status, 'blocked');
   assert.deepEqual(replay.state.history[0].initiativeAllocations, initiativeAllocations);
+  assert.deepEqual(replay.state.history[0].accelerationAllocations, { demand: 100, energy: 0 });
   assert.equal(JSON.stringify(replay.state.history[0].initiativeStates), JSON.stringify(tailored.nextState.history[0].initiativeStates));
 });
 
